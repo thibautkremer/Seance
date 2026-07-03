@@ -4,361 +4,370 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV TIME REBORN</title>
-    <!-- Tailwind CSS pour le style -->
+    <!-- Tailwind CSS pour un design magnifique -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- React et ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Babel pour compiler le JSX à la volée dans le navigateur -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Recharts requiert Prop-Types et Recharts lui-même -->
-    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
     <style>
-        /* Ajustements pour cacher le flash blanc au chargement de Babel */
-        [typeof="babel"] { display: none; }
-        body { background-color: #111827; }
+        body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans pb-20">
+<body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
-    <div id="root"></div>
+    <!-- Barre supérieure -->
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
+        <h1 class="text-xl font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
+        <button id="langToggle" class="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition">🌐 FR</button>
+    </header>
 
-    <!-- Script de l'application (Compilé par Babel) -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } = Recharts;
+    <!-- Zone principale -->
+    <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
+        
+        <!-- SECTION RECHERCHE -->
+        <div id="tab-search" class="space-y-4">
+            <!-- Filtres de type -->
+            <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
+                <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
+                <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg capitalize transition text-gray-400">Films</button>
+                <button onclick="setMediaType('anime')" id="btn-anime" class="py-2 text-sm font-bold rounded-lg capitalize transition text-gray-400">Animés</button>
+            </div>
 
-        // Configuration des API
+            <!-- Input -->
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Rechercher une série (3 lettres min)..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <div id="searchLoading" class="absolute right-4 top-3.5 text-indigo-400 text-sm animate-pulse hidden">Chargement...</div>
+            </div>
+
+            <div id="searchError" class="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50 hidden"></div>
+            <div id="searchResults" class="space-y-3"></div>
+        </div>
+
+        <!-- SECTION BIBLIOTHÈQUE -->
+        <div id="tab-library" class="space-y-4 hidden">
+            <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque (<span id="lib-count">0</span>)</h2>
+            <div id="libraryGrid" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- SECTION PROFIL -->
+        <div id="tab-profile" class="space-y-5 hidden">
+            <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
+                <div>
+                    <h2 class="text-lg font-bold text-white">Mon Profil Perso</h2>
+                    <p class="text-xs text-indigo-300">Vos statistiques globales</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                    <div id="stat-hours" class="text-2xl font-black text-indigo-400">0h</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Temps passé</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                    <div id="stat-count" class="text-2xl font-black text-emerald-400">0</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Épisodes vus</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FENÊTRE MODALE (DÉTAILS) -->
+    <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-md rounded-2xl overflow-hidden my-4 shadow-2xl">
+            <div class="p-4 flex justify-between items-center border-b border-gray-700">
+                <h2 id="modalTitle" class="font-bold text-white truncate text-base">Détails</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold">✕</button>
+            </div>
+            <div class="p-4 space-y-4">
+                <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
+                <div class="space-y-2">
+                    <h3 class="text-sm font-bold text-white flex justify-between items-center">
+                        <span>Épisodes</span>
+                        <span id="modalEpCount" class="text-xs font-normal text-gray-400"></span>
+                    </h3>
+                    <div id="modalEpisodesList" class="max-h-64 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de navigation fixe basse -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 shadow-2xl">
+        <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-indigo-400 font-bold transition">
+            <span class="text-lg">🔍</span><span class="mt-0.5">Recherche</span>
+        </button>
+        <button onclick="switchTab('library')" id="nav-library" class="flex flex-col items-center text-xs text-gray-400 transition">
+            <span class="text-lg">📚</span><span class="mt-0.5">Bibliothèque</span>
+        </button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-xs text-gray-400 transition">
+            <span class="text-lg">📊</span><span class="mt-0.5">Profil</span>
+        </button>
+    </nav>
+
+    <!-- Logique applicative en JS pur -->
+    <script>
         const TVMAZE_API = 'https://api.tvmaze.com';
         const JIKAN_API = 'https://api.jikan.moe/v4';
         const OMDB_API = 'https://www.omdbapi.com/?apikey=b9a52bc3';
 
-        function App() {
-            const [activeTab, setActiveTab] = useState('search');
-            const [lang, setLang] = useState('FR');
-            const [mediaType, setMediaType] = useState('series');
-            const [query, setQuery] = useState('');
-            const [searchResults, setSearchResults] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState('');
+        let currentMediaType = 'series';
+        let searchTimeout = null;
+        let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
 
-            const [library, setLibrary] = useState(() => {
-                const saved = localStorage.getItem('personal_tracker_db');
-                return saved ? JSON.parse(saved) : [];
+        // Navigation
+        function switchTab(tabName) {
+            ['search', 'library', 'profile'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).classList.remove('text-indigo-400', 'font-bold');
+                document.getElementById(`nav-${t}`).classList.add('text-gray-400');
             });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabName}`).classList.add('text-indigo-400', 'font-bold');
+            document.getElementById(`nav-${tabName}`).classList.remove('text-gray-400');
 
-            const [selectedMedia, setSelectedMedia] = useState(null);
-            const [detailedEpisodes, setDetailedEpisodes] = useState([]);
-            const [graphMode, setGraphMode] = useState('source');
-
-            useEffect(() => {
-                localStorage.setItem('personal_tracker_db', JSON.stringify(library));
-            }, [library]);
-
-            const handleSearch = async (searchVal) => {
-                if (searchVal.length < 3) {
-                    setSearchResults([]);
-                    return;
-                }
-                setLoading(true);
-                setError('');
-
-                try {
-                    let results = [];
-                    if (mediaType === 'series') {
-                        const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(searchVal)}`);
-                        const data = await res.json();
-                        results = data.slice(0, 10).map(item => ({
-                            id: `tv-${item.show.id}`,
-                            apiId: item.show.id,
-                            title: item.show.name,
-                            type: 'series',
-                            image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
-                            summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé disponible.',
-                            rating: item.show.rating?.average || 'N/A',
-                            genres: item.show.genres || []
-                        }));
-                    } else if (mediaType === 'anime') {
-                        const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(searchVal)}&limit=10`);
-                        const data = await res.json();
-                        results = (data.data || []).map(item => ({
-                            id: `mal-${item.mal_id}`,
-                            apiId: item.mal_id,
-                            title: item.title_english || item.title,
-                            type: 'anime',
-                            image: item.images?.jpg?.image_url,
-                            summary: item.synopsis || 'Aucun résumé disponible.',
-                            rating: item.score || 'N/A',
-                            genres: item.genres?.map(g => g.name) || []
-                        }));
-                    } else if (mediaType === 'movie') {
-                        const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(searchVal)}&type=movie`);
-                        const data = await res.json();
-                        if (data.Response === "True") {
-                            results = data.Search.slice(0, 10).map(item => ({
-                                id: `omdb-${item.imdbID}`,
-                                apiId: item.imdbID,
-                                title: item.Title,
-                                type: 'movie',
-                                image: item.Poster !== "N/A" ? item.Poster : 'https://via.placeholder.com/210x295?text=No+Image',
-                                summary: `Année : ${item.Year}.`,
-                                rating: 'N/A',
-                                genres: []
-                            }));
-                        }
-                    }
-                    
-                    setSearchResults(results);
-                    if (results.length === 0) setError('Aucun résultat trouvé.');
-                } catch (err) {
-                    setError('Erreur réseau ou API. Veuillez réessayer.');
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            useEffect(() => {
-                const delayDebounceFn = setTimeout(() => {
-                    if (query) handleSearch(query);
-                }, 500);
-                return () => clearTimeout(delayDebounceFn);
-            }, [query, mediaType]);
-
-            const addToLibrary = async (media) => {
-                if (library.some(item => item.id === media.id)) return;
-                
-                let episodes = [];
-                if (media.type === 'series') {
-                    try {
-                        const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
-                        const data = await res.json();
-                        episodes = data.map(ep => ({
-                            id: ep.id,
-                            name: ep.name,
-                            season: ep.season,
-                            number: ep.number,
-                            airdate: ep.airdate,
-                            runtime: ep.runtime || 40,
-                            summary: ep.summary ? ep.summary.replace(/<[^>]*>/g, '') : '',
-                            image: ep.image?.medium || '',
-                            ratingSource: ep.rating?.average || 7,
-                            ratingPerso: null,
-                            watched: false
-                        }));
-                    } catch (e) {
-                        console.error(e);
-                    }
-                }
-
-                const newItem = {
-                    ...media,
-                    status: 'to_watch',
-                    personalRating: null,
-                    episodes: episodes,
-                    dateAdded: new Date().toISOString()
-                };
-
-                setLibrary([...library, newItem]);
-            };
-
-            const toggleEpisodeWatched = (mediaId, epId) => {
-                setLibrary(library.map(item => {
-                    if (item.id === mediaId) {
-                        const updatedEpisodes = item.episodes.map(ep => 
-                            ep.id === epId ? { ...ep, watched: !ep.watched } : ep
-                        );
-                        return { ...item, episodes: updatedEpisodes };
-                    }
-                    return item;
-                }));
-            };
-
-            const getStats = () => {
-                let totalTime = 0;
-                let timeByType = { series: 0, movie: 0, anime: 0 };
-                let watchedCount = 0;
-
-                library.forEach(item => {
-                    if (item.type === 'movie' && item.status === 'watched') {
-                        totalTime += 120;
-                        timeByType.movie += 120;
-                        watchedCount += 1;
-                    } else {
-                        item.episodes?.forEach(ep => {
-                            if (ep.watched) {
-                                totalTime += ep.runtime || 40;
-                                timeByType[item.type] += ep.runtime || 40;
-                                watchedCount += 1;
-                            }
-                        });
-                    }
-                });
-
-                return {
-                    totalHours: Math.round(totalTime / 60),
-                    timeByType: [
-                        { name: 'Séries', value: Math.round(timeByType.series / 60) },
-                        { name: 'Films', value: Math.round(timeByType.movie / 60) },
-                        { name: 'Animés', value: Math.round(timeByType.anime / 60) },
-                    ],
-                    watchedCount
-                };
-            };
-
-            const stats = getStats();
-
-            return (
-                <div className="flex flex-col min-h-screen">
-                    <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
-                        <h1 className="text-xl font-black tracking-wider text-indigo-400">TV TIME <span className="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
-                        <button onClick={() => setLang(lang === 'FR' ? 'EN' : 'FR')} class="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition">
-                            🌐 {lang}
-                        </button>
-                    </header>
-
-                    <main className="max-w-md mx-auto p-4 w-full sm:max-w-2xl flex-1">
-                        {activeTab === 'search' && (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
-                                    {['series', 'movie', 'anime'].map((t) => (
-                                        <button key={t} onClick={() => setMediaType(t)} className={`py-2 text-sm font-bold rounded-lg capitalize transition ${mediaType === t ? 'bg-indigo-600 text-white' : 'text-gray-400'}`}>
-                                            {t === 'series' ? 'Séries' : t === 'movie' ? 'Films' : 'Animés'}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="relative">
-                                    <input type="text" placeholder="Rechercher..." value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                                    {loading && <div className="absolute right-4 top-3.5 text-indigo-400 text-sm animate-pulse">Chargement...</div>}
-                                </div>
-
-                                {error && <div className="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50">{error}</div>}
-
-                                <div className="space-y-3">
-                                    {searchResults.map((media) => {
-                                        const inLib = library.some(item => item.id === media.id);
-                                        return (
-                                            <div key={media.id} className="bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3">
-                                                <img src={media.image} className="w-20 h-28 object-cover rounded-lg bg-gray-900" />
-                                                <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                                    <div>
-                                                        <div className="flex justify-between items-start gap-2">
-                                                            <h3 className="font-bold text-white truncate">{media.title}</h3>
-                                                            <span className="text-xs font-bold text-yellow-400">★ {media.rating}</span>
-                                                        </div>
-                                                        <p className="text-xs text-gray-400 line-clamp-2 mt-1">{media.summary}</p>
-                                                    </div>
-                                                    <button onClick={() => addToLibrary(media)} disabled={inLib} className={`w-full py-1.5 text-xs font-bold rounded-lg mt-2 ${inLib ? 'bg-emerald-600/20 text-emerald-400' : 'bg-indigo-600 text-white'}`}>
-                                                        {inLib ? '✓ Dans la bibliothèque' : '+ Ajouter au suivi'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'library' && (
-                            <div className="space-y-4">
-                                <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque ({library.length})</h2>
-                                {library.length === 0 ? (
-                                    <p className="text-sm text-gray-500 text-center py-8">Bibliothèque vide.</p>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {library.map((item) => (
-                                            <div key={item.id} onClick={() => { setSelectedMedia(item); setDetailedEpisodes(item.episodes || []) }} className="bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden">
-                                                <img src={item.image} className="w-full aspect-[2/3] object-cover bg-gray-900" />
-                                                <div className="p-2">
-                                                    <h4 className="font-bold text-sm text-white truncate">{item.title}</h4>
-                                                    <span className="text-xs text-yellow-400">★ {item.rating}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === 'profile' && (
-                            <div className="space-y-4">
-                                <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black">ME</div>
-                                    <div>
-                                        <h2 className="text-lg font-bold text-white">Mon Profil</h2>
-                                        <p className="text-xs text-indigo-300">Stats de visionnage</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-gray-800 p-4 rounded-xl text-center border border-gray-700">
-                                        <div className="text-2xl font-black text-indigo-400">{stats.totalHours}h</div>
-                                        <div className="text-xs text-gray-400">Temps passé</div>
-                                    </div>
-                                    <div className="bg-gray-800 p-4 rounded-xl text-center border border-gray-700">
-                                        <div className="text-2xl font-black text-emerald-400">{stats.watchedCount}</div>
-                                        <div className="text-xs text-gray-400">Épisodes vus</div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {selectedMedia && (
-                            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center">
-                                <div className="bg-gray-800 border border-gray-700 w-full max-w-md rounded-2xl overflow-hidden my-4">
-                                    <div className="p-4 flex justify-between items-center border-b border-gray-700">
-                                        <h2 className="font-bold text-white truncate">{selectedMedia.title}</h2>
-                                        <button onClick={() => { setSelectedMedia(null); setDetailedEpisodes([]); }} className="text-gray-400 text-sm">✕</button>
-                                    </div>
-                                    <div className="p-4 space-y-4">
-                                        <p className="text-xs text-gray-300">{selectedMedia.summary}</p>
-                                        
-                                        {detailedEpisodes.length > 0 && (
-                                            <div className="h-32 bg-gray-900 p-2 rounded-xl">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <LineChart data={detailedEpisodes}>
-                                                        <XAxis dataKey="number" hide />
-                                                        <YAxis domain={[0, 10]} hide />
-                                                        <Tooltip />
-                                                        <Line type="monotone" dataKey="ratingSource" stroke="#6366f1" strokeWidth={2} dot={false} />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        )}
-
-                                        <div className="max-h-48 overflow-y-auto space-y-2">
-                                            {detailedEpisodes.map((ep) => (
-                                                <div key={ep.id} className="bg-gray-900/60 p-2 rounded-lg border border-gray-700/50 flex justify-between items-center text-xs">
-                                                    <span className="truncate pr-2">S{ep.season}E{ep.number} - {ep.name}</span>
-                                                    <button onClick={() => toggleEpisodeWatched(selectedMedia.id, ep.id)} className={`px-2 py-1 font-bold rounded ${ep.watched ? 'bg-emerald-600/20 text-emerald-400' : 'bg-gray-800 text-gray-400'}`}>
-                                                        {ep.watched ? '✓' : 'Vu'}
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </main>
-
-                    <nav className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40">
-                        <button onClick={() => setActiveTab('search')} className={`flex flex-col items-center text-xs ${activeTab === 'search' ? 'text-indigo-400' : 'text-gray-400'}`}>
-                            <span>🔍</span> Recherche
-                        </button>
-                        <button onClick={() => setActiveTab('library')} className={`flex flex-col items-center text-xs ${activeTab === 'library' ? 'text-indigo-400' : 'text-gray-400'}`}>
-                            <span>📚</span> Bibliothèque
-                        </button>
-                        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center text-xs ${activeTab === 'profile' ? 'text-indigo-400' : 'text-gray-400'}`}>
-                            <span>📊</span> Profil
-                        </button>
-                    </nav>
-                </div>
-            );
+            if (tabName === 'library') renderLibrary();
+            if (tabName === 'profile') renderProfile();
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        function setMediaType(type) {
+            currentMediaType = type;
+            ['series', 'movie', 'anime'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                btn.classList.add('text-gray-400');
+            });
+            document.getElementById(`btn-${type}`).classList.add('bg-indigo-600', 'text-white', 'shadow');
+            document.getElementById(`btn-${type}`).classList.remove('text-gray-400');
+            
+            const input = document.getElementById('searchInput');
+            input.placeholder = `Rechercher ${type === 'series' ? 'une série' : type === 'movie' ? 'un film' : 'un animé'}...`;
+            if (input.value.length >= 3) triggerSearch(input.value);
+        }
+
+        // Écouteur input recherche
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => triggerSearch(e.target.value), 400);
+        });
+
+        async function triggerSearch(val) {
+            const resultsContainer = document.getElementById('searchResults');
+            const loader = document.getElementById('searchLoading');
+            const errBox = document.getElementById('searchError');
+
+            if (val.length < 3) {
+                resultsContainer.innerHTML = '';
+                errBox.classList.add('hidden');
+                return;
+            }
+
+            loader.classList.remove('hidden');
+            errBox.classList.add('hidden');
+
+            try {
+                let results = [];
+                if (currentMediaType === 'series') {
+                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(val)}`);
+                    const data = await res.json();
+                    results = data.slice(0, 10).map(item => ({
+                        id: `tv-${item.show.id}`,
+                        apiId: item.show.id,
+                        title: item.show.name,
+                        type: 'series',
+                        image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
+                        summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
+                        rating: item.show.rating?.average || 'N/A'
+                    }));
+                } else if (currentMediaType === 'anime') {
+                    const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(val)}&limit=10`);
+                    const data = await res.json();
+                    results = (data.data || []).map(item => ({
+                        id: `mal-${item.mal_id}`,
+                        apiId: item.mal_id,
+                        title: item.title_english || item.title,
+                        type: 'anime',
+                        image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=No+Image',
+                        summary: item.synopsis || 'Aucun résumé.',
+                        rating: item.score || 'N/A'
+                    }));
+                } else if (currentMediaType === 'movie') {
+                    const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(val)}&type=movie`);
+                    const data = await res.json();
+                    if (data.Response === "True") {
+                        results = data.Search.slice(0, 10).map(item => ({
+                            id: `omdb-${item.imdbID}`,
+                            apiId: item.imdbID,
+                            title: item.Title,
+                            type: 'movie',
+                            image: item.Poster !== "N/A" ? item.Poster : 'https://via.placeholder.com/210x295?text=No+Image',
+                            summary: `Année de sortie : ${item.Year}.`,
+                            rating: 'N/A'
+                        }));
+                    }
+                }
+
+                resultsContainer.innerHTML = '';
+                if (results.length === 0) {
+                    errBox.textContent = 'Aucun résultat trouvé.';
+                    errBox.classList.remove('hidden');
+                    return;
+                }
+
+                results.forEach(media => {
+                    const inLib = library.some(i => i.id === media.id);
+                    const div = document.createElement('div');
+                    div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3";
+                    div.innerHTML = `
+                        <img src="${media.image}" class="w-16 h-24 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
+                        <div class="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start gap-1">
+                                    <h3 class="font-bold text-white text-sm truncate">${media.title}</h3>
+                                    <span class="text-[11px] text-yellow-400 font-bold flex-shrink-0">★ ${media.rating}</span>
+                                </div>
+                                <p class="text-[11px] text-gray-400 line-clamp-2 mt-0.5">${media.summary}</p>
+                            </div>
+                            <button onclick="addToLibrary(${window.btoa(encodeURIComponent(JSON.stringify(media)))})" ${inLib ? 'disabled' : ''} class="w-full py-1 text-xs font-bold rounded-lg mt-1.5 transition ${inLib ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-800/40' : 'bg-indigo-600 text-white hover:bg-indigo-500'}">
+                                ${inLib ? '✓ Suivi activé' : '+ Suivre'}
+                            </button>
+                        </div>
+                    `;
+                    resultsContainer.appendChild(div);
+                });
+
+            } catch (err) {
+                errBox.textContent = 'Une erreur est survenue lors du chargement des flux.';
+                errBox.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        async function addToLibrary(encodedData) {
+            const media = JSON.parse(decodeURIComponent(window.atob(encodedData)));
+            if (library.some(i => i.id === media.id)) return;
+
+            let episodes = [];
+            if (media.type === 'series') {
+                try {
+                    const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
+                    const data = await res.json();
+                    episodes = data.map(ep => ({
+                        id: ep.id,
+                        name: ep.name,
+                        season: ep.season,
+                        number: ep.number,
+                        runtime: ep.runtime || 40,
+                        watched: false
+                    }));
+                } catch (e) { console.error(e); }
+            }
+
+            media.episodes = episodes;
+            media.status = 'In Progress';
+            library.push(media);
+            localStorage.setItem('personal_tracker_db', JSON.stringify(library));
+            
+            const input = document.getElementById('searchInput');
+            triggerSearch(input.value);
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('libraryGrid');
+            document.getElementById('lib-count').textContent = library.length;
+            grid.innerHTML = '';
+
+            if (library.length === 0) {
+                grid.innerHTML = `<p class="text-xs text-gray-500 text-center col-span-2 py-8">Votre espace est vide.</p>`;
+                return;
+            }
+
+            library.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden relative shadow";
+                div.onclick = () => openModal(index);
+                div.innerHTML = `
+                    <img src="${item.image}" class="w-full aspect-[3/4] object-cover bg-gray-900" />
+                    <div class="p-2 bg-gray-800">
+                        <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <span class="text-[10px] text-indigo-400 capitalize">${item.type}</span>
+                            <span class="text-[10px] text-yellow-400 font-bold">★ ${item.rating}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function openModal(index) {
+            const item = library[index];
+            document.getElementById('modalTitle').textContent = item.title;
+            document.getElementById('modalSummary').textContent = item.summary;
+            
+            const epListContainer = document.getElementById('modalEpisodesList');
+            epListContainer.innerHTML = '';
+            
+            if (item.episodes && item.episodes.length > 0) {
+                document.getElementById('modalEpCount').textContent = `${item.episodes.length} éps`;
+                item.episodes.forEach(ep => {
+                    const div = document.createElement('div');
+                    div.className = "bg-gray-900/60 p-2 rounded-lg border border-gray-700/50 flex justify-between items-center text-xs";
+                    div.innerHTML = `
+                        <span class="truncate pr-2 text-gray-300">S${ep.season}E${ep.number} - <b class="text-white">${ep.name}</b></span>
+                        <button onclick="toggleEpisode(${index}, ${ep.id}, this)" class="px-2 py-0.5 font-bold rounded text-[11px] transition ${ep.watched ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : 'bg-gray-800 text-gray-400 border border-gray-700'}">
+                            ${ep.watched ? '✓ Vu' : 'Vu'}
+                        </button>
+                    `;
+                    epListContainer.appendChild(div);
+                });
+            } else {
+                document.getElementById('modalEpCount').textContent = '';
+                epListContainer.innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun module d'épisode requis pour ce format.</p>`;
+            }
+
+            document.getElementById('mediaModal').classList.remove('hidden');
+        }
+
+        function toggleEpisode(itemIndex, epId, btn) {
+            const item = library[itemIndex];
+            const ep = item.episodes.find(e => e.id === epId);
+            ep.watched = !ep.watched;
+            localStorage.setItem('personal_tracker_db', JSON.stringify(library));
+
+            if (ep.watched) {
+                btn.className = "px-2 py-0.5 font-bold rounded text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800/60";
+                btn.textContent = "✓ Vu";
+            } else {
+                btn.className = "px-2 py-0.5 font-bold rounded text-[11px] bg-gray-800 text-gray-400 border border-gray-700";
+                btn.textContent = "Vu";
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('mediaModal').classList.add('hidden');
+        }
+
+        function renderProfile() {
+            let totalTime = 0;
+            let watchedCount = 0;
+
+            library.forEach(item => {
+                if (item.type === 'movie') {
+                    totalTime += 120; // Forfait film
+                    watchedCount += 1;
+                } else {
+                    item.episodes?.forEach(ep => {
+                        if (ep.watched) {
+                            totalTime += ep.runtime || 40;
+                            watchedCount += 1;
+                        }
+                    });
+                }
+            });
+
+            document.getElementById('stat-hours').textContent = `${Math.round(totalTime / 60)}h`;
+            document.getElementById('stat-count').textContent = watchedCount;
+        }
     </script>
 </body>
 </html>
