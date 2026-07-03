@@ -168,17 +168,21 @@
                 if (currentMediaType === 'series') {
                     const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(val)}`);
                     const data = await res.json();
-                    results = data.slice(0, 10).map(item => ({
+                    results = data.slice(0, 15).map(item => ({
                         id: `tv-${item.show.id}`,
                         apiId: item.show.id,
                         title: item.show.name,
                         type: 'series',
                         image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
                         summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
-                        rating: item.show.rating?.average || 'N/A'
+                        rating: item.show.rating?.average || 0 // 0 par défaut pour le tri si pas de note
                     }));
+                    
+                    // TRI PAR POPULARITÉ / NOTE (Du plus grand au plus petit)
+                    results.sort((a, b) => b.rating - a.rating);
+                    
                 } else if (currentMediaType === 'anime') {
-                    const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(val)}&limit=10`);
+                    const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(val)}&limit=15`);
                     const data = await res.json();
                     results = (data.data || []).map(item => ({
                         id: `mal-${item.mal_id}`,
@@ -187,8 +191,12 @@
                         type: 'anime',
                         image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=No+Image',
                         summary: item.synopsis || 'Aucun résumé.',
-                        rating: item.score || 'N/A'
+                        rating: item.score || 0
                     }));
+                    
+                    // Tri également les animés par note globale MAL
+                    results.sort((a, b) => b.rating - a.rating);
+                    
                 } else if (currentMediaType === 'movie') {
                     const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(val)}&type=movie`);
                     const data = await res.json();
@@ -212,8 +220,10 @@
                     return;
                 }
 
-                results.forEach(media => {
+                // On limite l'affichage final aux 10 meilleurs après le tri
+                results.slice(0, 10).forEach(media => {
                     const inLib = library.some(i => i.id === media.id);
+                    const displayRating = media.rating === 0 || media.rating === 'N/A' ? 'N/A' : media.rating;
                     const div = document.createElement('div');
                     div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3";
                     div.innerHTML = `
@@ -222,7 +232,7 @@
                             <div>
                                 <div class="flex justify-between items-start gap-1">
                                     <h3 class="font-bold text-white text-sm truncate">${media.title}</h3>
-                                    <span class="text-[11px] text-yellow-400 font-bold flex-shrink-0">★ ${media.rating}</span>
+                                    <span class="text-[11px] text-yellow-400 font-bold flex-shrink-0">★ ${displayRating}</span>
                                 </div>
                                 <p class="text-[11px] text-gray-400 line-clamp-2 mt-0.5">${media.summary}</p>
                             </div>
@@ -282,6 +292,7 @@
             }
 
             library.forEach((item, index) => {
+                const displayRating = item.rating === 0 || item.rating === 'N/A' ? 'N/A' : item.rating;
                 const div = document.createElement('div');
                 div.className = "bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden relative shadow";
                 div.onclick = () => openModal(index);
@@ -291,7 +302,7 @@
                         <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
                         <div class="flex justify-between items-center mt-0.5">
                             <span class="text-[10px] text-indigo-400 capitalize">${item.type}</span>
-                            <span class="text-[10px] text-yellow-400 font-bold">★ ${item.rating}</span>
+                            <span class="text-[10px] text-yellow-400 font-bold">★ ${displayRating}</span>
                         </div>
                     </div>
                 `;
