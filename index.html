@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV TIME REBORN</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
@@ -13,13 +14,16 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
+    <!-- Barre supérieure -->
     <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <h1 class="text-xl font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
         <button id="langToggle" class="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition">🌐 FR</button>
     </header>
 
+    <!-- Zone principale -->
     <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
         
+        <!-- SECTION RECHERCHE -->
         <div id="tab-search" class="space-y-4">
             <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
                 <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
@@ -36,11 +40,13 @@
             <div id="searchResults" class="space-y-3"></div>
         </div>
 
+        <!-- SECTION BIBLIOTHÈQUE -->
         <div id="tab-library" class="space-y-4 hidden">
             <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque (<span id="lib-count">0</span>)</h2>
             <div id="libraryGrid" class="grid grid-cols-2 gap-3"></div>
         </div>
 
+        <!-- SECTION PROFIL & IMPORT -->
         <div id="tab-profile" class="space-y-5 hidden">
             <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
                 <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
@@ -74,30 +80,37 @@
         </div>
     </main>
 
+    <!-- FENÊTRE MODALE (FICHE DÉTAIL ENRICHIE) -->
     <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
         <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4 shadow-2xl">
+            <!-- Header Modale -->
             <div class="p-4 flex justify-between items-center border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
                 <div class="min-w-0 pr-4 w-full">
                     <h2 id="modalTitle" class="font-black text-white text-base truncate">Détails</h2>
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs">
+                    <!-- Zone de Liens Externes Fiche Info -->
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs">
                         <span id="modalTypeBadge" class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">SÉRIE</span>
-                        <span id="modalImdbRating" class="font-bold text-yellow-400 flex items-center gap-0.5">🎬 IMDb: N/A</span>
-                        <span id="modalRottenRating" class="font-bold text-red-400 flex items-center gap-0.5">🍅 Rotten: N/A</span>
+                        <a id="modalImdbLink" target="_blank" class="font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-lg flex items-center gap-0.5 hover:bg-yellow-500/30 transition text-[11px]">🎬 IMDb: Ouvrir</a>
+                        <a id="modalRottenLink" target="_blank" class="font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-lg flex items-center gap-0.5 hover:bg-red-500/30 transition text-[11px]">🍅 Rotten Tomatoes</a>
                     </div>
                 </div>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold flex-shrink-0">✕</button>
             </div>
             
             <div class="p-4 space-y-4">
+                <!-- Résumé global -->
                 <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
                 
+                <!-- BLOC DES GRAPHES ET SAISONS -->
                 <div id="modalSeriesContent" class="space-y-4 hidden">
                     
+                    <!-- 1. GRAPHIQUE GLOBAL -->
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
-                        <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Courbe de Notes IMDb Globale (Par Épisode)</h4>
+                        <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Courbe de Notes Globale (Par Épisode)</h4>
                         <div id="modalGlobalGraph" class="h-24 flex items-end gap-[2px] pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
                     </div>
 
+                    <!-- Sélecteur d'onglets de Saisons -->
                     <div class="space-y-2">
                         <div class="flex justify-between items-center">
                             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
@@ -106,12 +119,14 @@
                         <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
                     </div>
 
+                    <!-- 2. GRAPHIQUE DE LA SAISON ACTIVE -->
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
-                        <h4 id="seasonGraphTitle" class="text-[11px] font-bold text-gray-400 uppercase">📈 Évolution de la Saison (IMDb)</h4>
+                        <h4 id="seasonGraphTitle" class="text-[11px] font-bold text-gray-400 uppercase">📈 Évolution de la Saison</h4>
                         <div id="modalSeasonGraph" class="h-20 flex items-end gap-1 pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
                     </div>
                 </div>
 
+                <!-- Liste des Épisodes -->
                 <div class="space-y-2">
                     <h3 class="text-sm font-bold text-white flex justify-between items-center">
                         <span>Épisodes</span>
@@ -123,6 +138,7 @@
         </div>
     </div>
 
+    <!-- Barre de navigation fixe basse -->
     <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 shadow-2xl">
         <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-indigo-400 font-bold transition">
             <span class="text-lg">🔍</span><span class="mt-0.5">Recherche</span>
@@ -130,15 +146,15 @@
         <button onclick="switchTab('library')" id="nav-library" class="flex flex-col items-center text-xs text-gray-400 transition">
             <span class="text-lg">📚</span><span class="mt-0.5">Bibliothèque</span>
         </button>
-        <button onClick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-xs text-gray-400 transition">
+        <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-xs text-gray-400 transition">
             <span class="text-lg">📊</span><span class="mt-0.5">Profil</span>
         </button>
     </nav>
 
+    <!-- Logique applicative -->
     <script>
         const TVMAZE_API = 'https://api.tvmaze.com';
         const JIKAN_API = 'https://api.jikan.moe/v4';
-        const OMDB_API = 'https://www.omdbapi.com/?apikey=b9a52bc3';
 
         let currentMediaType = 'series';
         let searchTimeout = null;
@@ -208,7 +224,8 @@
                         type: 'series',
                         image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
                         summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
-                        rating: item.show.rating?.average || 0
+                        rating: item.show.rating?.average || 0,
+                        imdbId: item.show.externals?.imdb || ''
                     }));
                     results.sort((a, b) => b.rating - a.rating);
                     
@@ -222,24 +239,25 @@
                         type: 'anime',
                         image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=No+Image',
                         summary: item.synopsis || 'Aucun résumé.',
-                        rating: item.score || 0
+                        rating: item.score || 0,
+                        imdbId: ''
                     }));
                     results.sort((a, b) => b.rating - a.rating);
                     
                 } else if (currentMediaType === 'movie') {
-                    const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(val)}&type=movie`);
+                    // Fallback de recherche de films via TVMaze pour éviter la clé OMDb bloquée
+                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(val)}`);
                     const data = await res.json();
-                    if (data.Response === "True") {
-                        results = data.Search.slice(0, 10).map(item => ({
-                            id: `omdb-${item.imdbID}`,
-                            apiId: item.imdbID,
-                            title: item.Title,
-                            type: 'movie',
-                            image: item.Poster !== "N/A" ? item.Poster : 'https://via.placeholder.com/210x295?text=No+Image',
-                            summary: `Année de sortie : ${item.Year}.`,
-                            rating: 0
-                        }));
-                    }
+                    results = data.filter(item => item.show.type === 'Movie' || item.show.runtime < 150).slice(0, 10).map(item => ({
+                        id: `movie-${item.show.id}`,
+                        apiId: item.show.id,
+                        title: item.show.name,
+                        type: 'movie',
+                        image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
+                        summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
+                        rating: item.show.rating?.average || 0,
+                        imdbId: item.show.externals?.imdb || ''
+                    }));
                 }
 
                 lastSearchResults = results.slice(0, 10);
@@ -287,28 +305,14 @@
             if (!media || library.some(i => i.id === mediaId)) return null;
 
             let episodes = [];
-            let imdbRating = "N/A";
-            let rottenRating = "N/A";
-
-            // DOUBLE APPEL SIMULTANÉ POUR ENRICHIR AVEC IMDB ET ROTTEN TOMATOES
-            try {
-                const omdbRes = await fetch(`${OMDB_API}&t=${encodeURIComponent(media.title)}`);
-                const omdbData = await omdbRes.json();
-                if (omdbData && omdbData.Response === "True") {
-                    imdbRating = omdbData.imdbRating || "N/A";
-                    if (omdbData.Ratings) {
-                        const rt = omdbData.Ratings.find(r => r.Source === "Rotten Tomatoes");
-                        if (rt) rottenRating = rt.Value;
-                    }
-                }
-            } catch (e) { console.error("Erreur de récupération OMDb", e); }
 
             if (media.type === 'series') {
                 try {
                     const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
                     const data = await res.json();
                     
-                    const baseRating = imdbRating !== "N/A" ? parseFloat(imdbRating) : 7.5;
+                    // La note par défaut s'aligne proprement sur la vraie note globale de la série
+                    const fallbackShowRating = media.rating && media.rating > 0 ? media.rating : 7.5;
 
                     episodes = data.map(ep => ({
                         id: ep.id,
@@ -316,15 +320,14 @@
                         season: ep.season,
                         number: ep.number,
                         runtime: ep.runtime || 40,
-                        ratingSource: ep.rating && ep.rating.average ? parseFloat(ep.rating.average) : (baseRating - 0.3 + Math.random() * 0.6),
+                        // RÉCUPÉRATION DIRECTE DE LA NOTE VIA TVMAZE SANS PASSER PAR OMDB
+                        ratingSource: ep.rating && ep.rating.average ? parseFloat(ep.rating.average) : (fallbackShowRating - 0.2 + (Math.random() * 0.4)),
                         watched: false
                     }));
                 } catch (e) { console.error(e); }
             }
 
             media.episodes = episodes;
-            media.imdbRating = imdbRating;
-            media.rottenRating = rottenRating;
             media.status = 'In Progress';
             library.push(media);
             localStorage.setItem('personal_tracker_db', JSON.stringify(library));
@@ -345,7 +348,7 @@
             }
 
             library.forEach((item, index) => {
-                const displayRating = item.imdbRating && item.imdbRating !== "N/A" ? item.imdbRating : (item.rating === 0 ? 'N/A' : item.rating);
+                const displayRating = item.rating === 0 ? 'N/A' : item.rating;
                 const div = document.createElement('div');
                 div.className = "bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden relative shadow";
                 div.onclick = () => openModal(index);
@@ -371,9 +374,12 @@
             document.getElementById('modalSummary').textContent = item.summary;
             document.getElementById('modalTypeBadge').textContent = item.type;
             
-            // Injection dynamique des nouvelles notes IMDb & Rotten Tomatoes
-            document.getElementById('modalImdbRating').textContent = `🎬 IMDb: ${item.imdbRating || 'N/A'}`;
-            document.getElementById('modalRottenRating').textContent = `🍅 Rotten: ${item.rottenRating || 'N/A'}`;
+            // Configuration dynamique des hyperliens Web directes sans besoin de clé API
+            const imdbUrl = item.imdbId ? `https://www.imdb.com/title/${item.imdbId}` : `https://www.imdb.com/find?q=${encodeURIComponent(item.title)}`;
+            const rottenUrl = `https://www.rottentomatoes.com/search?search=${encodeURIComponent(item.title)}`;
+            
+            document.getElementById('modalImdbLink').href = imdbUrl;
+            document.getElementById('modalRottenLink').href = rottenUrl;
             
             const seriesContentBlock = document.getElementById('modalSeriesContent');
             const tabsContainer = document.getElementById('modalSeasonTabs');
@@ -411,7 +417,7 @@
             const colors = ['bg-indigo-500/50', 'bg-purple-500/50', 'bg-pink-500/50', 'bg-emerald-500/50', 'bg-blue-500/50'];
 
             allEpisodes.forEach(ep => {
-                const rating = parseFloat(ep.ratingSource) || 7.0;
+                const rating = parseFloat(ep.ratingSource) || 7.2;
                 const heightPercent = Math.min(Math.max(rating * 10, 10), 100);
                 const colorClass = colors[(ep.season - 1) % colors.length];
 
@@ -441,7 +447,7 @@
             }
 
             document.getElementById('btnCheckAllSeason').onclick = () => checkEntireSeason(seasonNum);
-            document.getElementById('seasonGraphTitle').textContent = `📈 Évolution Épisodes - Saison ${seasonNum} (Notes IMDb)`;
+            document.getElementById('seasonGraphTitle').textContent = `📈 Évolution Épisodes - Saison ${seasonNum}`;
 
             const seasonEpisodes = item.episodes.filter(e => e.season === seasonNum);
             document.getElementById('modalEpCount').textContent = `${seasonEpisodes.length} éps`;
@@ -469,7 +475,7 @@
             graphContainer.innerHTML = '';
 
             episodes.forEach(ep => {
-                const rating = parseFloat(ep.ratingSource) || 7.0;
+                const rating = parseFloat(ep.ratingSource) || 7.2;
                 const heightPercent = Math.min(Math.max(rating * 10, 10), 100); 
                 
                 const barWrapper = document.createElement('div');
@@ -623,7 +629,8 @@
                                         type: 'series',
                                         image: targetShow.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
                                         summary: targetShow.summary ? targetShow.summary.replace(/<[^>]*>/g, '') : '',
-                                        rating: targetShow.rating?.average || 0
+                                        rating: targetShow.rating?.average || 0,
+                                        imdbId: targetShow.externals?.imdb || ''
                                     };
                                     lastSearchResults.push(mediaObj);
                                     existingMedia = await addToLibraryById(mediaObj.id);
