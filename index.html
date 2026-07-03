@@ -1,453 +1,364 @@
-import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV TIME REBORN</title>
+    <!-- Tailwind CSS pour le style -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- React et ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel pour compiler le JSX à la volée dans le navigateur -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Recharts requiert Prop-Types et Recharts lui-même -->
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    <style>
+        /* Ajustements pour cacher le flash blanc au chargement de Babel */
+        [typeof="babel"] { display: none; }
+        body { background-color: #111827; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans pb-20">
 
-// Configuration des API
-const TVMAZE_API = 'https://api.tvmaze.com';
-const JIKAN_API = 'https://api.jikan.moe/v4';
-const OMDB_API = 'https://www.omdbapi.com/?apikey=b9a52bc3'; // Clé de démo/test incluse pour les films
+    <div id="root"></div>
 
-export default function App() {
-  // Navigation & UI
-  const [activeTab, setActiveTab] = useState('search'); // 'search', 'library', 'calendar', 'profile'
-  const [lang, setLang] = useState('FR'); // FR / EN Toggle
-  const [mediaType, setMediaType] = useState('series'); // 'series', 'movie', 'anime'
-  
-  // États de recherche
-  const [query, setQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+    <!-- Script de l'application (Compilé par Babel) -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } = Recharts;
 
-  // Stockage principal (Library)
-  const [library, setLibrary] = useState(() => {
-    const saved = localStorage.getItem('personal_tracker_db');
-    return saved ? JSON.parse(saved) : [];
-  });
+        // Configuration des API
+        const TVMAZE_API = 'https://api.tvmaze.com';
+        const JIKAN_API = 'https://api.jikan.moe/v4';
+        const OMDB_API = 'https://www.omdbapi.com/?apikey=b9a52bc3';
 
-  // Sélection pour la fiche détail
-  const [selectedMedia, setSelectedMedia] = useState(null);
-  const [detailedEpisodes, setDetailedEpisodes] = useState([]);
-  const [selectedSeason, setSelectedSeason] = useState('all');
-  const [graphMode, setGraphMode] = useState('source'); // 'source' ou 'perso'
+        function App() {
+            const [activeTab, setActiveTab] = useState('search');
+            const [lang, setLang] = useState('FR');
+            const [mediaType, setMediaType] = useState('series');
+            const [query, setQuery] = useState('');
+            const [searchResults, setSearchResults] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
 
-  // Sauvegarde automatique
-  useEffect(() => {
-    localStorage.setItem('personal_tracker_db', JSON.stringify(library));
-  }, [library]);
+            const [library, setLibrary] = useState(() => {
+                const saved = localStorage.getItem('personal_tracker_db');
+                return saved ? JSON.parse(saved) : [];
+            });
 
-  // --- TRADUCTION & RECHERCHE ---
-  const handleSearch = async (searchVal) => {
-    if (searchVal.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-    setLoading(true);
-    setError('');
+            const [selectedMedia, setSelectedMedia] = useState(null);
+            const [detailedEpisodes, setDetailedEpisodes] = useState([]);
+            const [graphMode, setGraphMode] = useState('source');
 
-    let searchQuery = searchVal;
-    // Simulation rapide de traduction (pour l'exemple, on pousse la requête d'origine)
-    // En mode réel, on peut coupler une API de trad ou chercher les termes anglais les plus proches
-    
-    try {
-      let results = [];
-      if (mediaType === 'series') {
-        const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(searchQuery)}`);
-        const data = await res.json();
-        results = data.slice(0, 10).map(item => ({
-          id: `tv-${item.show.id}`,
-          apiId: item.show.id,
-          title: item.show.name,
-          type: 'series',
-          image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
-          summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé disponible.',
-          rating: item.show.rating?.average || 'N/A',
-          genres: item.show.genres || []
-        }));
-      } else if (mediaType === 'anime') {
-        const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(searchQuery)}&limit=10`);
-        const data = await res.json();
-        results = (data.data || []).map(item => ({
-          id: `mal-${item.mal_id}`,
-          apiId: item.mal_id,
-          title: item.title_english || item.title,
-          type: 'anime',
-          image: item.images?.jpg?.image_url,
-          summary: item.synopsis || 'Aucun résumé disponible.',
-          rating: item.score || 'N/A',
-          genres: item.genres?.map(g => g.name) || []
-        }));
-      } else if (mediaType === 'movie') {
-        const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(searchQuery)}&type=movie`);
-        const data = await res.json();
-        if (data.Response === "True") {
-          results = data.Search.slice(0, 10).map(item => ({
-            id: `omdb-${item.imdbID}`,
-            apiId: item.imdbID,
-            title: item.Title,
-            type: 'movie',
-            image: item.Poster !== "N/A" ? item.Poster : 'https://via.placeholder.com/210x295?text=No+Image',
-            summary: `Année : ${item.Year}. Cliquez pour charger les détails complets.`,
-            rating: 'N/A',
-            genres: []
-          }));
-        }
-      }
-      
-      setSearchResults(results);
-      if (results.length === 0) setError('Aucun résultat trouvé.');
-    } catch (err) {
-      setError('Erreur lors de la récupération des données. Vérifiez votre connexion.');
-    } finally {
-      setLoading(false);
-    }
-  };
+            useEffect(() => {
+                localStorage.setItem('personal_tracker_db', JSON.stringify(library));
+            }, [library]);
 
-  // Déclencheur de recherche en direct (Debounce simplifié)
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (query) handleSearch(query);
-    }, 500);
-    return () => clearTimeout(delayDebounceFn);
-  }, [query, mediaType]);
+            const handleSearch = async (searchVal) => {
+                if (searchVal.length < 3) {
+                    setSearchResults([]);
+                    return;
+                }
+                setLoading(true);
+                setError('');
 
-  // --- GESTION DE LA BIBLIOTHÈQUE ---
-  const addToLibrary = async (media) => {
-    if (library.some(item => item.id === media.id)) return;
-    
-    let episodes = [];
-    // Si c'est une série, on pré-charge tout de suite tous les épisodes pour fluidifier l'appli
-    if (media.type === 'series') {
-      try {
-        const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
-        const data = await res.json();
-        episodes = data.map(ep => ({
-          id: ep.id,
-          name: ep.name,
-          season: ep.season,
-          number: ep.number,
-          airdate: ep.airdate,
-          runtime: ep.runtime || 40,
-          summary: ep.summary ? ep.summary.replace(/<[^>]*>/g, '') : '',
-          image: ep.image?.medium || '',
-          ratingSource: ep.rating?.average || 7,
-          ratingPerso: null,
-          watched: false
-        }));
-      } catch (e) {
-        console.error("Impossible de charger les épisodes en arrière-plan", e);
-      }
-    }
+                try {
+                    let results = [];
+                    if (mediaType === 'series') {
+                        const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(searchVal)}`);
+                        const data = await res.json();
+                        results = data.slice(0, 10).map(item => ({
+                            id: `tv-${item.show.id}`,
+                            apiId: item.show.id,
+                            title: item.show.name,
+                            type: 'series',
+                            image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
+                            summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé disponible.',
+                            rating: item.show.rating?.average || 'N/A',
+                            genres: item.show.genres || []
+                        }));
+                    } else if (mediaType === 'anime') {
+                        const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(searchVal)}&limit=10`);
+                        const data = await res.json();
+                        results = (data.data || []).map(item => ({
+                            id: `mal-${item.mal_id}`,
+                            apiId: item.mal_id,
+                            title: item.title_english || item.title,
+                            type: 'anime',
+                            image: item.images?.jpg?.image_url,
+                            summary: item.synopsis || 'Aucun résumé disponible.',
+                            rating: item.score || 'N/A',
+                            genres: item.genres?.map(g => g.name) || []
+                        }));
+                    } else if (mediaType === 'movie') {
+                        const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(searchVal)}&type=movie`);
+                        const data = await res.json();
+                        if (data.Response === "True") {
+                            results = data.Search.slice(0, 10).map(item => ({
+                                id: `omdb-${item.imdbID}`,
+                                apiId: item.imdbID,
+                                title: item.Title,
+                                type: 'movie',
+                                image: item.Poster !== "N/A" ? item.Poster : 'https://via.placeholder.com/210x295?text=No+Image',
+                                summary: `Année : ${item.Year}.`,
+                                rating: 'N/A',
+                                genres: []
+                            }));
+                        }
+                    }
+                    
+                    setSearchResults(results);
+                    if (results.length === 0) setError('Aucun résultat trouvé.');
+                } catch (err) {
+                    setError('Erreur réseau ou API. Veuillez réessayer.');
+                } finally {
+                    setLoading(false);
+                }
+            };
 
-    const newItem = {
-      ...media,
-      status: 'to_watch', // 'watching', 'watched', 'to_watch', 'dropped'
-      personalRating: null,
-      episodes: episodes,
-      dateAdded: new Date().toISOString()
-    };
+            useEffect(() => {
+                const delayDebounceFn = setTimeout(() => {
+                    if (query) handleSearch(query);
+                }, 500);
+                return () => clearTimeout(delayDebounceFn);
+            }, [query, mediaType]);
 
-    setLibrary([...library, newItem]);
-  };
+            const addToLibrary = async (media) => {
+                if (library.some(item => item.id === media.id)) return;
+                
+                let episodes = [];
+                if (media.type === 'series') {
+                    try {
+                        const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
+                        const data = await res.json();
+                        episodes = data.map(ep => ({
+                            id: ep.id,
+                            name: ep.name,
+                            season: ep.season,
+                            number: ep.number,
+                            airdate: ep.airdate,
+                            runtime: ep.runtime || 40,
+                            summary: ep.summary ? ep.summary.replace(/<[^>]*>/g, '') : '',
+                            image: ep.image?.medium || '',
+                            ratingSource: ep.rating?.average || 7,
+                            ratingPerso: null,
+                            watched: false
+                        }));
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
 
-  const toggleEpisodeWatched = (mediaId, epId) => {
-    setLibrary(library.map(item => {
-      if (item.id === mediaId) {
-        const updatedEpisodes = item.episodes.map(ep => 
-          ep.id === epId ? { ...ep, watched: !ep.watched } : ep
-        );
-        return { ...item, episodes: updatedEpisodes };
-      }
-      return item;
-    }));
-  };
+                const newItem = {
+                    ...media,
+                    status: 'to_watch',
+                    personalRating: null,
+                    episodes: episodes,
+                    dateAdded: new Date().toISOString()
+                };
 
-  // --- STATISTIQUES POUR LE PROFIL ---
-  const getStats = () => {
-    let totalTime = 0;
-    let timeByType = { series: 0, movie: 0, anime: 0 };
-    let watchedCount = 0;
+                setLibrary([...library, newItem]);
+            };
 
-    library.forEach(item => {
-      if (item.type === 'movie' && item.status === 'watched') {
-        totalTime += 120; // Estimation par défaut pour un film
-        timeByType.movie += 120;
-        watchedCount += 1;
-      } else {
-        item.episodes?.forEach(ep => {
-          if (ep.watched) {
-            totalTime += ep.runtime || 40;
-            timeByType[item.type] += ep.runtime || 40;
-            watchedCount += 1;
-          }
-        });
-      }
-    });
+            const toggleEpisodeWatched = (mediaId, epId) => {
+                setLibrary(library.map(item => {
+                    if (item.id === mediaId) {
+                        const updatedEpisodes = item.episodes.map(ep => 
+                            ep.id === epId ? { ...ep, watched: !ep.watched } : ep
+                        );
+                        return { ...item, episodes: updatedEpisodes };
+                    }
+                    return item;
+                }));
+            };
 
-    return {
-      totalHours: Math.round(totalTime / 60),
-      timeByType: [
-        { name: 'Séries', value: Math.round(timeByType.series / 60) },
-        { name: 'Films', value: Math.round(timeByType.movie / 60) },
-        { name: 'Animés', value: Math.round(timeByType.anime / 60) },
-      ],
-      watchedCount
-    };
-  };
+            const getStats = () => {
+                let totalTime = 0;
+                let timeByType = { series: 0, movie: 0, anime: 0 };
+                let watchedCount = 0;
 
-  const stats = getStats();
+                library.forEach(item => {
+                    if (item.type === 'movie' && item.status === 'watched') {
+                        totalTime += 120;
+                        timeByType.movie += 120;
+                        watchedCount += 1;
+                    } else {
+                        item.episodes?.forEach(ep => {
+                            if (ep.watched) {
+                                totalTime += ep.runtime || 40;
+                                timeByType[item.type] += ep.runtime || 40;
+                                watchedCount += 1;
+                            }
+                        });
+                    }
+                });
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 font-sans pb-20">
-      {/* Barre supérieure fixe */}
-      <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
-        <h1 className="text-xl font-black tracking-wider text-indigo-400">TV TIME <span className="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
-        
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setLang(lang === 'FR' ? 'EN' : 'FR')}
-            className="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition"
-          >
-            🌐 {lang}
-          </button>
-        </div>
-      </header>
+                return {
+                    totalHours: Math.round(totalTime / 60),
+                    timeByType: [
+                        { name: 'Séries', value: Math.round(timeByType.series / 60) },
+                        { name: 'Films', value: Math.round(timeByType.movie / 60) },
+                        { name: 'Animés', value: Math.round(timeByType.anime / 60) },
+                    ],
+                    watchedCount
+                };
+            };
 
-      {/* Contenu de la page */}
-      <main className="max-w-md mx-auto p-4 sm:max-w-4xl">
-        
-        {/* --- ONGLET RECHERCHE --- */}
-        {activeTab === 'search' && (
-          <div className="space-y-4">
-            {/* Barre de filtrage type */}
-            <div className="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
-              {['series', 'movie', 'anime'].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setMediaType(t)}
-                  className={`py-2 text-sm font-bold rounded-lg capitalize transition ${mediaType === t ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
-                >
-                  {t === 'series' ? 'Séries' : t === 'movie' ? 'Films' : 'Animés'}
-                </button>
-              ))}
-            </div>
+            const stats = getStats();
 
-            {/* Input de recherche */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder={`Rechercher un ${mediaType === 'series' ? 'série' : mediaType === 'movie' ? 'film' : 'animé'}...`}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              {loading && <div className="absolute right-4 top-3.5 text-indigo-400 text-sm animate-pulse">Chargement...</div>}
-            </div>
+            return (
+                <div className="flex flex-col min-h-screen">
+                    <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
+                        <h1 className="text-xl font-black tracking-wider text-indigo-400">TV TIME <span className="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
+                        <button onClick={() => setLang(lang === 'FR' ? 'EN' : 'FR')} class="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition">
+                            🌐 {lang}
+                        </button>
+                    </header>
 
-            {error && <div className="text-red-400 text-sm bg-red-950/40 border border-red-900/50 p-3 rounded-xl">{error}</div>}
+                    <main className="max-w-md mx-auto p-4 w-full sm:max-w-2xl flex-1">
+                        {activeTab === 'search' && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
+                                    {['series', 'movie', 'anime'].map((t) => (
+                                        <button key={t} onClick={() => setMediaType(t)} className={`py-2 text-sm font-bold rounded-lg capitalize transition ${mediaType === t ? 'bg-indigo-600 text-white' : 'text-gray-400'}`}>
+                                            {t === 'series' ? 'Séries' : t === 'movie' ? 'Films' : 'Animés'}
+                                        </button>
+                                    ))}
+                                </div>
 
-            {/* Résultats de recherche */}
-            <div className="space-y-3">
-              {searchResults.map((media) => {
-                const inLib = library.some(item => item.id === media.id);
-                return (
-                  <div key={media.id} className="bg-gray-800 rounded-xl overflow-hidden border border-gray-700 flex p-3 gap-3 hover:border-gray-600 transition">
-                    <img src={media.image} alt={media.title} className="w-20 h-28 object-cover rounded-lg flex-shrink-0 bg-gray-900" />
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start gap-2">
-                          <h3 className="font-bold text-white text-base truncate">{media.title}</h3>
-                          <span className="text-xs font-bold px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded border border-yellow-500/30 flex-shrink-0">★ {media.rating}</span>
-                        </div>
-                        <p className="text-xs text-gray-400 line-clamp-2 mt-1">{media.summary}</p>
-                      </div>
-                      <div className="flex gap-1.5 overflow-x-auto py-1">
-                        {media.genres.map(g => <span key={g} className="text-[10px] bg-gray-700 px-2 py-0.5 rounded-full text-gray-300">{g}</span>)}
-                      </div>
-                      <button
-                        onClick={() => addToLibrary(media)}
-                        disabled={inLib}
-                        className={`w-full py-1.5 text-xs font-bold rounded-lg mt-2 transition ${inLib ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
-                      >
-                        {inLib ? '✓ Dans la bibliothèque' : '+ Ajouter au suivi'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                                <div className="relative">
+                                    <input type="text" placeholder="Rechercher..." value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                    {loading && <div className="absolute right-4 top-3.5 text-indigo-400 text-sm animate-pulse">Chargement...</div>}
+                                </div>
 
-        {/* --- ONGLET BIBLIOTHÈQUE --- */}
-        {activeTab === 'library' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque ({library.length})</h2>
-            {library.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">Votre bibliothèque est vide. Allez dans l'onglet Recherche pour ajouter du contenu !</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {library.map((item) => (
-                  <div 
-                    key={item.id} 
-                    onClick={() => { setSelectedMedia(item); setDetailedEpisodes(item.episodes || []) }}
-                    className="bg-gray-800 rounded-xl overflow-hidden border border-gray-700 cursor-pointer hover:scale-[1.02] transition shadow-lg"
-                  >
-                    <div className="relative aspect-[2/3] bg-gray-900">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                      <span className="absolute bottom-2 left-2 text-[10px] uppercase font-black px-2 py-0.5 bg-black/70 backdrop-blur rounded text-indigo-300 tracking-wider">
-                        {item.type}
-                      </span>
-                    </div>
-                    <div className="p-2.5">
-                      <h4 className="font-bold text-sm text-white truncate">{item.title}</h4>
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-gray-400 capitalize">{item.status.replace('_', ' ')}</span>
-                        <span className="text-xs font-bold text-yellow-400">★ {item.rating}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                                {error && <div className="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50">{error}</div>}
 
-        {/* --- PROFIL ET STATS --- */}
-        {activeTab === 'profile' && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 border border-indigo-500/20 p-5 rounded-2xl shadow-xl flex items-center gap-4">
-              <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center text-2xl font-black text-white shadow-lg">ME</div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Mon Profil Perso</h2>
-                <p className="text-xs text-indigo-300">Statistiques de visionnage en temps réel</p>
-              </div>
-            </div>
+                                <div className="space-y-3">
+                                    {searchResults.map((media) => {
+                                        const inLib = library.some(item => item.id === media.id);
+                                        return (
+                                            <div key={media.id} className="bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3">
+                                                <img src={media.image} className="w-20 h-28 object-cover rounded-lg bg-gray-900" />
+                                                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                                    <div>
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <h3 className="font-bold text-white truncate">{media.title}</h3>
+                                                            <span className="text-xs font-bold text-yellow-400">★ {media.rating}</span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 line-clamp-2 mt-1">{media.summary}</p>
+                                                    </div>
+                                                    <button onClick={() => addToLibrary(media)} disabled={inLib} className={`w-full py-1.5 text-xs font-bold rounded-lg mt-2 ${inLib ? 'bg-emerald-600/20 text-emerald-400' : 'bg-indigo-600 text-white'}`}>
+                                                        {inLib ? '✓ Dans la bibliothèque' : '+ Ajouter au suivi'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
-            {/* Chiffres clés */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-800 border border-gray-700 p-4 rounded-xl text-center">
-                <div className="text-2xl font-black text-indigo-400">{stats.totalHours}h</div>
-                <div className="text-xs text-gray-400 mt-1">Temps total passé</div>
-              </div>
-              <div className="bg-gray-800 border border-gray-700 p-4 rounded-xl text-center">
-                <div className="text-2xl font-black text-emerald-400">{stats.watchedCount}</div>
-                <div className="text-xs text-gray-400 mt-1">Épisodes & Films vus</div>
-              </div>
-            </div>
+                        {activeTab === 'library' && (
+                            <div className="space-y-4">
+                                <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque ({library.length})</h2>
+                                {library.length === 0 ? (
+                                    <p className="text-sm text-gray-500 text-center py-8">Bibliothèque vide.</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {library.map((item) => (
+                                            <div key={item.id} onClick={() => { setSelectedMedia(item); setDetailedEpisodes(item.episodes || []) }} className="bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden">
+                                                <img src={item.image} className="w-full aspect-[2/3] object-cover bg-gray-900" />
+                                                <div className="p-2">
+                                                    <h4 className="font-bold text-sm text-white truncate">{item.title}</h4>
+                                                    <span className="text-xs text-yellow-400">★ {item.rating}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-            {/* Graphique de répartition */}
-            <div className="bg-gray-800 border border-gray-700 p-4 rounded-xl">
-              <h3 className="text-sm font-bold text-gray-300 mb-2">Répartition du temps (en heures)</h3>
-              <div className="h-48 flex justify-center items-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={stats.timeByType} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={5}>
-                      <Cell fill="#6366f1" />
-                      <Cell fill="#f59e0b" />
-                      <Cell fill="#10b981" />
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#fff' }} />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        )}
+                        {activeTab === 'profile' && (
+                            <div className="space-y-4">
+                                <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black">ME</div>
+                                    <div>
+                                        <h2 className="text-lg font-bold text-white">Mon Profil</h2>
+                                        <p className="text-xs text-indigo-300">Stats de visionnage</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-gray-800 p-4 rounded-xl text-center border border-gray-700">
+                                        <div className="text-2xl font-black text-indigo-400">{stats.totalHours}h</div>
+                                        <div className="text-xs text-gray-400">Temps passé</div>
+                                    </div>
+                                    <div className="bg-gray-800 p-4 rounded-xl text-center border border-gray-700">
+                                        <div className="text-2xl font-black text-emerald-400">{stats.watchedCount}</div>
+                                        <div className="text-xs text-gray-400">Épisodes vus</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-        {/* --- MODAL FICHE DÉTAIL ENRICHIE --- */}
-        {selectedMedia && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center">
-            <div className="bg-gray-800 border border-gray-700 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl my-4">
-              <div className="relative h-48 bg-gray-900">
-                <img src={selectedMedia.image} alt={selectedMedia.title} className="w-full h-full object-cover blur-md opacity-30" />
-                <button 
-                  onClick={() => { setSelectedMedia(null); setDetailedEpisodes([]); }}
-                  className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold transition"
-                >
-                  ✕
-                </button>
-                <div className="absolute bottom-4 left-4 flex gap-4 items-end">
-                  <img src={selectedMedia.image} alt={selectedMedia.title} className="w-20 aspect-[2/3] object-cover rounded-lg border-2 border-gray-700 shadow-md hidden sm:block" />
-                  <div>
-                    <span className="text-[10px] bg-indigo-600 text-white font-bold px-2 py-0.5 rounded capitalize">{selectedMedia.type}</span>
-                    <h2 className="text-xl font-bold text-white mt-1">{selectedMedia.title}</h2>
-                  </div>
+                        {selectedMedia && (
+                            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center">
+                                <div className="bg-gray-800 border border-gray-700 w-full max-w-md rounded-2xl overflow-hidden my-4">
+                                    <div className="p-4 flex justify-between items-center border-b border-gray-700">
+                                        <h2 className="font-bold text-white truncate">{selectedMedia.title}</h2>
+                                        <button onClick={() => { setSelectedMedia(null); setDetailedEpisodes([]); }} className="text-gray-400 text-sm">✕</button>
+                                    </div>
+                                    <div className="p-4 space-y-4">
+                                        <p className="text-xs text-gray-300">{selectedMedia.summary}</p>
+                                        
+                                        {detailedEpisodes.length > 0 && (
+                                            <div className="h-32 bg-gray-900 p-2 rounded-xl">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <LineChart data={detailedEpisodes}>
+                                                        <XAxis dataKey="number" hide />
+                                                        <YAxis domain={[0, 10]} hide />
+                                                        <Tooltip />
+                                                        <Line type="monotone" dataKey="ratingSource" stroke="#6366f1" strokeWidth={2} dot={false} />
+                                                    </LineChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        )}
+
+                                        <div className="max-h-48 overflow-y-auto space-y-2">
+                                            {detailedEpisodes.map((ep) => (
+                                                <div key={ep.id} className="bg-gray-900/60 p-2 rounded-lg border border-gray-700/50 flex justify-between items-center text-xs">
+                                                    <span className="truncate pr-2">S{ep.season}E{ep.number} - {ep.name}</span>
+                                                    <button onClick={() => toggleEpisodeWatched(selectedMedia.id, ep.id)} className={`px-2 py-1 font-bold rounded ${ep.watched ? 'bg-emerald-600/20 text-emerald-400' : 'bg-gray-800 text-gray-400'}`}>
+                                                        {ep.watched ? '✓' : 'Vu'}
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    <nav className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40">
+                        <button onClick={() => setActiveTab('search')} className={`flex flex-col items-center text-xs ${activeTab === 'search' ? 'text-indigo-400' : 'text-gray-400'}`}>
+                            <span>🔍</span> Recherche
+                        </button>
+                        <button onClick={() => setActiveTab('library')} className={`flex flex-col items-center text-xs ${activeTab === 'library' ? 'text-indigo-400' : 'text-gray-400'}`}>
+                            <span>📚</span> Bibliothèque
+                        </button>
+                        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center text-xs ${activeTab === 'profile' ? 'text-indigo-400' : 'text-gray-400'}`}>
+                            <span>📊</span> Profil
+                        </button>
+                    </nav>
                 </div>
-              </div>
+            );
+        }
 
-              <div className="p-4 space-y-4">
-                {/* Résumé */}
-                <p className="text-xs text-gray-300 leading-relaxed bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">{selectedMedia.summary}</p>
-
-                {/* Section Graphique Épisodes (uniquement pour Séries/Animés possédant des épisodes) */}
-                {detailedEpisodes.length > 0 && (
-                  <div className="bg-gray-900 p-3 rounded-xl border border-gray-700">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Évolution des Notes</h3>
-                      <select 
-                        value={graphMode} 
-                        onChange={(e) => setGraphMode(e.target.value)}
-                        className="bg-gray-800 text-xs text-gray-300 border border-gray-700 rounded px-2 py-1 focus:outline-none"
-                      >
-                        <option value="source">Notes Communauté</option>
-                        <option value="perso">Mes Notes Perso</option>
-                      </select>
-                    </div>
-                    <div className="h-36">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={detailedEpisodes.filter(e => e.season === 1 || selectedSeason === 'all')}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-                          <XAxis dataKey="number" stroke="#718096" fontSize={10} />
-                          <YAxis domain={[0, 10]} stroke="#718096" fontSize={10} />
-                          <Tooltip contentStyle={{ backgroundColor: '#1a202c', borderColor: '#2d3748', color: '#fff' }} />
-                          <Line type="monotone" dataKey={graphMode === 'source' ? 'ratingSource' : 'ratingPerso'} stroke="#6366f1" strokeWidth={2} dot={{ r: 2 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Liste des Épisodes */}
-                {detailedEpisodes.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-bold text-white">Épisodes</h3>
-                    <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
-                      {detailedEpisodes.map((ep) => (
-                        <div key={ep.id} className="bg-gray-900/60 p-2.5 rounded-xl border border-gray-700/60 flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold text-gray-300">S{ep.season}E{ep.number} — <span className="text-white">{ep.name}</span></div>
-                            <div className="text-[10px] text-gray-500 mt-0.5">Diffusion : {ep.airdate || 'Inconnue'}</div>
-                          </div>
-                          <button
-                            onClick={() => toggleEpisodeWatched(selectedMedia.id, ep.id)}
-                            className={`px-3 py-1 text-xs font-bold rounded-lg flex-shrink-0 border transition ${ep.watched ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30' : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-white'}`}
-                          >
-                            {ep.watched ? '✓ Vu' : 'Marquer vu'}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Barre de navigation basse (Mobile Friendly) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around px-2 shadow-2xl z-40">
-        <button onClick={() => setActiveTab('search')} className={`flex flex-col items-center gap-1 text-xs ${activeTab === 'search' ? 'text-indigo-400 font-bold' : 'text-gray-400'}`}>
-          <span className="text-lg">🔍</span> Recherche
-        </button>
-        <button onClick={() => setActiveTab('library')} className={`flex flex-col items-center gap-1 text-xs ${activeTab === 'library' ? 'text-indigo-400 font-bold' : 'text-gray-400'}`}>
-          <span className="text-lg">📚</span> Ma Bibliothèque
-        </button>
-        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 text-xs ${activeTab === 'profile' ? 'text-indigo-400 font-bold' : 'text-gray-400'}`}>
-          <span className="text-lg">📊</span> Profil
-        </button>
-      </nav>
-    </div>
-  );
-}
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
