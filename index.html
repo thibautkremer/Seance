@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV TIME REBORN</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
@@ -13,6 +14,7 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
+    <!-- Barre supérieure -->
     <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <h1 class="text-xl font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
         <div class="flex items-center gap-2">
@@ -21,8 +23,10 @@
         </div>
     </header>
 
+    <!-- Zone principale -->
     <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
         
+        <!-- SECTION RECHERCHE -->
         <div id="tab-search" class="space-y-4">
             <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
                 <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
@@ -31,7 +35,7 @@
             </div>
 
             <div class="relative">
-                <input type="text" id="searchInput" placeholder="Rechercher (3 lettres min)..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input type="text" id="searchInput" placeholder="Rechercher (ex: Breaking Bad, One Piece...)" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 <div id="searchLoading" class="absolute right-4 top-3.5 text-indigo-400 text-sm animate-pulse hidden">Chargement...</div>
             </div>
 
@@ -39,23 +43,32 @@
             <div id="searchResults" class="space-y-3"></div>
         </div>
 
+        <!-- SECTION DECOUVRIR -->
         <div id="tab-discover" class="space-y-4 hidden">
-            <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">✨ Inspiré par vos goûts</h2>
-            <p class="text-xs text-gray-400">Basé sur les genres dominants de votre bibliothèque locale.</p>
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                <div>
+                    <h2 class="text-lg font-bold text-white">✨ Inspiré par vos goûts</h2>
+                    <p class="text-xs text-gray-400">Propositions aléatoires selon votre bibliothèque.</p>
+                </div>
+                <button onclick="renderDiscoverTab(true)" class="text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg font-bold transition">🎲 Changer</button>
+            </div>
             <div id="discoverGrid" class="space-y-3"></div>
         </div>
 
+        <!-- SECTION A VENIR -->
         <div id="tab-calendar" class="space-y-4 hidden">
             <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">📅 Épisodes à Venir</h2>
             <p class="text-xs text-gray-400">Prochaines diffusions des séries que vous suivez actuellement.</p>
             <div id="calendarTimeline" class="space-y-3"></div>
         </div>
 
+        <!-- SECTION BIBLIOTHÈQUE -->
         <div id="tab-library" class="space-y-4 hidden">
             <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque (<span id="lib-count">0</span>)</h2>
             <div id="libraryGrid" class="grid grid-cols-2 gap-3"></div>
         </div>
 
+        <!-- SECTION PROFIL & CLOUD -->
         <div id="tab-profile" class="space-y-5 hidden">
             <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
                 <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
@@ -65,14 +78,22 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-3">
-                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
                     <div id="stat-hours" class="text-sm font-black text-indigo-400">0h</div>
                     <div class="text-xs text-gray-400 mt-0.5">Temps de visionnage total</div>
                 </div>
                 <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                    <div id="stat-count" class="text-2xl font-black text-emerald-400">0</div>
-                    <div class="text-xs text-gray-400 mt-0.5">Épisodes ou films vus</div>
+                    <div id="stat-series" class="text-2xl font-black text-emerald-400">0</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Séries suivies</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                    <div id="stat-movies" class="text-2xl font-black text-amber-400">0</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Films suivis</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
+                    <div id="stat-animes" class="text-2xl font-black text-purple-400">0</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Animés suivis</div>
                 </div>
             </div>
 
@@ -96,8 +117,10 @@
         </div>
     </main>
 
+    <!-- FENÊTRE MODALE -->
     <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
         <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4 shadow-2xl">
+            <!-- Header Modale -->
             <div class="p-4 flex gap-3 border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
                 <img id="modalPoster" src="" class="w-12 h-16 object-cover rounded bg-gray-900 border border-gray-700 flex-shrink-0 shadow-sm" />
                 <div class="min-w-0 flex-1 flex flex-col justify-center">
@@ -116,30 +139,33 @@
             <div class="p-4 space-y-4">
                 <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
                 
+                <!-- BOUTON DYNAMIQUE SUGGESTIONS DANS LA FICHE -->
                 <div class="flex gap-2">
-                    <button id="modalViewSuggestionsBtn" class="flex-1 py-2 bg-gray-700 border border-gray-600 text-white hover:bg-gray-600 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5">
-                        💡 Voir les Suggestions Similaires
+                    <button id="modalViewSuggestionsBtn" class="flex-1 py-2 bg-indigo-900/40 border border-indigo-700/50 text-indigo-300 hover:bg-indigo-900/60 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                        💡 Voir ~10 suggestions similaires
                     </button>
                 </div>
 
+                <!-- BLOC SUGGESTIONS -->
                 <div id="modalSuggestionsBlock" class="space-y-3 hidden bg-gray-900/50 p-3 rounded-xl border border-indigo-500/10">
                     <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex justify-between items-center">
-                        <span>✨ Recommandé pour vous</span>
+                        <span>✨ Contenus suggérés (Dizaine)</span>
                         <button onclick="document.getElementById('modalSuggestionsBlock').classList.add('hidden')" class="text-[10px] text-gray-400 hover:text-white">Masquer</button>
                     </h3>
-                    <div id="modalSuggestionsList" class="grid grid-cols-1 gap-2"></div>
+                    <div id="modalSuggestionsList" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1 hide-scroll"></div>
                 </div>
 
+                <!-- CONTENU SPECIFIQUE SÉRIES -->
                 <div id="modalSeriesContent" class="space-y-4 hidden">
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
-                        <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Courbe de Notes Globale</h4>
+                        <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Évolution des Notes (Épisodes)</h4>
                         <div id="modalGlobalGraph" class="h-24 flex items-end gap-[2px] pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
                     </div>
 
                     <div id="modalSeasonSelectionRow" class="space-y-2">
                         <div class="flex justify-between items-center">
                             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
-                            <button id="btnCheckAllSeason" class="text-[11px] font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-900/50 px-2.5 py-1 rounded-lg hover:bg-indigo-900/50 transition"> Tout cocher</button>
+                            <button id="btnCheckAllSeason" class="text-[11px] font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-900/50 px-2.5 py-1 rounded-lg hover:bg-indigo-900/50 transition">Tout cocher</button>
                         </div>
                         <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
                     </div>
@@ -150,6 +176,7 @@
                     </div>
                 </div>
 
+                <!-- CONTENU ÉPISODES -->
                 <div id="modalEpisodesBlock" class="space-y-2">
                     <h3 class="text-sm font-bold text-white flex justify-between items-center">
                         <span>Épisodes</span>
@@ -158,14 +185,16 @@
                     <div id="modalEpisodesList" class="max-h-60 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
                 </div>
 
+                <!-- BOUTONS ACTIONS PRIMAIRES -->
                 <div class="grid grid-cols-2 gap-2 pt-2" id="modalActionButtonsGrid">
-                    <button id="modalActionFollowBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 transition shadow">Option</button>
+                    <button id="modalActionFollowBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 transition shadow">A regarder</button>
                     <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-500 transition shadow">Déjà Tout Vu</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Navigation basse -->
     <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 shadow-2xl px-1">
         <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-indigo-400 font-bold">
             <span>🔍</span><span class="mt-0.5 text-[11px]">Chercher</span>
@@ -199,12 +228,23 @@
         let activeModalMediaIndex = null;
         let activeModalSeason = null;
 
-        window.addEventListener('DOMContentLoaded', () => {
+        // Stockage en cache pour éviter les requêtes API redondantes et accélérer la découverte/suggestions
+        let showsCache = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
             if (cloudUserKey) {
                 document.getElementById('userCloudKey').value = cloudUserKey;
                 pullFromCloud();
             }
+            preloadShowsCache();
         });
+
+        async function preloadShowsCache() {
+            try {
+                const res = await fetch(`${TVMAZE_API}/shows?page=1`);
+                if(res.ok) showsCache = await res.json();
+            } catch(e) { console.error("Erreur pré-chargement cache:", e); }
+        }
 
         async function pushToCloud() {
             if (!cloudUserKey || SUPABASE_URL === "VOTRE_SUPABASE_URL") return;
@@ -280,7 +320,7 @@
 
             if (tabName === 'library') renderLibrary();
             if (tabName === 'profile') renderProfile();
-            if (tabName === 'discover') renderDiscoverTab();
+            if (tabName === 'discover') renderDiscoverTab(false);
             if (tabName === 'calendar') renderCalendarTab();
         }
 
@@ -290,76 +330,110 @@
                 document.getElementById(`btn-${t}`).className = `py-2 text-sm font-bold rounded-lg capitalize transition ${type === t ? 'bg-indigo-600 text-white shadow' : 'text-gray-400'}`;
             });
             const input = document.getElementById('searchInput');
-            if (input.value.length >= 3) triggerSearch(input.value);
+            if (input.value.trim().length >= 2) triggerSearch(input.value);
         }
 
-        // Écouteur pour la recherche dynamique adaptative
         document.getElementById('searchInput')?.addEventListener('input', (e) => {
             clearTimeout(window.searchTimeout);
             window.searchTimeout = setTimeout(() => { triggerSearch(e.target.value); }, 400);
         });
 
+        // RECHERCHE OPTIMISÉE ET ULTRA ROBUSTE (Multi-API fallback et filtres stricts)
         async function triggerSearch(val) {
             const resultsContainer = document.getElementById('searchResults');
             const loader = document.getElementById('searchLoading');
             const errBox = document.getElementById('searchError');
 
-            if (val.length < 3) { resultsContainer.innerHTML = ''; errBox.classList.add('hidden'); return; }
-            loader.classList.remove('hidden'); errBox.classList.add('hidden');
-
-            const cleanQuery = val.toLowerCase().trim();
+            const query = val.trim();
+            if (query.length < 2) { resultsContainer.innerHTML = ''; errBox.classList.add('hidden'); return; }
+            
+            loader.classList.remove('hidden'); 
+            errBox.classList.add('hidden');
 
             try {
                 let results = [];
+
                 if (currentMediaType === 'series' || currentMediaType === 'movie') {
-                    let searchWord = cleanQuery;
-                    if(cleanQuery === "hous") searchWord = "house";
-                    if(cleanQuery === "drag") searchWord = "dragon";
-
-                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(searchWord)}`);
-                    let data = await res.json();
-
-                    if(data.length === 0 || cleanQuery === "drag" || cleanQuery === "house of") {
-                        const fallbackRes = await fetch(`${TVMAZE_API}/shows?page=1`);
-                        const fallbackData = await fallbackRes.json();
-                        data = fallbackData.map(d => ({ show: d }));
+                    // 1. Recherche par texte intégrale via TVMaze
+                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        results = data.map(item => ({
+                            id: `${item.show.type === 'Movie' ? 'movie' : 'series'}-${item.show.id}`, 
+                            apiId: item.show.id, 
+                            title: item.show.name, 
+                            type: item.show.type === 'Movie' ? 'movie' : 'series',
+                            image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
+                            summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé disponible.',
+                            rating: item.show.rating?.average || 0, 
+                            genres: item.show.genres || ['Drama'],
+                            premiered: item.show.premiered || 'Inconnue'
+                        }));
                     }
 
-                    results = data.map(item => ({
-                        id: `${item.show.type === 'Movie' ? 'movie' : 'series'}-${item.show.id}`, 
-                        apiId: item.show.id, 
-                        title: item.show.name, 
-                        type: item.show.type === 'Movie' ? 'movie' : 'series',
-                        image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
-                        summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
-                        rating: item.show.rating?.average || 0, 
-                        genres: item.show.genres || ['Drama'],
-                        premiered: item.show.premiered || 'Inconnue'
-                    }));
+                    // 2. Fallback ou complément via le cache préchargé si peu de résultats
+                    if (results.length < 3 && showsCache.length > 0) {
+                        const filteredCache = showsCache.filter(s => s.name.toLowerCase().includes(query.toLowerCase())).map(show => ({
+                            id: `${show.type === 'Movie' ? 'movie' : 'series'}-${show.id}`,
+                            apiId: show.id,
+                            title: show.name,
+                            type: show.type === 'Movie' ? 'movie' : 'series',
+                            image: show.image?.medium || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
+                            summary: show.summary ? show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé disponible.',
+                            rating: show.rating?.average || 0,
+                            genres: show.genres || ['Drama'],
+                            premiered: show.premiered || 'Inconnue'
+                        }));
+                        results = [...results, ...filteredCache];
+                    }
 
+                    // Filtrage strict selon l'onglet actif (Film ou Série)
                     results = results.filter(r => currentMediaType === 'movie' ? r.type === 'movie' : r.type === 'series');
 
                 } else if (currentMediaType === 'anime') {
-                    const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(cleanQuery)}&limit=25`);
-                    const data = await res.json();
-                    results = (data.data || []).map(item => ({
-                        id: `mal-${item.mal_id}`, apiId: item.mal_id, title: item.title_english || item.title, type: 'anime',
-                        image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=No+Image',
-                        summary: item.synopsis || 'Aucun résumé.', rating: item.score || 0,
-                        genres: item.genres?.map(g => g.name) || ['Animation'], premiered: item.aired?.from ? item.aired.from.split('T')[0] : 'Inconnue'
-                    }));
+                    // Recherche via Jikan (MyAnimeList)
+                    const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(query)}&limit=20`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        results = (data.data || []).map(item => ({
+                            id: `anime-${item.mal_id}`, 
+                            apiId: item.mal_id, 
+                            title: item.title_english || item.title, 
+                            type: 'anime',
+                            image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
+                            summary: item.synopsis || 'Aucun résumé disponible.', 
+                            rating: item.score || 0,
+                            genres: item.genres?.map(g => g.name) || ['Animation'], 
+                            premiered: item.aired?.from ? item.aired.from.split('T')[0] : 'Inconnue'
+                        }));
+                    }
                 }
 
-                let matchedItems = results.filter(media => media.title.toLowerCase().includes(cleanQuery));
-                let otherItems = results.filter(media => !matchedItems.includes(media));
+                // Supprimer les doublons d'identifiants
+                const uniqueIds = new Set();
+                results = results.filter(item => {
+                    if (uniqueIds.has(item.id)) return false;
+                    uniqueIds.add(item.id);
+                    return true;
+                });
 
-                matchedItems.sort((a, b) => b.rating - a.rating);
-                otherItems.sort((a, b) => b.rating - a.rating);
+                // Tri intelligent : pertinence exacte puis note décroissante
+                results.sort((a, b) => {
+                    const aExact = a.title.toLowerCase() === query.toLowerCase();
+                    const bExact = b.title.toLowerCase() === query.toLowerCase();
+                    if (aExact && !bExact) return -1;
+                    if (!aExact && bExact) return 1;
+                    return b.rating - a.rating;
+                });
 
-                lastSearchResults = [...matchedItems, ...otherItems].slice(0, 12);
+                lastSearchResults = results.slice(0, 15);
                 resultsContainer.innerHTML = '';
                 
-                if (lastSearchResults.length === 0) { errBox.textContent = 'Aucun résultat trouvé.'; errBox.classList.remove('hidden'); return; }
+                if (lastSearchResults.length === 0) { 
+                    errBox.textContent = 'Aucun résultat correspondant trouvé. Réessayez avec un autre mot.'; 
+                    errBox.classList.remove('hidden'); 
+                    return; 
+                }
 
                 lastSearchResults.forEach(media => {
                     const displayRating = media.rating === 0 ? 'N/A' : `${media.rating.toFixed(1)}/10`;
@@ -376,13 +450,18 @@
                                 </div>
                                 <p class="text-[11px] text-gray-400 line-clamp-2 mt-0.5">${media.summary}</p>
                             </div>
-                            <div class="text-[10px] uppercase font-bold tracking-wider text-indigo-400 mt-1">Ouvrir la fiche →</div>
+                            <div class="text-[10px] uppercase font-bold tracking-wider text-indigo-400 mt-1">Consulter la fiche →</div>
                         </div>
                     `;
                     resultsContainer.appendChild(div);
                 });
-            } catch (err) { errBox.textContent = 'Erreur lors du traitement.'; errBox.classList.remove('hidden'); }
-            finally { loader.classList.add('hidden'); }
+            } catch (err) { 
+                console.error(err);
+                errBox.textContent = 'Erreur réseau ou service momentanément indisponible.'; 
+                errBox.classList.remove('hidden'); 
+            } finally { 
+                loader.classList.add('hidden'); 
+            }
         }
 
         async function openPreviewModal(media) {
@@ -408,7 +487,6 @@
                     const data = await res.json();
                     const previewEpisodes = data.map(ep => ({ season: ep.season, number: ep.number, ratingSource: ep.rating?.average || 7.5 }));
                     
-                    // Ajustement de la note globale selon les épisodes si absente
                     if(media.rating === 0 && previewEpisodes.length > 0) {
                         const sum = previewEpisodes.reduce((acc, curr) => acc + curr.ratingSource, 0);
                         media.rating = sum / previewEpisodes.length;
@@ -430,7 +508,6 @@
                 } catch(e) { console.error(e); }
             } else { seriesContentBlock.classList.add('hidden'); }
 
-            // Configurer l'action du bouton Suggestions
             document.getElementById('modalViewSuggestionsBtn').onclick = () => { renderSuggestions(media.genres?.[0] || 'Drama', media.id); };
 
             const followBtn = document.getElementById('modalActionFollowBtn');
@@ -443,15 +520,16 @@
                 allWatchedBtn.style.display = 'none';
             } else {
                 allWatchedBtn.style.display = 'block'; followBtn.disabled = false;
-                followBtn.textContent = "+ Suivre";
+                followBtn.textContent = "➕ À regarder";
                 followBtn.className = "py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 transition text-center shadow";
-                followBtn.onclick = async () => { lastSearchResults.push(media); await addToLibraryById(media.id, false); closeModal(); switchTab('library'); };
-                allWatchedBtn.onclick = async () => { lastSearchResults.push(media); await addToLibraryById(media.id, true); closeModal(); switchTab('library'); };
+                followBtn.onclick = async () => { if(!lastSearchResults.some(x=>x.id===media.id)) lastSearchResults.push(media); await addToLibraryById(media.id, false); closeModal(); switchTab('library'); };
+                allWatchedBtn.onclick = async () => { if(!lastSearchResults.some(x=>x.id===media.id)) lastSearchResults.push(media); await addToLibraryById(media.id, true); closeModal(); switchTab('library'); };
             }
 
             document.getElementById('mediaModal').classList.remove('hidden');
         }
 
+        // Fiche bibliothèque ouverte
         function openLibraryModal(index) {
             activeModalMediaIndex = index;
             const item = library[index];
@@ -467,7 +545,7 @@
             document.getElementById('modalPremiereDate').textContent = `Sortie : ${item.premiered || 'Inconnue'}`;
             
             document.getElementById('modalEpisodesBlock').classList.remove('hidden');
-            document.getElementById('modalActionButtonsGrid').classList.add('hidden'); // Caché car déjà dans la bibliothèque
+            document.getElementById('modalActionButtonsGrid').classList.add('hidden');
 
             const seriesContentBlock = document.getElementById('modalSeriesContent');
             const tabsContainer = document.getElementById('modalSeasonTabs');
@@ -490,13 +568,12 @@
                 selectSeason(seasons[0]);
             } else {
                 seriesContentBlock.classList.add('hidden');
+                document.getElementById('modalSeasonSelectionRow').classList.add('hidden');
                 document.getElementById('modalEpCount').textContent = '';
                 document.getElementById('modalEpisodesList').innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun épisode requis pour ce format.</p>`;
             }
 
-            // Liaison du bouton Suggestions de la bibliothèque
             document.getElementById('modalViewSuggestionsBtn').onclick = () => { renderSuggestions(item.genres?.[0] || 'Drama', item.id); };
-
             document.getElementById('mediaModal').classList.remove('hidden');
         }
 
@@ -539,85 +616,170 @@
             renderSeasonGraph(seasonEpisodes);
         }
 
+        // AFFICHAGE DIZAINE SUGGESTIONS + BOUTON DÉJÀ VU
         async function renderSuggestions(genre, currentId) {
             const block = document.getElementById('modalSuggestionsBlock');
             const container = document.getElementById('modalSuggestionsList');
             block.classList.remove('hidden');
-            container.innerHTML = `<div class="text-xs text-gray-400 animate-pulse py-2 text-center">Recherche de contenus similaires (${genre})...</div>`;
+            container.innerHTML = `<div class="text-xs text-gray-400 animate-pulse py-2 text-center">Calcul de 10 contenus complémentaires similaires (${genre})...</div>`;
             
             try {
-                const res = await fetch(`${TVMAZE_API}/shows?page=1`);
-                const data = await res.json();
-                let matches = data.filter(item => item.genres.includes(genre) && `series-${item.id}` !== currentId && !library.some(lib => lib.apiId === item.id)).slice(0, 3);
+                let pool = [];
+                if (showsCache.length > 0) {
+                    pool = showsCache.filter(item => item.genres.includes(genre) && `series-${item.id}` !== currentId);
+                }
+                
+                if (pool.length < 10) {
+                    const res = await fetch(`${TVMAZE_API}/shows?page=2`);
+                    if (res.ok) {
+                        const data2 = await res.json();
+                        const extraPool = data2.filter(item => item.genres.includes(genre) && `series-${item.id}` !== currentId);
+                        pool = [...pool, ...extraPool];
+                    }
+                }
+
+                pool.sort(() => 0.5 - Math.random());
+                let matches = pool.slice(0, 10);
                 
                 container.innerHTML = '';
-                if(matches.length === 0) { container.innerHTML = `<p class="text-xs text-gray-500 text-center py-2">Aucune suggestion disponible pour le moment.</p>`; return; }
+                if(matches.length === 0) { 
+                    container.innerHTML = `<p class="text-xs text-gray-500 text-center py-2">Aucune suggestion disponible pour ce genre.</p>`; 
+                    return; 
+                }
 
                 matches.forEach(show => {
+                    const isMovie = show.type === 'Movie';
                     const normShow = {
-                        id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series',
-                        image: show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
+                        id: `${isMovie ? 'movie' : 'series'}-${show.id}`, 
+                        apiId: show.id, 
+                        title: show.name, 
+                        type: isMovie ? 'movie' : 'series',
+                        image: show.image?.medium || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
                         summary: show.summary ? show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
-                        rating: show.rating?.average || 7.0, genres: show.genres || ['Drama'], premiered: show.premiered
+                        rating: show.rating?.average || 7.2, 
+                        genres: show.genres || ['Drama'], 
+                        premiered: show.premiered
                     };
+
+                    const inLib = library.some(lib => lib.id === normShow.id);
+
                     const div = document.createElement('div');
-                    div.className = "bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex items-center justify-between gap-3 cursor-pointer hover:border-indigo-500 transition shadow-sm";
-                    div.onclick = () => { openPreviewModal(normShow); };
+                    div.className = "bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm hover:border-gray-600 transition";
+                    
                     div.innerHTML = `
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onclick="closeModal(); openPreviewModal(${JSON.stringify(normShow).replace(/"/g, '&quot;')})">
                             <img src="${normShow.image}" class="w-10 h-14 object-cover rounded bg-gray-950 flex-shrink-0" />
                             <div class="min-w-0 flex-1">
                                 <h4 class="text-xs font-bold text-white truncate">${normShow.title}</h4>
                                 <span class="text-[11px] font-bold text-yellow-400">★ ${normShow.rating.toFixed(1)}/10</span>
+                                <span class="text-[9px] text-gray-400 block capitalize">${normShow.type}</span>
                             </div>
                         </div>
-                        <span class="text-indigo-400 font-bold text-xs pr-2">Voir →</span>
-                    `;
-                    container.appendChild(div);
-                });
-            } catch(e) { container.innerHTML = `<p class="text-xs text-red-400 text-center">Erreur réseau.</p>`; }
-        }
-
-        async function renderDiscoverTab() {
-            const container = document.getElementById('discoverGrid');
-            container.innerHTML = '';
-            if (library.length === 0) {
-                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-12">Ajoutez d'abord des contenus dans votre bibliothèque pour analyser vos préférences.</p>`;
-                return;
-            }
-            let genreCounts = {};
-            library.forEach(item => { item.genres?.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; }); });
-            let favoriteGenre = Object.keys(genreCounts).sort((a,b) => genreCounts[b] - genreCounts[a])[0] || 'Drama';
-
-            container.innerHTML = `<div class="text-xs text-indigo-400 animate-pulse text-center py-6">Analyse basée sur votre genre favori : ${favoriteGenre}...</div>`;
-
-            try {
-                const res = await fetch(`${TVMAZE_API}/shows?page=2`);
-                const data = await res.json();
-                let recommendations = data.filter(item => item.genres.includes(favoriteGenre) && !library.some(lib => lib.apiId === item.id)).slice(0, 6);
-
-                container.innerHTML = '';
-                recommendations.forEach(show => {
-                    const norm = {
-                        id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series',
-                        image: show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
-                        summary: show.summary ? show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
-                        rating: show.rating?.average || 7.0, genres: show.genres || ['Drama'], premiered: show.premiered
-                    };
-                    const div = document.createElement('div');
-                    div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 cursor-pointer hover:border-indigo-500/40 transition shadow";
-                    div.onclick = () => openPreviewModal(norm);
-                    div.innerHTML = `
-                        <img src="${norm.image}" class="w-14 h-20 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
-                        <div class="flex-1 min-w-0 flex flex-col justify-center">
-                            <h3 class="font-bold text-white text-sm truncate">${norm.title}</h3>
-                            <p class="text-[10px] text-gray-400 mt-0.5">Genre dominant : ${favoriteGenre}</p>
-                            <span class="text-xs font-bold text-yellow-400 mt-1">★ ${norm.rating.toFixed(1)}/10</span>
+                        <div class="flex items-center gap-1 self-end sm:self-center">
+                            ${inLib ? `
+                                <span class="text-[10px] text-gray-500 px-2 font-bold">Inclus ✓</span>
+                            ` : `
+                                <button id="sugWatch-${normShow.id}" onclick="actionSuggestionDirect('${normShow.id}', false)" class="text-[10px] bg-indigo-950 text-indigo-400 border border-indigo-900/60 font-bold px-2 py-1 rounded-lg hover:bg-indigo-900/40 transition">Suivre</button>
+                                <button id="sugDone-${normShow.id}" onclick="actionSuggestionDirect('${normShow.id}', true)" class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-bold px-2 py-1 rounded-lg hover:bg-emerald-900/40 transition">Déjà vu</button>
+                            `}
                         </div>
                     `;
                     container.appendChild(div);
                 });
-            } catch(e) { container.innerHTML = `<p class="text-xs text-gray-500 text-center">Erreur de chargement.</p>`; }
+            } catch(e) { 
+                console.error(e);
+                container.innerHTML = `<p class="text-xs text-red-400 text-center">Erreur lors de la génération des suggestions.</p>`; 
+            }
+        }
+
+        async function actionSuggestionDirect(id, allWatched) {
+            let found = showsCache.find(s => `${s.type === 'Movie' ? 'movie' : 'series'}-${s.id}` === id);
+            if (!found) {
+                const cleanId = id.split('-')[1];
+                const r = await fetch(`${TVMAZE_API}/shows/${cleanId}`);
+                if (r.ok) found = await r.json();
+            }
+            if (found) {
+                const norm = {
+                    id: id, apiId: found.id, title: found.name, type: found.type === 'Movie' ? 'movie' : 'series',
+                    image: found.image?.medium || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
+                    summary: found.summary ? found.summary.replace(/<[^>]*>/g, '') : '',
+                    rating: found.rating?.average || 7.0, genres: found.genres || ['Drama'], premiered: found.premiered
+                };
+                if (!lastSearchResults.some(x => x.id === norm.id)) lastSearchResults.push(norm);
+                await addToLibraryById(norm.id, allWatched);
+                
+                const btnContainer = document.getElementById(`sugWatch-${id}`)?.parentElement;
+                if(btnContainer) {
+                    btnContainer.innerHTML = `<span class="text-[10px] text-emerald-400 font-bold">Ajouté ✓</span>`;
+                }
+                renderLibrary();
+            }
+        }
+
+        // ONGLET DECOUVERTE ALEATOIRE
+        async function renderDiscoverTab(forceRefresh = false) {
+            const container = document.getElementById('discoverGrid');
+            if (!forceRefresh && container.children.length > 1 && !container.innerHTML.includes("Analyse basée")) return;
+            
+            container.innerHTML = '';
+            if (library.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center col-span-2 py-12">Ajoutez d'abord des séries, films ou animés à vos suivis pour que l'algorithme comprenne vos préférences.</p>`;
+                return;
+            }
+
+            let genreCounts = {};
+            library.forEach(item => { item.genres?.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; }); });
+            let favoriteGenres = Object.keys(genreCounts).sort((a,b) => genreCounts[b] - genreCounts[a]);
+            let targetGenre = favoriteGenres[Math.floor(Math.random() * Math.min(favoriteGenres.length, 3))] || 'Drama';
+
+            container.innerHTML = `<div class="text-xs text-indigo-400 animate-pulse text-center py-6">Exploration de nouveaux titres proches de vos goûts (${targetGenre})...</div>`;
+
+            try {
+                const randomPage = Math.floor(Math.random() * 4) + 1;
+                const res = await fetch(`${TVMAZE_API}/shows?page=${randomPage}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    let recommendations = data.filter(item => item.genres.includes(targetGenre) && !library.some(lib => lib.apiId === item.id));
+                    
+                    recommendations.sort(() => 0.5 - Math.random());
+                    let finalSelection = recommendations.slice(0, 6);
+
+                    container.innerHTML = '';
+                    if (finalSelection.length === 0) {
+                        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">Cliquez sur "Changer" pour relancer l'exploration.</p>`;
+                        return;
+                    }
+
+                    finalSelection.forEach(show => {
+                        const norm = {
+                            id: `${show.type === 'Movie' ? 'movie' : 'series'}-${show.id}`, 
+                            apiId: show.id, 
+                            title: show.name, 
+                            type: show.type === 'Movie' ? 'movie' : 'series',
+                            image: show.image?.medium || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
+                            summary: show.summary ? show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
+                            rating: show.rating?.average || 7.0, 
+                            genres: show.genres || ['Drama'], 
+                            premiered: show.premiered
+                        };
+                        const div = document.createElement('div');
+                        div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 cursor-pointer hover:border-indigo-500/40 transition shadow";
+                        div.onclick = () => openPreviewModal(norm);
+                        div.innerHTML = `
+                            <img src="${norm.image}" class="w-14 h-20 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
+                            <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                <h3 class="font-bold text-white text-sm truncate">${norm.title}</h3>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Catégorie explorée : <span class="text-indigo-400 font-semibold">${targetGenre}</span></p>
+                                <span class="text-xs font-bold text-yellow-400 mt-1">★ ${norm.rating.toFixed(1)}/10</span>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+            } catch(e) { 
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center">Une erreur s'est produite. Veuillez changer ou réessayer.</p>`; 
+            }
         }
 
         function renderCalendarTab() {
@@ -756,7 +918,7 @@
             const grid = document.getElementById('libraryGrid');
             document.getElementById('lib-count').textContent = library.length;
             grid.innerHTML = '';
-            if (library.length === 0) { grid.innerHTML = `<p class="text-xs text-gray-500 text-center col-span-2 py-12">Votre espace est vide.</p>`; return; }
+            if (library.length === 0) { grid.innerHTML = `<p class="text-xs text-gray-500 text-center col-span-2 py-12">Votre bibliothèque est vide.</p>`; return; }
             library.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = "bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden relative shadow-md";
@@ -787,14 +949,32 @@
             return parts.join(', ');
         }
 
+        // PROFIL PAR COMPTAGE PAR TYPE DE CONTENU DISCRET
         function renderProfile() {
-            let totalTime = 0; let watchedCount = 0;
+            let totalTime = 0;
+            let seriesCount = 0;
+            let moviesCount = 0;
+            let animesCount = 0;
+
             library.forEach(item => {
-                if (item.type === 'movie') { totalTime += 120; watchedCount += 1; }
-                else { item.episodes?.forEach(ep => { if (ep.watched) { totalTime += ep.runtime || 40; watchedCount += 1; } }); }
+                if (item.type === 'movie') { 
+                    moviesCount++;
+                    totalTime += 120; 
+                } else if (item.type === 'anime') {
+                    animesCount++;
+                    if(item.episodes && item.episodes.length > 0) {
+                        item.episodes.forEach(ep => { if(ep.watched) totalTime += 24; });
+                    } else { totalTime += 24; }
+                } else if (item.type === 'series') {
+                    seriesCount++;
+                    item.episodes?.forEach(ep => { if (ep.watched) { totalTime += ep.runtime || 40; } });
+                }
             });
+
             document.getElementById('stat-hours').textContent = formatMinutesToSmartString(totalTime);
-            document.getElementById('stat-count').textContent = watchedCount;
+            document.getElementById('stat-series').textContent = seriesCount;
+            document.getElementById('stat-movies').textContent = moviesCount;
+            document.getElementById('stat-animes').textContent = animesCount;
         }
     </script>
 </body>
