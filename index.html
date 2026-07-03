@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Balises Icône Écran d'accueil (Style Popcorn Time) -->
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111827'/><path d='M30 45 L35 90 L65 90 L70 45 Z' fill='%23EF4444'/><path d='M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90' stroke='%23FFFFFF' stroke-width='4'/><circle cx='35' cy='35' r='12' fill='%23FBBF24'/><circle cx='50' cy='30' r='14' fill='%23FFFFFF'/><circle cx='65' cy='35' r='12' fill='%23FBBF24'/><rect x='25' y='45' width='50' height='12' rx='6' fill='%23374151'/><rect x='28' y='48' width='20' height='6' rx='3' fill='%233B82F6'/><rect x='52' y='48' width='20' height='6' rx='3' fill='%23EF4444'/></svg>">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111827'/><path d='M30 45 L35 90 L65 90 L70 45 Z' fill='%23EF4444'/><path d='M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90' stroke='%23FFFFFF' stroke-width='4'/><circle cx='35' cy='35' r='12' fill='%23FBBF24'/><circle cx='50' cy='30' r='14' fill='%23FFFFFF'/><circle cx='65' cy='35' r='12' fill='%23FBBF24'/><rect x='25' y='45' width='50' height='12' rx='6' fill='%23374151'/><rect x='28' y='48' width='20' height='6' rx='3' fill='%233B82F6'/><rect x='52' y='48' width='20' height='6' rx='3' fill='%23EF4444'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111827'/><path d='M30 45 L35 90 L65 90 L70 45 Z' fill='%23EF4444'/><path d='M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90' stroke='%23FFFFFF' stroke-width='4'/><circle cx='35' cy='32' r='11' fill='%23FBBF24'/><circle cx='50' cy='28' r='13' fill='%23FFFFFF'/><circle cx='65' cy='32' r='11' fill='%23FBBF24'/><rect x='23' y='42' width='54' height='12' rx='6' fill='%231F2937'/><rect x='26' y='45' width='22' height='6' rx='3' fill='%233B82F6'/><rect x='52' y='45' width='22' height='6' rx='3' fill='%23EF4444'/></svg>">
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
@@ -20,6 +20,7 @@
     <!-- Barre supérieure -->
     <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-2.5 flex justify-between items-center shadow-md">
         <div class="flex items-center gap-2">
+            <!-- Logo Popcorn -->
             <svg class="w-8 h-8 drop-shadow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <path d="M30 45 L35 90 L65 90 L70 45 Z" fill="#EF4444"/>
                 <path d="M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90" stroke="#FFFFFF" stroke-width="4"/>
@@ -73,7 +74,7 @@
             <div id="discoverGrid" class="space-y-3"></div>
         </div>
 
-        <!-- SECTION A VENIR (CALENDRIER PERSO) -->
+        <!-- SECTION A VENIR -->
         <div id="tab-calendar" class="space-y-4 hidden">
             <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">📅 Mon Calendrier de Sorties</h2>
             <div id="calendarTimeline" class="space-y-3"></div>
@@ -126,7 +127,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
                     <div id="stat-hours" class="text-sm font-black text-indigo-400">0 heure</div>
-                    <div class="text-xs text-gray-400 mt-0.5">Temps de visionnage calculé</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Temps total</div>
                 </div>
                 <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
                     <div id="stat-series" class="text-2xl font-black text-emerald-400">0</div>
@@ -180,12 +181,12 @@
                     </button>
                 </div>
 
-                <!-- BLOC SUGGESTIONS -->
+                <!-- BLOC SUGGESTIONS (RESTE OUVERT À LA SÉLECTION DÉSORMAIS) -->
                 <div id="modalSuggestionsBlock" class="space-y-3 hidden bg-gray-900/50 p-3 rounded-xl border border-indigo-500/10">
                     <div id="modalSuggestionsList" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1 hide-scroll"></div>
                 </div>
 
-                <!-- GRAPHES NOTES -->
+                <!-- CONTENU SPECIFIQUE SÉRIES AVEC GRAPHES À 3 LIGNES DE REPÈRE (5, 7.5, 10) -->
                 <div id="modalSeriesContent" class="space-y-4 hidden">
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
                         <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Évolution des Notes (Épisodes)</h4>
@@ -194,8 +195,9 @@
                                 <span>10</span><span>7.5</span><span>5</span><span>2.5</span><span>0</span>
                             </div>
                             <div class="flex-1 h-24 relative">
-                                <div class="absolute inset-x-0 top-[2px] border-b border-dashed border-yellow-600/30 z-0"></div>
-                                <div class="absolute inset-x-0 top-[48px] border-b border-dashed border-yellow-600/30 z-0"></div>
+                                <div class="absolute inset-x-0 top-[2px] border-b border-dashed border-yellow-600/30 z-0"></div> <!-- Repère 10 -->
+                                <div class="absolute inset-x-0 top-[24px] border-b border-dashed border-yellow-600/20 z-0"></div> <!-- Repère 7.5 -->
+                                <div class="absolute inset-x-0 top-[48px] border-b border-dashed border-yellow-600/30 z-0"></div> <!-- Repère 5 -->
                                 <div id="modalGlobalGraph" class="absolute inset-0 flex items-end gap-[2px] pt-1 pb-1 overflow-x-auto hide-scroll px-1 z-10"></div>
                             </div>
                         </div>
@@ -213,11 +215,12 @@
                         <h4 id="seasonGraphTitle" class="text-[11px] font-bold text-gray-400 uppercase">📈 Évolution de la Saison</h4>
                         <div class="flex gap-2 items-stretch">
                             <div class="flex flex-col justify-between text-[9px] font-mono font-bold text-gray-500 pr-1 border-r border-gray-800 py-0.5 text-right select-none w-4 h-20">
-                                <span>10</span><span>5</span><span>0</span>
+                                <span>10</span><span>7.5</span><span>5</span><span>0</span>
                             </div>
                             <div class="flex-1 h-20 relative">
-                                <div class="absolute inset-x-0 top-[2px] border-b border-dashed border-yellow-600/30 z-0"></div>
-                                <div class="absolute inset-x-0 top-[40px] border-b border-dashed border-yellow-600/30 z-0"></div>
+                                <div class="absolute inset-x-0 top-[2px] border-b border-dashed border-yellow-600/30 z-0"></div> <!-- Repère 10 -->
+                                <div class="absolute inset-x-0 top-[20px] border-b border-dashed border-yellow-600/20 z-0"></div> <!-- Repère 7.5 -->
+                                <div class="absolute inset-x-0 top-[40px] border-b border-dashed border-yellow-600/30 z-0"></div> <!-- Repère 5 -->
                                 <div id="modalSeasonGraph" class="absolute inset-0 flex items-end gap-1 pt-1 pb-1 overflow-x-auto hide-scroll px-1 z-10"></div>
                             </div>
                         </div>
@@ -319,7 +322,7 @@
             window.searchTimeout = setTimeout(() => { triggerHybridSearch(e.target.value); }, 400);
         });
 
-        // RECHERCHE HYBRIDE RÉÉCRITE : CLASSEMENT STRICT ET COMPLET POUR LES FILMS VIA TVMAZE
+        // RECHERCHE HYBRIDE AVEC PRISE EN CHARGE GLOBALE DU CATALOGUE FILMS ET FILTRAGES AVANCÉS
         async function triggerHybridSearch(val) {
             const loader = document.getElementById('searchLoading');
             const errBox = document.getElementById('searchError');
@@ -334,6 +337,7 @@
             loader.classList.remove('hidden'); errBox.classList.add('hidden');
 
             try {
+                // Double requête TVMaze pour couvrir à la fois les formats natifs et les formats spéciaux / films
                 const tvmazePromise = fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []);
                 const jikanPromise = fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(query)}&limit=20`).then(r => r.json()).catch(() => ({ data: [] }));
 
@@ -343,11 +347,10 @@
                     if (!item || !item.show) return null;
                     const s = item.show;
                     
-                    // Détection robuste du format de long-métrage (Movie, TV Movie, ou runtime long type cinéma)
                     const format = s.type ? s.type.toLowerCase() : '';
-                    const isMovie = format.includes('movie') || format.includes('film') || format.includes('special') || (s.runtime && s.runtime >= 70);
-                    
-                    const platform = s.network ? s.network.name : (s.webChannel ? s.webChannel.name : 'Streaming');
+                    // Inclusion des téléfilms et longs formats
+                    const isMovie = format.includes('movie') || format.includes('film') || format.includes('special') || (s.runtime && s.runtime >= 65);
+                    const platform = s.network ? s.network.name : (s.webChannel ? s.webChannel.name : 'Streaming/VOD');
 
                     return {
                         id: `${isMovie ? 'movie' : 'series'}-${s.id}`,
@@ -392,7 +395,6 @@
             } finally { loader.classList.add('hidden'); }
         }
 
-        // AFFICHAGE DES FILMS DE MANIÈRE FLUIDE ET FIXATION DE L'OUVERTURE DE LA MODALE
         function displayUnifiedResults() {
             const resultsContainer = document.getElementById('searchResults');
             const errBox = document.getElementById('searchError');
@@ -415,7 +417,6 @@
 
                 const div = document.createElement('div');
                 div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 cursor-pointer hover:border-indigo-500/50 transition";
-                // FIX CORRIGÉ : Utilisation sécurisée de l'objet direct media
                 div.onclick = () => openPreviewModal(media);
                 div.innerHTML = `
                     <img src="${media.image}" class="w-16 h-24 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
@@ -458,51 +459,56 @@
                 document.getElementById('discoverTitle').textContent = "✨ Pour vous";
                 document.getElementById('discoverSub').textContent = "Propositions personnalisées selon vos préférences.";
             } else if(mode === 'trending') {
-                document.getElementById('discoverTitle').textContent = "🔥 Tendances mondiales";
-                document.getElementById('discoverSub').textContent = "Les œuvres les plus populaires et regardées du moment.";
+                document.getElementById('discoverTitle').textContent = "🔥 Diffusions cette semaine";
+                document.getElementById('discoverSub').textContent = "Les épisodes et programmes qui sortent sur les écrans en ce moment.";
             } else {
-                document.getElementById('discoverTitle').textContent = "📅 Prochaines Sorties (Unreleased)";
-                document.getElementById('discoverSub').textContent = "Contenus annoncés, futurs ou actuellement en production.";
+                document.getElementById('discoverTitle').textContent = "📅 Prochaines Sorties Futures";
+                document.getElementById('discoverSub').textContent = "Œuvres à venir ou prévues strictement après aujourd'hui.";
             }
             renderDiscoverTab(true);
         }
 
+        // CORRECTIONS APPORTÉES AUX ENDPOINTS DE RETOURS DE SUGGESTIONS FUTURES ET DE COMPORTEMENT TRENDING
         async function renderDiscoverTab(forceRefresh = false) {
             const container = document.getElementById('discoverGrid');
             if (!container) return;
             if (!forceRefresh && container.children.length > 0) return;
-            container.innerHTML = `<div class="text-xs text-indigo-400 animate-pulse text-center py-12">Synchronisation avec les serveurs...</div>`;
+            container.innerHTML = `<div class="text-xs text-indigo-400 animate-pulse text-center py-12">Chargement des données...</div>`;
 
             const todayStr = new Date().toISOString().split('T')[0];
 
             try {
                 if (discoverFilter === 'unreleased') {
-                    const res = await fetch(`${TVMAZE_API}/shows?page=2`);
+                    // Cible un flux récent et filtre STRICTEMENT pour n'avoir que du futur
+                    const res = await fetch(`${TVMAZE_API}/shows?page=4`);
                     if (res.ok) {
                         const data = await res.json();
-                        let unreleased = data.filter(item => {
-                            return (!item.premiered || item.premiered > todayStr) && !library.some(lib => lib.apiId === item.id);
-                        });
-                        if (unreleased.length === 0) {
-                            unreleased = data.slice(40, 46); // Fallback sélectif
+                        let unreleased = data.filter(item => item.premiered && item.premiered > todayStr && !library.some(lib => lib.apiId === item.id));
+                        
+                        if(unreleased.length === 0) {
+                            // Deuxième page de secours
+                            const fb = await fetch(`${TVMAZE_API}/shows?page=12`);
+                            unreleased = (await fb.json()).filter(item => !item.premiered || item.premiered > todayStr);
                         }
                         unreleased.sort(() => 0.5 - Math.random());
                         displayDiscoverCards(unreleased.slice(0, 6), container, "Futur 📅");
                     }
                 } else if (discoverFilter === 'trending') {
-                    const res = await fetch(`${TVMAZE_API}/shows?page=1`);
+                    // Les tendances du moment réel : Le planning de diffusion global de la semaine en cours
+                    const res = await fetch(`${TVMAZE_API}/schedule`);
                     if (res.ok) {
                         const data = await res.json();
-                        let trending = data.filter(item => item.rating && item.rating.average >= 7.8 && !library.some(lib => lib.apiId === item.id));
-                        trending.sort(() => 0.5 - Math.random());
-                        displayDiscoverCards(trending.slice(0, 6), container, "Trending 🔥");
+                        let scheduleShows = data.map(item => item.show).filter((show, index, self) => 
+                            show && self.findIndex(t => t.id === show.id) === index && !library.some(lib => lib.apiId === show.id)
+                        );
+                        scheduleShows.sort(() => 0.5 - Math.random());
+                        displayDiscoverCards(scheduleShows.slice(0, 6), container, "En ce moment 🔥");
                     }
                 } else {
                     if (library.length === 0) {
-                        // Fallback intelligent si bibliothèque vide
                         const res = await fetch(`${TVMAZE_API}/shows?page=1`);
                         const data = await res.json();
-                        displayDiscoverCards(data.slice(10, 16), container, "Découvrir 🎲");
+                        displayDiscoverCards(data.slice(15, 21), container, "Découvrir 🎲");
                         return;
                     }
                     let genreCounts = {};
@@ -517,13 +523,13 @@
                         displayDiscoverCards(recommendations.slice(0, 6), container, `Genre: ${targetGenre}`);
                     }
                 }
-            } catch(e) { container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">Une erreur s'est produite.</p>`; }
+            } catch(e) { container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">Une erreur s'est produite lors de l'accès au catalogue.</p>`; }
         }
 
         function displayDiscoverCards(items, container, badgeLabel) {
             container.innerHTML = '';
             if(!items || items.length === 0) {
-                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-12">Aucun contenu trouvé.</p>`;
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-12">Aucun contenu correspondant trouvé.</p>`;
                 return;
             }
 
@@ -886,6 +892,7 @@
             renderSeasonGraph(seasonEpisodes);
         }
 
+        // COMPORTEMENT SÉCURISÉ : LE CLIC SUR "VU" DANS LES SUGGESTIONS NE FERME PLUS LA LISTE
         async function renderSuggestions(genre, currentId) {
             const block = document.getElementById('modalSuggestionsBlock');
             const container = document.getElementById('modalSuggestionsList');
@@ -906,15 +913,16 @@
                     };
                     const inLib = library.some(lib => lib.id === normShow.id);
                     const div = document.createElement('div');
+                    div.id = `sug-${normShow.id}`;
                     div.className = "bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex items-center justify-between gap-2 shadow-sm transition";
                     div.innerHTML = `
                         <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onclick="closeModal(); openPreviewModal(${JSON.stringify(normShow).replace(/"/g, '&quot;')})">
                             <img src="${normShow.image}" class="w-8 h-11 object-cover rounded bg-gray-950 flex-shrink-0" />
                             <div class="min-w-0 flex-1"><h4 class="text-xs font-bold text-white truncate">${normShow.title} <span class="text-indigo-400 font-mono text-[10px]">${yearDisplay}</span></h4></div>
                         </div>
-                        <div>
+                        <div id="sugAction-${normShow.id}">
                             ${inLib ? `<span class="text-[9px] text-gray-500 font-bold px-1">Suivi</span>` : `
-                                <button onclick="actionSuggestionDirect('${normShow.id}', true)" class="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-bold px-2 py-0.5 rounded-lg">Vu</button>
+                                <button onclick="actionSuggestionDirect('${normShow.id}', true)" class="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-bold px-2 py-0.5 rounded-lg hover:bg-emerald-900 transition">Vu</button>
                             `}
                         </div>
                     `;
@@ -923,18 +931,24 @@
             } catch(e) { container.innerHTML = ''; }
         }
 
+        // LE BOUTON PASSE EN MODE "SUIVI" EN DIRECT SANS FERMER LE RESTE DE LA LISTE
         async function actionSuggestionDirect(id, allWatched) {
-            let found = showsCache.find(s => `series-${s.id}` === id);
+            let cleanId = id.replace('series-', '');
+            let found = showsCache.find(s => String(s.id) === String(cleanId));
             if (found) {
                 const norm = {
                     id: id, apiId: found.id, title: found.name, type: 'series',
                     image: found.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image', summary: found.summary ? found.summary.replace(/<[^>]*>/g, '') : '',
                     rating: found.rating?.average || 7.0, genres: found.genres || ['Drama'], premiered: found.premiered, status_production: found.status || 'Running'
                 };
-                unifiedSearchResults.push(norm);
+                if (!unifiedSearchResults.some(x => x.id === norm.id)) unifiedSearchResults.push(norm);
                 await addToLibraryById(norm.id, allWatched);
-                renderLibrary();
-                document.getElementById('modalSuggestionsBlock').classList.add('hidden');
+                
+                // Mutation d'état visuelle immédiate du bouton ciblé sans recharger la modale globale
+                const actionContainer = document.getElementById(`sugAction-${id}`);
+                if(actionContainer) {
+                    actionContainer.innerHTML = `<span class="text-[9px] text-gray-500 font-bold px-1 animate-pulse">Suivi</span>`;
+                }
             }
         }
 
@@ -992,6 +1006,104 @@
             document.getElementById('mediaModal').classList.add('hidden');
             activeModalMediaIndex = null; activeModalSeason = null;
             renderLibrary();
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('libraryGrid');
+            if (!grid) return;
+            const filterValue = document.getElementById('libraryFilterSelect').value;
+            
+            let filteredList = library;
+            if (filterValue === 'in_progress') {
+                filteredList = library.filter(item => item.status === 'In Progress');
+            } else if (filterValue === 'watched') {
+                filteredList = library.filter(item => item.status === 'Watched');
+            } else if (filterValue === 'series' || filterValue === 'movie' || filterValue === 'anime') {
+                filteredList = library.filter(item => item.type === filterValue);
+            }
+
+            document.getElementById('lib-count').textContent = filteredList.length;
+            grid.innerHTML = '';
+            
+            if (filteredList.length === 0) { 
+                grid.innerHTML = `<p class="text-xs text-gray-500 text-center col-span-3 py-12">Aucun titre.</p>`; 
+                return; 
+            }
+
+            filteredList.forEach(item => {
+                const origIdx = library.findIndex(x => x.id === item.id);
+                let nextBadgeHTML = '';
+                if(item.type === 'series' && item.episodes && item.episodes.length > 0) {
+                    const nextEp = item.episodes.find(e => !e.watched);
+                    if(nextEp) {
+                        nextBadgeHTML = `
+                            <button onclick="checkNextEpisodeDirect(event, ${origIdx})" class="absolute bottom-1 right-1 bg-indigo-600/90 hover:bg-indigo-500 text-white text-[9px] px-1.5 py-0.5 rounded font-black tracking-tighter transition shadow-md z-10">
+                                ➕ S${nextEp.season}E${nextEp.number}
+                            </button>
+                        `;
+                    }
+                }
+
+                const div = document.createElement('div');
+                div.className = "bg-gray-800 rounded-lg border border-gray-700 cursor-pointer overflow-hidden relative shadow hover:border-gray-600 transition flex flex-col";
+                div.onclick = () => openLibraryModal(origIdx);
+                div.innerHTML = `
+                    <div class="relative w-full aspect-[3/4]">
+                        <img src="${item.image}" class="w-full h-full object-cover bg-gray-900" />
+                        ${nextBadgeHTML}
+                    </div>
+                    <div class="p-1.5 bg-gray-800 flex-1 flex items-center">
+                        <h4 class="font-bold text-[10px] text-gray-300 truncate w-full">${item.title}</h4>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function renderCalendarTab() {
+            const container = document.getElementById('calendarTimeline');
+            if (!container) return;
+            container.innerHTML = '';
+            let futureEpisodes = [];
+            const today = new Date().toISOString().split('T')[0];
+
+            library.forEach(item => {
+                if (item.episodes) {
+                    item.episodes.forEach(ep => {
+                        if (ep.airdate && ep.airdate >= today && !ep.watched) {
+                            futureEpisodes.push({
+                                showTitle: item.title, showImage: item.image, epName: ep.name,
+                                season: ep.season, number: ep.number, airdate: ep.airdate
+                            });
+                        }
+                    });
+                }
+            });
+
+            if (futureEpisodes.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-12">Aucune sortie planifiée.</p>`;
+                return;
+            }
+            futureEpisodes.sort((a, b) => a.airdate.localeCompare(b.airdate));
+
+            futureEpisodes.forEach(ep => {
+                const diffTime = Math.ceil((new Date(ep.airdate) - new Date(today)) / (1000 * 60 * 60 * 24));
+                const countdownText = diffTime === 0 ? "Aujourd'hui 🚀" : `J-${diffTime}`;
+                const div = document.createElement('div');
+                div.className = "bg-gray-800 border border-gray-700 p-3 rounded-xl flex gap-3 items-center shadow";
+                div.innerHTML = `
+                    <img src="${ep.showImage}" class="w-12 h-16 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[9px] uppercase font-black text-indigo-400 truncate">${ep.showTitle}</div>
+                        <h4 class="font-bold text-white text-xs truncate">S${ep.season}E${ep.number} - ${ep.epName}</h4>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-[10px] text-gray-400 font-mono">📅 ${ep.airdate}</span>
+                            <span class="text-[9px] font-black px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">${countdownText}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
         }
 
         function renderProfile() {
