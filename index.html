@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV TIME REBORN</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
@@ -13,13 +14,16 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
+    <!-- Barre supérieure -->
     <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <h1 class="text-xl font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
         <button id="langToggle" class="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition">🌐 FR</button>
     </header>
 
+    <!-- Zone principale -->
     <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
         
+        <!-- SECTION RECHERCHE -->
         <div id="tab-search" class="space-y-4">
             <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
                 <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
@@ -36,11 +40,13 @@
             <div id="searchResults" class="space-y-3"></div>
         </div>
 
+        <!-- SECTION BIBLIOTHÈQUE -->
         <div id="tab-library" class="space-y-4 hidden">
             <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque (<span id="lib-count">0</span>)</h2>
             <div id="libraryGrid" class="grid grid-cols-2 gap-3"></div>
         </div>
 
+        <!-- SECTION PROFIL & IMPORT -->
         <div id="tab-profile" class="space-y-5 hidden">
             <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
                 <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
@@ -74,28 +80,35 @@
         </div>
     </main>
 
+    <!-- FENÊTRE MODALE (FICHE DÉTAIL ENRICHIE) -->
     <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
         <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4 shadow-2xl">
+            <!-- Header Modale -->
             <div class="p-4 flex justify-between items-center border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
                 <div class="min-w-0 pr-4 w-full">
                     <h2 id="modalTitle" class="font-black text-white text-base truncate">Détails</h2>
                     <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs">
                         <span id="modalTypeBadge" class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">SÉRIE</span>
                         <span id="modalGlobalRating" class="text-xs font-bold text-yellow-400 flex items-center gap-0.5">★ N/A</span>
+                        <span id="modalTotalEpCountBadge" class="text-[11px] text-gray-400 bg-gray-900/60 px-2 py-0.5 rounded border border-gray-700/40 hidden"></span>
                     </div>
                 </div>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold flex-shrink-0">✕</button>
             </div>
             
             <div class="p-4 space-y-4">
+                <!-- Résumé global -->
                 <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
                 
+                <!-- BLOC DES GRAPHES ET SAISONS -->
                 <div id="modalSeriesContent" class="space-y-4 hidden">
+                    <!-- 1. GRAPHIQUE GLOBAL -->
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
                         <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Courbe de Notes Globale (Par Épisode)</h4>
                         <div id="modalGlobalGraph" class="h-24 flex items-end gap-[2px] pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
                     </div>
 
+                    <!-- Sélecteur d'onglets de Saisons -->
                     <div id="modalSeasonSelectionRow" class="space-y-2">
                         <div class="flex justify-between items-center">
                             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
@@ -104,12 +117,14 @@
                         <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
                     </div>
 
+                    <!-- 2. GRAPHIQUE DE LA SAISON ACTIVE -->
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
                         <h4 id="seasonGraphTitle" class="text-[11px] font-bold text-gray-400 uppercase">📈 Évolution de la Saison</h4>
                         <div id="modalSeasonGraph" class="h-20 flex items-end gap-1 pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
                     </div>
                 </div>
 
+                <!-- Section Liste des Épisodes (Masquée en mode Preview Recherche) -->
                 <div id="modalEpisodesBlock" class="space-y-2">
                     <h3 class="text-sm font-bold text-white flex justify-between items-center">
                         <span>Épisodes</span>
@@ -118,15 +133,22 @@
                     <div id="modalEpisodesList" class="max-h-60 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
                 </div>
 
+                <!-- Section Suggestions Intelligentes Cross-Media -->
                 <div id="modalSuggestionsBlock" class="space-y-3 hidden">
                     <h3 class="text-sm font-bold text-indigo-400 flex items-center gap-1">✨ Dans le même style</h3>
                     <div id="modalSuggestionsList" class="space-y-2"></div>
-                    <button id="modalActionFollowBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 shadow-lg transition mt-4">+ Activer le suivi de cette série</button>
+                    
+                    <!-- Doubles boutons d'actions contextuels de la recherche -->
+                    <div class="grid grid-cols-2 gap-2 pt-2" id="modalActionButtonsGrid">
+                        <button id="modalActionFollowBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 shadow-lg transition">+ Suivre</button>
+                        <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-500 shadow-lg transition">✓ Déjà Tout Vu</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Barre de navigation fixe basse -->
     <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 shadow-2xl">
         <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-indigo-400 font-bold transition">
             <span class="text-lg">🔍</span><span class="mt-0.5">Recherche</span>
@@ -139,6 +161,7 @@
         </button>
     </nav>
 
+    <!-- Logique applicative -->
     <script>
         const TVMAZE_API = 'https://api.tvmaze.com';
         const JIKAN_API = 'https://api.jikan.moe/v4';
@@ -150,7 +173,7 @@
         
         let activeModalMediaIndex = null;
         let activeModalSeason = null;
-        let activePreviewItem = null; // Stocke l'item temporaire de recherche ouvert
+        let activePreviewItem = null;
 
         function switchTab(tabName) {
             ['search', 'library', 'profile'].forEach(t => {
@@ -200,10 +223,16 @@
             loader.classList.remove('hidden');
             errBox.classList.add('hidden');
 
+            // Correction de saisie pour "House of dragons" -> "House of the Dragon"
+            let optimizedVal = val;
+            if (val.toLowerCase().trim().replace(/\s+/g, ' ') === "house of dragons") {
+                optimizedVal = "House of the Dragon";
+            }
+
             try {
                 let results = [];
                 if (currentMediaType === 'series') {
-                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(val)}`);
+                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(optimizedVal)}`);
                     const data = await res.json();
                     results = data.slice(0, 15).map(item => ({
                         id: `tv-${item.show.id}`,
@@ -218,7 +247,7 @@
                     results.sort((a, b) => b.rating - a.rating);
                     
                 } else if (currentMediaType === 'anime') {
-                    const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(val)}&limit=15`);
+                    const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(optimizedVal)}&limit=15`);
                     const data = await res.json();
                     results = (data.data || []).map(item => ({
                         id: `mal-${item.mal_id}`,
@@ -233,7 +262,7 @@
                     results.sort((a, b) => b.rating - a.rating);
                     
                 } else if (currentMediaType === 'movie') {
-                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(val)}`);
+                    const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(optimizedVal)}`);
                     const data = await res.json();
                     results = data.filter(item => item.show.type === 'Movie' || item.show.runtime < 150).slice(0, 10).map(item => ({
                         id: `movie-${item.show.id}`,
@@ -260,7 +289,7 @@
                     const displayRating = media.rating === 0 ? 'N/A' : media.rating;
                     const div = document.createElement('div');
                     div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 cursor-pointer hover:border-indigo-500/50 transition";
-                    div.onclick = () => openPreviewModal(media.id);
+                    div.onclick = () => openPreviewModal(media, true);
                     div.innerHTML = `
                         <img src="${media.image}" class="w-16 h-24 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
                         <div class="flex-1 min-w-0 flex flex-col justify-between">
@@ -278,17 +307,15 @@
                 });
 
             } catch (err) {
-                errBox.textContent = 'Une erreur est survenue lors du chargement des flux.';
+                errBox.textContent = 'Une erreur est survenue.';
                 errBox.classList.remove('hidden');
             } finally {
                 loader.classList.add('hidden');
             }
         }
 
-        // --- OUVERTURE DE LA FICHE EN MODE RECHERCHE PREVIEW (SANS CHECKS) ---
-        async function openPreviewModal(mediaId) {
-            const media = lastSearchResults.find(m => m.id === mediaId);
-            if (!media) return;
+        // --- FICHE PREVIEW DES SÉRIES (RECHERCHE OU RECOMMANDATIONS CLIQUEES) ---
+        async function openPreviewModal(media, isDirectSearchResult = true) {
             activePreviewItem = media;
 
             document.getElementById('modalTitle').textContent = media.title;
@@ -300,12 +327,19 @@
             document.getElementById('modalSuggestionsBlock').classList.remove('hidden');
 
             const seriesContentBlock = document.getElementById('modalSeriesContent');
-            
+            const epCountBadge = document.getElementById('modalTotalEpCountBadge');
+            epCountBadge.classList.add('hidden');
+
             if (media.type === 'series') {
                 seriesContentBlock.classList.remove('hidden');
                 try {
                     const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
                     const data = await res.json();
+                    
+                    // Injection de l'indicateur du nombre total d'épisodes de la série
+                    epCountBadge.textContent = `${data.length} épisodes au total`;
+                    epCountBadge.classList.remove('hidden');
+
                     const fbRating = media.rating > 0 ? media.rating : 7.4;
                     const previewEpisodes = data.map(ep => ({
                         season: ep.season,
@@ -336,40 +370,50 @@
                 seriesContentBlock.classList.add('hidden');
             }
 
-            // Configuration de l'action du gros bouton d'ajout
+            // Gestion des boutons Suivre & Déjà Tout Vu
             const followBtn = document.getElementById('modalActionFollowBtn');
-            const alreadyInLib = library.some(i => i.id === mediaId);
+            const allWatchedBtn = document.getElementById('modalActionAllWatchedBtn');
+            const alreadyInLib = library.some(i => i.id === media.id);
+
             if (alreadyInLib) {
-                followBtn.textContent = "✓ Déjà suivi dans votre bibliothèque";
+                followBtn.textContent = "✓ Déjà suivi";
                 followBtn.disabled = true;
-                followBtn.className = "w-full py-3 bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-bold rounded-xl text-xs mt-4 cursor-default";
+                followBtn.className = "col-span-2 py-3 bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-bold rounded-xl text-xs cursor-default text-center";
+                allWatchedBtn.style.display = 'none';
             } else {
-                followBtn.textContent = `+ Activer le suivi de ce ${media.type === 'movie' ? 'film' : media.type === 'anime' ? 'animé' : 'cette série'}`;
+                allWatchedBtn.style.display = 'block';
                 followBtn.disabled = false;
-                followBtn.className = "w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 shadow-lg transition mt-4";
+                followBtn.textContent = "+ Suivre";
+                followBtn.className = "py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 shadow transition text-center";
+                
                 followBtn.onclick = async () => {
-                    await addToLibraryById(mediaId);
+                    if (!isDirectSearchResult) lastSearchResults.push(media); // Sécurité d'injection mémoire
+                    await addToLibraryById(media.id, false);
+                    closeModal();
+                    switchTab('library');
+                };
+
+                // FONCTIONNALITÉ DEMANDÉE : AJOUT DE LA SÉRIE DIRECTEMENT COMME "TOUT VU"
+                allWatchedBtn.onclick = async () => {
+                    if (!isDirectSearchResult) lastSearchResults.push(media);
+                    await addToLibraryById(media.id, true);
                     closeModal();
                     switchTab('library');
                 };
             }
 
-            // Génération des suggestions basées sur le premier genre de l'œuvre
             renderSuggestions(media.genres[0] || 'Drama', media.id);
             document.getElementById('mediaModal').classList.remove('hidden');
         }
 
-        // MOTEUR DE SUGGESTIONS CROISÉES (CROSS-MEDIA) VIA RECHERCHE DE GENRES SUR TVMAZE
+        // --- MOTEUR DE NAVIGATION DE SÉRIE EN SÉRIE ---
         async function renderSuggestions(genre, currentId) {
             const container = document.getElementById('modalSuggestionsList');
             container.innerHTML = `<div class="text-xs text-gray-500 animate-pulse py-2">Calcul des correspondances du même style...</div>`;
             
             try {
-                // On utilise les flux de genres populaires de TVMaze pour croiser les suggestions
-                const res = await fetch(`${TVMAZE_API}/shows?page=1`);
+                const res = await fetch(`${TVMAZE_API}/shows?page=2`);
                 const data = await res.json();
-                
-                // Filtrer les œuvres partageant le même genre mais exclure l'œuvre courante
                 let matches = data.filter(item => item.genres.includes(genre) && `tv-${item.id}` !== currentId).slice(0, 4);
                 
                 container.innerHTML = '';
@@ -379,24 +423,42 @@
                 }
 
                 matches.forEach(show => {
+                    const normShow = {
+                        id: `tv-${show.id}`,
+                        apiId: show.id,
+                        title: show.name,
+                        type: 'series',
+                        image: show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
+                        summary: show.summary ? show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
+                        rating: show.rating?.average || 7.2,
+                        genres: show.genres || ['Drama']
+                    };
+
                     const div = document.createElement('div');
-                    div.className = "bg-gray-900/60 border border-gray-700/40 p-2 rounded-xl flex items-center gap-3";
+                    div.className = "bg-gray-900/60 border border-gray-700/40 p-2 rounded-xl flex items-center gap-3 cursor-pointer hover:border-indigo-500/40 transition";
+                    
+                    // EN CLIQUANT SUR LA SUGGESTION -> ON RECHARGE LA MODALE AVEC LA NOUVELLE SÉRIE
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        openPreviewModal(normShow, false);
+                    };
+
                     div.innerHTML = `
-                        <img src="${show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image'}" class="w-10 h-14 object-cover rounded bg-gray-900 flex-shrink-0" />
+                        <img src="${normShow.image}" class="w-10 h-14 object-cover rounded bg-gray-900 flex-shrink-0" />
                         <div class="min-w-0 flex-1">
-                            <h4 class="text-xs font-bold text-white truncate">${show.name}</h4>
-                            <p class="text-[10px] text-gray-400 truncate mt-0.5">${show.genres.join(', ')}</p>
-                            <span class="text-[10px] font-bold text-yellow-500">★ ${show.rating?.average || '7.4'}</span>
+                            <h4 class="text-xs font-bold text-white truncate">${normShow.title}</h4>
+                            <p class="text-[10px] text-gray-400 truncate mt-0.5">${normShow.genres.join(', ')}</p>
+                            <span class="text-[10px] font-bold text-yellow-500">★ ${normShow.rating}</span>
                         </div>
                     `;
                     container.appendChild(div);
                 });
             } catch(e) {
-                container.innerHTML = `<p class="text-xs text-gray-500">Suggestion indisponible hors-ligne.</p>`;
+                container.innerHTML = `<p class="text-xs text-gray-500">Suggestions indisponibles.</p>`;
             }
         }
 
-        async function addToLibraryById(mediaId) {
+        async function addToLibraryById(mediaId, forceAllWatched = false) {
             let media = library.find(m => m.id === mediaId);
             if (media) return media;
             
@@ -417,13 +479,13 @@
                         number: ep.number,
                         runtime: ep.runtime || 40,
                         ratingSource: ep.rating && ep.rating.average ? parseFloat(ep.rating.average) : (fallbackShowRating - 0.2 + (Math.random() * 0.4)),
-                        watched: false
+                        watched: forceAllWatched // Coché vrai si on utilise le bouton "Déjà tout vu"
                     }));
                 } catch (e) { console.error(e); }
             }
 
             media.episodes = episodes;
-            media.status = 'In Progress';
+            media.status = forceAllWatched ? 'Watched' : 'In Progress';
             library.push(media);
             localStorage.setItem('personal_tracker_db', JSON.stringify(library));
             return media;
@@ -458,7 +520,6 @@
             });
         }
 
-        // --- OUVERTURE DE LA FICHE DEPUIS LA BIBLIOTHÈQUE (AVEC CHECKS) ---
         function openLibraryModal(index) {
             activeModalMediaIndex = index;
             const item = library[index];
@@ -473,11 +534,15 @@
 
             const seriesContentBlock = document.getElementById('modalSeriesContent');
             const tabsContainer = document.getElementById('modalSeasonTabs');
+            const epCountBadge = document.getElementById('modalTotalEpCountBadge');
             
             if (item.episodes && item.episodes.length > 0) {
                 seriesContentBlock.classList.remove('hidden');
                 document.getElementById('modalSeasonSelectionRow').classList.remove('hidden');
                 
+                epCountBadge.textContent = `${item.episodes.length} épisodes au total`;
+                epCountBadge.classList.remove('hidden');
+
                 renderGlobalGraph(item.episodes);
                 
                 const seasons = [...new Set(item.episodes.map(e => e.season))].sort((a, b) => a - b);
@@ -495,8 +560,9 @@
                 selectSeason(seasons[0]);
             } else {
                 seriesContentBlock.classList.add('hidden');
+                epCountBadge.classList.add('hidden');
                 document.getElementById('modalEpCount').textContent = '';
-                document.getElementById('modalEpisodesList').innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun module d'épisode requis pour ce format.</p>`;
+                document.getElementById('modalEpisodesList').innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun module d'épisode requis.</p>`;
             }
 
             document.getElementById('mediaModal').classList.remove('hidden');
