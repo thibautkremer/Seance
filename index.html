@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV TIME REBORN</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
@@ -14,16 +13,13 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
-    <!-- Barre supérieure -->
     <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <h1 class="text-xl font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
         <button id="langToggle" class="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition">🌐 FR</button>
     </header>
 
-    <!-- Zone principale -->
     <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
         
-        <!-- SECTION RECHERCHE -->
         <div id="tab-search" class="space-y-4">
             <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
                 <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
@@ -40,13 +36,11 @@
             <div id="searchResults" class="space-y-3"></div>
         </div>
 
-        <!-- SECTION BIBLIOTHÈQUE -->
         <div id="tab-library" class="space-y-4 hidden">
             <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque (<span id="lib-count">0</span>)</h2>
             <div id="libraryGrid" class="grid grid-cols-2 gap-3"></div>
         </div>
 
-        <!-- SECTION PROFIL & IMPORT -->
         <div id="tab-profile" class="space-y-5 hidden">
             <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
                 <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
@@ -80,38 +74,29 @@
         </div>
     </main>
 
-    <!-- FENÊTRE MODALE (FICHE DÉTAIL ENRICHIE) -->
     <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
         <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4 shadow-2xl">
-            <!-- Header Modale -->
             <div class="p-4 flex justify-between items-center border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
                 <div class="min-w-0 pr-4 w-full">
                     <h2 id="modalTitle" class="font-black text-white text-base truncate">Détails</h2>
-                    <!-- Zone de Liens Externes Fiche Info -->
                     <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs">
                         <span id="modalTypeBadge" class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">SÉRIE</span>
-                        <a id="modalImdbLink" target="_blank" class="font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-lg flex items-center gap-0.5 hover:bg-yellow-500/30 transition text-[11px]">🎬 IMDb: Ouvrir</a>
-                        <a id="modalRottenLink" target="_blank" class="font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-lg flex items-center gap-0.5 hover:bg-red-500/30 transition text-[11px]">🍅 Rotten Tomatoes</a>
+                        <span id="modalGlobalRating" class="text-xs font-bold text-yellow-400 flex items-center gap-0.5">★ N/A</span>
                     </div>
                 </div>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold flex-shrink-0">✕</button>
             </div>
             
             <div class="p-4 space-y-4">
-                <!-- Résumé global -->
                 <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
                 
-                <!-- BLOC DES GRAPHES ET SAISONS -->
                 <div id="modalSeriesContent" class="space-y-4 hidden">
-                    
-                    <!-- 1. GRAPHIQUE GLOBAL -->
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
                         <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Courbe de Notes Globale (Par Épisode)</h4>
                         <div id="modalGlobalGraph" class="h-24 flex items-end gap-[2px] pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
                     </div>
 
-                    <!-- Sélecteur d'onglets de Saisons -->
-                    <div class="space-y-2">
+                    <div id="modalSeasonSelectionRow" class="space-y-2">
                         <div class="flex justify-between items-center">
                             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
                             <button id="btnCheckAllSeason" class="text-[11px] font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-900/50 px-2.5 py-1 rounded-lg hover:bg-indigo-900/50 transition"> Tout cocher</button>
@@ -119,26 +104,29 @@
                         <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
                     </div>
 
-                    <!-- 2. GRAPHIQUE DE LA SAISON ACTIVE -->
                     <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
                         <h4 id="seasonGraphTitle" class="text-[11px] font-bold text-gray-400 uppercase">📈 Évolution de la Saison</h4>
                         <div id="modalSeasonGraph" class="h-20 flex items-end gap-1 pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
                     </div>
                 </div>
 
-                <!-- Liste des Épisodes -->
-                <div class="space-y-2">
+                <div id="modalEpisodesBlock" class="space-y-2">
                     <h3 class="text-sm font-bold text-white flex justify-between items-center">
                         <span>Épisodes</span>
                         <span id="modalEpCount" class="text-xs font-normal text-gray-400"></span>
                     </h3>
                     <div id="modalEpisodesList" class="max-h-60 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
                 </div>
+
+                <div id="modalSuggestionsBlock" class="space-y-3 hidden">
+                    <h3 class="text-sm font-bold text-indigo-400 flex items-center gap-1">✨ Dans le même style</h3>
+                    <div id="modalSuggestionsList" class="space-y-2"></div>
+                    <button id="modalActionFollowBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 shadow-lg transition mt-4">+ Activer le suivi de cette série</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Barre de navigation fixe basse -->
     <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 shadow-2xl">
         <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-indigo-400 font-bold transition">
             <span class="text-lg">🔍</span><span class="mt-0.5">Recherche</span>
@@ -151,7 +139,6 @@
         </button>
     </nav>
 
-    <!-- Logique applicative -->
     <script>
         const TVMAZE_API = 'https://api.tvmaze.com';
         const JIKAN_API = 'https://api.jikan.moe/v4';
@@ -163,6 +150,7 @@
         
         let activeModalMediaIndex = null;
         let activeModalSeason = null;
+        let activePreviewItem = null; // Stocke l'item temporaire de recherche ouvert
 
         function switchTab(tabName) {
             ['search', 'library', 'profile'].forEach(t => {
@@ -225,7 +213,7 @@
                         image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
                         summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
                         rating: item.show.rating?.average || 0,
-                        imdbId: item.show.externals?.imdb || ''
+                        genres: item.show.genres || ['Drama']
                     }));
                     results.sort((a, b) => b.rating - a.rating);
                     
@@ -240,12 +228,11 @@
                         image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=No+Image',
                         summary: item.synopsis || 'Aucun résumé.',
                         rating: item.score || 0,
-                        imdbId: ''
+                        genres: item.genres?.map(g => g.name) || ['Animation']
                     }));
                     results.sort((a, b) => b.rating - a.rating);
                     
                 } else if (currentMediaType === 'movie') {
-                    // Fallback de recherche de films via TVMaze pour éviter la clé OMDb bloquée
                     const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(val)}`);
                     const data = await res.json();
                     results = data.filter(item => item.show.type === 'Movie' || item.show.runtime < 150).slice(0, 10).map(item => ({
@@ -256,7 +243,7 @@
                         image: item.show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
                         summary: item.show.summary ? item.show.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
                         rating: item.show.rating?.average || 0,
-                        imdbId: item.show.externals?.imdb || ''
+                        genres: item.show.genres || ['Drama']
                     }));
                 }
 
@@ -270,10 +257,10 @@
                 }
 
                 lastSearchResults.forEach(media => {
-                    const inLib = library.some(i => i.id === media.id);
                     const displayRating = media.rating === 0 ? 'N/A' : media.rating;
                     const div = document.createElement('div');
-                    div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3";
+                    div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 cursor-pointer hover:border-indigo-500/50 transition";
+                    div.onclick = () => openPreviewModal(media.id);
                     div.innerHTML = `
                         <img src="${media.image}" class="w-16 h-24 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
                         <div class="flex-1 min-w-0 flex flex-col justify-between">
@@ -284,9 +271,7 @@
                                 </div>
                                 <p class="text-[11px] text-gray-400 line-clamp-2 mt-0.5">${media.summary}</p>
                             </div>
-                            <button onclick="addToLibraryById('${media.id}')" ${inLib ? 'disabled' : ''} class="w-full py-1 text-xs font-bold rounded-lg mt-1.5 transition ${inLib ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-800/40' : 'bg-indigo-600 text-white hover:bg-indigo-500'}">
-                                ${inLib ? '✓ Suivi activé' : '+ Suivre'}
-                            </button>
+                            <div class="text-[10px] uppercase font-bold tracking-wider text-indigo-400 mt-1">Ouvrir la fiche de présentation →</div>
                         </div>
                     `;
                     resultsContainer.appendChild(div);
@@ -300,18 +285,129 @@
             }
         }
 
-        async function addToLibraryById(mediaId) {
+        // --- OUVERTURE DE LA FICHE EN MODE RECHERCHE PREVIEW (SANS CHECKS) ---
+        async function openPreviewModal(mediaId) {
             const media = lastSearchResults.find(m => m.id === mediaId);
-            if (!media || library.some(i => i.id === mediaId)) return null;
+            if (!media) return;
+            activePreviewItem = media;
+
+            document.getElementById('modalTitle').textContent = media.title;
+            document.getElementById('modalSummary').textContent = media.summary;
+            document.getElementById('modalTypeBadge').textContent = media.type;
+            document.getElementById('modalGlobalRating').textContent = `★ ${media.rating === 0 ? 'N/A' : media.rating}`;
+
+            document.getElementById('modalEpisodesBlock').classList.add('hidden');
+            document.getElementById('modalSuggestionsBlock').classList.remove('hidden');
+
+            const seriesContentBlock = document.getElementById('modalSeriesContent');
+            
+            if (media.type === 'series') {
+                seriesContentBlock.classList.remove('hidden');
+                try {
+                    const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
+                    const data = await res.json();
+                    const fbRating = media.rating > 0 ? media.rating : 7.4;
+                    const previewEpisodes = data.map(ep => ({
+                        season: ep.season,
+                        number: ep.number,
+                        ratingSource: ep.rating?.average || fbRating
+                    }));
+                    
+                    renderGlobalGraph(previewEpisodes);
+                    
+                    const seasons = [...new Set(previewEpisodes.map(e => e.season))].sort((a, b) => a - b);
+                    const tabsContainer = document.getElementById('modalSeasonTabs');
+                    tabsContainer.innerHTML = '';
+                    document.getElementById('modalSeasonSelectionRow').classList.remove('hidden');
+
+                    seasons.forEach((s, idx) => {
+                        const btn = document.createElement('button');
+                        btn.className = `px-3 py-1 text-xs font-bold rounded-lg transition shrink-0 ${idx === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300'}`;
+                        btn.textContent = `Saison ${s}`;
+                        btn.onclick = () => {
+                            document.getElementById('seasonGraphTitle').textContent = `📈 Évolution Épisodes - Saison ${s}`;
+                            renderSeasonGraph(previewEpisodes.filter(e => e.season === s));
+                        };
+                        tabsContainer.appendChild(btn);
+                    });
+                    renderSeasonGraph(previewEpisodes.filter(e => e.season === seasons[0]));
+                } catch(e) { console.error(e); }
+            } else {
+                seriesContentBlock.classList.add('hidden');
+            }
+
+            // Configuration de l'action du gros bouton d'ajout
+            const followBtn = document.getElementById('modalActionFollowBtn');
+            const alreadyInLib = library.some(i => i.id === mediaId);
+            if (alreadyInLib) {
+                followBtn.textContent = "✓ Déjà suivi dans votre bibliothèque";
+                followBtn.disabled = true;
+                followBtn.className = "w-full py-3 bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-bold rounded-xl text-xs mt-4 cursor-default";
+            } else {
+                followBtn.textContent = `+ Activer le suivi de ce ${media.type === 'movie' ? 'film' : media.type === 'anime' ? 'animé' : 'cette série'}`;
+                followBtn.disabled = false;
+                followBtn.className = "w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 shadow-lg transition mt-4";
+                followBtn.onclick = async () => {
+                    await addToLibraryById(mediaId);
+                    closeModal();
+                    switchTab('library');
+                };
+            }
+
+            // Génération des suggestions basées sur le premier genre de l'œuvre
+            renderSuggestions(media.genres[0] || 'Drama', media.id);
+            document.getElementById('mediaModal').classList.remove('hidden');
+        }
+
+        // MOTEUR DE SUGGESTIONS CROISÉES (CROSS-MEDIA) VIA RECHERCHE DE GENRES SUR TVMAZE
+        async function renderSuggestions(genre, currentId) {
+            const container = document.getElementById('modalSuggestionsList');
+            container.innerHTML = `<div class="text-xs text-gray-500 animate-pulse py-2">Calcul des correspondances du même style...</div>`;
+            
+            try {
+                // On utilise les flux de genres populaires de TVMaze pour croiser les suggestions
+                const res = await fetch(`${TVMAZE_API}/shows?page=1`);
+                const data = await res.json();
+                
+                // Filtrer les œuvres partageant le même genre mais exclure l'œuvre courante
+                let matches = data.filter(item => item.genres.includes(genre) && `tv-${item.id}` !== currentId).slice(0, 4);
+                
+                container.innerHTML = '';
+                if(matches.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-gray-500">Aucune recommandation disponible.</p>`;
+                    return;
+                }
+
+                matches.forEach(show => {
+                    const div = document.createElement('div');
+                    div.className = "bg-gray-900/60 border border-gray-700/40 p-2 rounded-xl flex items-center gap-3";
+                    div.innerHTML = `
+                        <img src="${show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image'}" class="w-10 h-14 object-cover rounded bg-gray-900 flex-shrink-0" />
+                        <div class="min-w-0 flex-1">
+                            <h4 class="text-xs font-bold text-white truncate">${show.name}</h4>
+                            <p class="text-[10px] text-gray-400 truncate mt-0.5">${show.genres.join(', ')}</p>
+                            <span class="text-[10px] font-bold text-yellow-500">★ ${show.rating?.average || '7.4'}</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch(e) {
+                container.innerHTML = `<p class="text-xs text-gray-500">Suggestion indisponible hors-ligne.</p>`;
+            }
+        }
+
+        async function addToLibraryById(mediaId) {
+            let media = library.find(m => m.id === mediaId);
+            if (media) return media;
+            
+            media = lastSearchResults.find(m => m.id === mediaId);
+            if (!media) return null;
 
             let episodes = [];
-
             if (media.type === 'series') {
                 try {
                     const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
                     const data = await res.json();
-                    
-                    // La note par défaut s'aligne proprement sur la vraie note globale de la série
                     const fallbackShowRating = media.rating && media.rating > 0 ? media.rating : 7.5;
 
                     episodes = data.map(ep => ({
@@ -320,7 +416,6 @@
                         season: ep.season,
                         number: ep.number,
                         runtime: ep.runtime || 40,
-                        // RÉCUPÉRATION DIRECTE DE LA NOTE VIA TVMAZE SANS PASSER PAR OMDB
                         ratingSource: ep.rating && ep.rating.average ? parseFloat(ep.rating.average) : (fallbackShowRating - 0.2 + (Math.random() * 0.4)),
                         watched: false
                     }));
@@ -331,9 +426,6 @@
             media.status = 'In Progress';
             library.push(media);
             localStorage.setItem('personal_tracker_db', JSON.stringify(library));
-            
-            const input = document.getElementById('searchInput');
-            if (input && input.value.length >= 3) triggerSearch(input.value);
             return media;
         }
 
@@ -351,7 +443,7 @@
                 const displayRating = item.rating === 0 ? 'N/A' : item.rating;
                 const div = document.createElement('div');
                 div.className = "bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden relative shadow";
-                div.onclick = () => openModal(index);
+                div.onclick = () => openLibraryModal(index);
                 div.innerHTML = `
                     <img src="${item.image}" class="w-full aspect-[3/4] object-cover bg-gray-900" />
                     <div class="p-2 bg-gray-800">
@@ -366,26 +458,25 @@
             });
         }
 
-        function openModal(index) {
+        // --- OUVERTURE DE LA FICHE DEPUIS LA BIBLIOTHÈQUE (AVEC CHECKS) ---
+        function openLibraryModal(index) {
             activeModalMediaIndex = index;
             const item = library[index];
             
             document.getElementById('modalTitle').textContent = item.title;
             document.getElementById('modalSummary').textContent = item.summary;
             document.getElementById('modalTypeBadge').textContent = item.type;
+            document.getElementById('modalGlobalRating').textContent = `★ ${item.rating === 0 ? 'N/A' : item.rating}`;
             
-            // Configuration dynamique des hyperliens Web directes sans besoin de clé API
-            const imdbUrl = item.imdbId ? `https://www.imdb.com/title/${item.imdbId}` : `https://www.imdb.com/find?q=${encodeURIComponent(item.title)}`;
-            const rottenUrl = `https://www.rottentomatoes.com/search?search=${encodeURIComponent(item.title)}`;
-            
-            document.getElementById('modalImdbLink').href = imdbUrl;
-            document.getElementById('modalRottenLink').href = rottenUrl;
-            
+            document.getElementById('modalEpisodesBlock').classList.remove('hidden');
+            document.getElementById('modalSuggestionsBlock').classList.add('hidden');
+
             const seriesContentBlock = document.getElementById('modalSeriesContent');
             const tabsContainer = document.getElementById('modalSeasonTabs');
             
             if (item.episodes && item.episodes.length > 0) {
                 seriesContentBlock.classList.remove('hidden');
+                document.getElementById('modalSeasonSelectionRow').classList.remove('hidden');
                 
                 renderGlobalGraph(item.episodes);
                 
@@ -405,7 +496,7 @@
             } else {
                 seriesContentBlock.classList.add('hidden');
                 document.getElementById('modalEpCount').textContent = '';
-                document.getElementById('modalEpisodesList').innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun module d'épisode requis.</p>`;
+                document.getElementById('modalEpisodesList').innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun module d'épisode requis pour ce format.</p>`;
             }
 
             document.getElementById('mediaModal').classList.remove('hidden');
@@ -521,6 +612,7 @@
             document.getElementById('mediaModal').classList.add('hidden');
             activeModalMediaIndex = null;
             activeModalSeason = null;
+            activePreviewItem = null;
             renderLibrary();
         }
 
@@ -630,7 +722,7 @@
                                         image: targetShow.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
                                         summary: targetShow.summary ? targetShow.summary.replace(/<[^>]*>/g, '') : '',
                                         rating: targetShow.rating?.average || 0,
-                                        imdbId: targetShow.externals?.imdb || ''
+                                        genres: targetShow.genres || ['Drama']
                                     };
                                     lastSearchResults.push(mediaObj);
                                     existingMedia = await addToLibraryById(mediaObj.id);
