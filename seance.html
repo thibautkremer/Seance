@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Séance — suivi séries, films &amp; animés</title>
+<meta name="theme-color" content="#14120F" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #14120F; font-family: 'Inter', sans-serif; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #302B22; border-radius: 4px; }
+  input, select, button, textarea { font-family: inherit; }
+  a { color: #D4A24C; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+// =====================================================================================
+// CONSTANTS
+// =====================================================================================
+const OMDB_KEY = "1e01c814";
+const OMDB = "https://www.omdbapi.com/";
+const TVMAZE = "https://api.tvmaze.com";
+const JIKAN = "https://api.jikan.moe/v4";
+
+const STATUS = {
+  watching: { label: "En cours", color: "#C0392B" },
+  planned: { label: "À voir", color: "#8A8272" },
+  completed: { label: "Terminé", color: "#4B7A51" },
+  dropped: { label: "Abandonné", color: "#5A5248" },
+};
+const TYPE_LABEL = { series: "Série", movie: "Film", anime: "Animé" };
+const DEFAULT_RUNTIME = { series: 42, anime: 24, movie: 110 };
+
+// =====================================================================================
+// UTILITIES
+// =====================================================================================
+function stripHtml(html) {
+  if (!html) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || "").trim();
+}
+function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function safeFetchJson(url, retries = 1) {
+  try {
+    const r = await fetch(url);
+    if (r.status === 429 && retries > 0) { await sleep(900); return safeFetchJson(url, retries - 1); }
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+function parseDate(d) {
+  if (!d || d === "N/A") return null;
+  const t = Date.parse(d);
+  return isNaN(t) ? null : new Date(t);
+}
+function fmtDate(d) {
+  if (!d) return "Date inconnue";
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+}
+function todayMidnight() { const n = new Date(); n.setHours(0,0,0,0); return n; }
+function parseRuntimeMinutes(str, fallback) {
+  if (!str) return fallback;
+  const m = String(str).match(/\d+/);
+  return m ? parseInt(m[0], 10) : fallback;
+}
+function fmtMinutes(mins) {
+  mins = Math.round(mins || 0);
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+
+// =====================================================================================
+// STORAGE (plain localStorage — real webpage, not a sandboxed artifact)
+// =====================================================================================
+function loadLibrary() {
+  try { const raw = localStorage.getItem("seance_library_v2"); return raw ? JSON.parse(raw) : []; }
+  catch { return []; }
+}
+function saveLibrary(lib) {
+  try { localStorage.setItem("seance_library_v2", JSON.stringify(lib)); } catch (e) { console.error(e); }
+}
+function exportBackup(library) {
+  const blob = new Blob([JSON.stringify(library, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `seance-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// =====================================================================================
+// API LAYER — TVMaze (series), OMDb (movies + episode rating enrichment), Jikan (anime)
+// =====================================================================================
+async function translateText(text, from, to) {
+  const data = await safeFetchJson(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
+  const translated = data?.responseData?.translatedText;
+  return translated && translated.toLowerCase() !== text.toLowerCase() ? translated : null;
+}
+
+async function tvmazeSearch(query) {
+  const data = await safeFetchJson(`${TVMAZE}/search/shows?q=${encodeURIComponent(query)}`);
+  if (!data) return [];
+  return data.map(d => ({
+    source: "tvmaze", kind: "series", externalId: d.show.id,
+    title: d.show.name, year: d.show.premiered ? d.show.premiered.slice(0,4) : "",
+    poster: d.show.image?.medium || null, summary: stripHtml(d.show.summary),
+    genres: d.show.genres || [], rating: d.show.rating?.average || null,
+  }));
+}
+async function tvmazeShowFull(id) {
+  return safeFetchJson(`${TVMAZE}/shows/${id}?embed=episodes`);
+}
+
+async function omdbSearchMovies(query) {
+  const data = await safeFetchJson(`${OMDB}?apikey=${OMDB_KEY}&type=movie&s=${encodeURIComponent(query)}`);
+  if (!data || !data.Search) return [];
+  return data.Search.map(d => ({
+    source: "omdb", kind: "movie", externalId: d.imdbID,
+    title: d.Title, year: d.Year, poster: d.Poster !== "N/A" ? d.Poster : null,
+    summary: "", genres: [], rating: null,
+  }));
+}
+async function omdbDetails(imdbID) {
+  return safeFetchJson(`${OMDB}?apikey=${OMDB_KEY}&i=${imdbID}&plot=short`);
+}
+async function omdbSeasonRatings(imdbID, season) {
+  const data = await safeFetchJson(`${OMDB}?apikey=${OMDB_KEY}&i=${imdbID}&Season=${season}`);
+  return data?.Episodes || null;
+}
+
+async function jikanSearchAnime(query) {
+  const data = await safeFetchJson(`${JIKAN}/anime?q=${encodeURIComponent(query)}&limit=8&sfw=true`);
+  if (!data || !data.data) return [];
+  return data.data.map(d => ({
+    source: "jikan", kind: "anime", externalId: d.mal_id,
+    title: d.title, year: d.aired?.prop?.from?.year || "",
+    poster: d.images?.jpg?.image_url || null, summary: stripHtml(d.synopsis),
+    genres: (d.genres || []).map(g => g.name), rating: d.score || null,
+  }));
+}
+async function jikanAnimeFull(id) { return safeFetchJson(`${JIKAN}/anime/${id}/full`); }
+async function jikanAnimeEpisodesPage(id, page) { return safeFetchJson(`${JIKAN}/anime/${id}/episodes?page=${page}`); }
+
+async function unifiedSearch(query, kind, lang) {
+  const queries = [query];
+  if (lang === "fr") { const t = await translateText(query, "fr", "en"); if (t) queries.unshift(t); }
+  const calls = [];
+  queries.forEach(q => {
+    if (kind === "all" || kind === "series") calls.push(tvmazeSearch(q));
+    if (kind === "all" || kind === "movie") calls.push(omdbSearchMovies(q));
+    if (kind === "all" || kind === "anime") calls.push(jikanSearchAnime(q));
+  });
+  const settled = await Promise.allSettled(calls);
+  const seen = new Set(); const combined = [];
+  settled.forEach(s => {
+    if (s.status === "fulfilled") s.value.forEach(r => {
+      const key = `${r.source}-${r.externalId}`;
+      if (!seen.has(key)) { seen.add(key); combined.push(r); }
+    });
+  });
+  return combined.slice(0, 12);
+}
+
+// build a full library item from a normalized search result
+async function buildItem(result) {
+  if (result.source === "tvmaze") {
+    const full = await tvmazeShowFull(result.externalId);
+    if (!full) return null;
+    const episodesData = {};
+    (full._embedded?.episodes || []).forEach(ep => {
+      const sn = ep.season || 1;
+      if (!episodesData[sn]) episodesData[sn] = [];
+      episodesData[sn].push({
+        episode: ep.number || episodesData[sn].length + 1,
+        title: ep.name || `Épisode ${ep.number || ""}`,
+        summary: stripHtml(ep.summary),
+        image: ep.image?.medium || null,
+        released: ep.airdate || null,
+        runtime: ep.runtime || DEFAULT_RUNTIME.series,
+        imdbRating: null, watched: false, userRating: null,
+      });
+    });
+    const seasonNums = Object.keys(episodesData).map(Number);
+    return {
+      id: `tvmaze-${result.externalId}`, source: "tvmaze", externalId: result.externalId,
+      imdbID: full.externals?.imdb || null,
+      title: full.name, year: full.premiered ? full.premiered.slice(0,4) : "",
+      poster: full.image?.original || full.image?.medium || null,
+      summary: stripHtml(full.summary), genres: full.genres || [],
+      sourceRating: full.rating?.average || null, sourceLabel: "TVMaze",
+      type: "series", status: "planned", userRating: null,
+      addedAt: new Date().toISOString(),
+      totalSeasons: seasonNums.length ? Math.max(...seasonNums) : 1,
+      episodesData,
+    };
+  }
+  if (result.source === "jikan") {
+    const fullRes = await jikanAnimeFull(result.externalId);
+    const d = fullRes?.data;
+    const episodesData = { 1: [] };
+    let page = 1, more = true;
+    while (more && page <= 2) {
+      const epRes = await jikanAnimeEpisodesPage(result.externalId, page);
+      const eps = epRes?.data || [];
+      eps.forEach(ep => {
+        episodesData[1].push({
+          episode: ep.mal_id, title: ep.title || `Épisode ${ep.mal_id}`,
+          summary: "", image: null, released: ep.aired || null,
+          runtime: parseRuntimeMinutes(d?.duration, DEFAULT_RUNTIME.anime),
+          imdbRating: ep.score || null, watched: false, userRating: null,
+        });
+      });
+      more = !!epRes?.pagination?.has_next_page;
+      page++;
+      await sleep(400); // be gentle with Jikan's rate limit
+    }
+    return {
+      id: `jikan-${result.externalId}`, source: "jikan", externalId: result.externalId, imdbID: null,
+      title: d?.title || result.title, year: d?.aired?.prop?.from?.year || "",
+      poster: d?.images?.jpg?.image_url || result.poster || null,
+      summary: stripHtml(d?.synopsis), genres: (d?.genres || []).map(g => g.name),
+      sourceRating: d?.score || null, sourceLabel: "MyAnimeList",
+      type: "anime", status: "planned", userRating: null,
+      addedAt: new Date().toISOString(), totalSeasons: 1, episodesData,
+    };
+  }
+  // omdb movie
+  const details = await omdbDetails(result.externalId);
+  if (!details || details.Response === "False") return null;
+  return {
+    id: `omdb-${result.externalId}`, source: "omdb", externalId: result.externalId, imdbID: result.externalId,
+    title: details.Title, year: details.Year,
+    poster: details.Poster !== "N/A" ? details.Poster : null,
+    summary: details.Plot !== "N/A" ? details.Plot : "",
+    genres: details.Genre ? details.Genre.split(", ") : [],
+    sourceRating: details.imdbRating !== "N/A" ? parseFloat(details.imdbRating) : null, sourceLabel: "IMDb",
+    type: "movie", status: "planned", userRating: null,
+    addedAt: new Date().toISOString(), totalSeasons: null,
+    runtimeMinutes: parseRuntimeMinutes(details.Runtime, DEFAULT_RUNTIME.movie),
+    episodesData: {},
+  };
+}
+
+// =====================================================================================
+// STATS
+// =====================================================================================
+function computeStats(library) {
+  const minutesByType = { series: 0, movie: 0, anime: 0 };
+  let episodesWatched = 0, showsCompleted = 0, ratingsSum = 0, ratingsCount = 0;
+  const rated = [];
+  library.forEach(item => {
+    if (item.status === "completed") showsCompleted++;
+    if (item.userRating) { ratingsSum += item.userRating; ratingsCount++; rated.push(item); }
+    if (item.type === "movie") {
+      if (item.status === "completed") minutesByType.movie += item.runtimeMinutes || DEFAULT_RUNTIME.movie;
+    } else {
+      Object.values(item.episodesData || {}).forEach(eps => eps.forEach(ep => {
+        if (ep.watched) { episodesWatched++; minutesByType[item.type] += ep.runtime || DEFAULT_RUNTIME[item.type]; }
+      }));
+    }
+  });
+  rated.sort((a,b) => b.userRating - a.userRating);
+  const totalMinutes = minutesByType.series + minutesByType.movie + minutesByType.anime;
+  return {
+    minutesByType, totalMinutes, episodesWatched, showsCompleted, totalShows: library.length,
+    avgRating: ratingsCount ? (ratingsSum/ratingsCount).toFixed(1) : null,
+    topRated: rated.slice(0,5),
+  };
+}
+
+// =====================================================================================
+// CURATED SUGGESTIONS CATALOG (matched against the genres already in your library)
+// =====================================================================================
+const CURATED = [
+  { title: "Breaking Bad", kind: "series", genres: ["Drama","Crime"] },
+  { title: "The Bear", kind: "series", genres: ["Drama","Comedy"] },
+  { title: "Severance", kind: "series", genres: ["Drama","Science-Fiction","Mystery"] },
+  { title: "Fleabag", kind: "series", genres: ["Comedy","Drama"] },
+  { title: "The Last of Us", kind: "series", genres: ["Drama","Science-Fiction","Horror"] },
+  { title: "Chernobyl", kind: "series", genres: ["Drama","History"] },
+  { title: "True Detective", kind: "series", genres: ["Crime","Drama","Mystery"] },
+  { title: "Succession", kind: "series", genres: ["Drama"] },
+  { title: "Slow Horses", kind: "series", genres: ["Drama","Thriller","Espionage"] },
+  { title: "Shogun", kind: "series", genres: ["Drama","History","War"] },
+  { title: "Parasite", kind: "movie", genres: ["Drama","Thriller"] },
+  { title: "Everything Everywhere All at Once", kind: "movie", genres: ["Comedy","Science-Fiction","Adventure"] },
+  { title: "Oppenheimer", kind: "movie", genres: ["Drama","History"] },
+  { title: "Whiplash", kind: "movie", genres: ["Drama","Music"] },
+  { title: "The Grand Budapest Hotel", kind: "movie", genres: ["Comedy","Drama"] },
+  { title: "Interstellar", kind: "movie", genres: ["Science-Fiction","Adventure","Drama"] },
+  { title: "Dune", kind: "movie", genres: ["Science-Fiction","Adventure"] },
+  { title: "Attack on Titan", kind: "anime", genres: ["Action","Drama","Fantasy"] },
+  { title: "Fullmetal Alchemist: Brotherhood", kind: "anime", genres: ["Action","Adventure","Fantasy"] },
+  { title: "Steins;Gate", kind: "anime", genres: ["Science-Fiction","Thriller"] },
+  { title: "Vinland Saga", kind: "anime", genres: ["Action","Drama","History"] },
+  { title: "Spy x Family", kind: "anime", genres: ["Comedy","Action"] },
+  { title: "Jujutsu Kaisen", kind: "anime", genres: ["Action","Fantasy"] },
+  { title: "Frieren: Beyond Journey's End", kind: "anime", genres: ["Adventure","Fantasy","Drama"] },
+];
+
+// =====================================================================================
+// ICONS (inline SVG — no external icon library dependency, more robust offline)
+// =====================================================================================
+function Icon({ name, size = 16, color = "currentColor", fill = "none" }) {
+  const s = { width: size, height: size, display: "block", flexShrink: 0 };
+  const c = { viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+  switch (name) {
+    case "search": return <svg {...c} style={s}><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>;
+    case "plus": return <svg {...c} style={s}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+    case "film": return <svg {...c} style={s}><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="8" y1="4" x2="8" y2="20"/><line x1="16" y1="4" x2="16" y2="20"/></svg>;
+    case "tv": return <svg {...c} style={s}><rect x="3" y="6" width="18" height="13" rx="1"/><line x1="8" y1="22" x2="16" y2="22"/><line x1="12" y1="19" x2="12" y2="22"/></svg>;
+    case "sparkles": return <svg {...c} style={s}><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 15l.7 2.1L22 18l-2.3.9L19 21l-.7-2.1L16 18l2.3-.9L19 15z"/></svg>;
+    case "calendar": return <svg {...c} style={s}><rect x="3" y="5" width="18" height="16" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>;
+    case "upload": return <svg {...c} style={s}><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>;
+    case "download": return <svg {...c} style={s}><path d="M12 4v12"/><path d="M6 10l6 6 6-6"/><path d="M4 20h16"/></svg>;
+    case "star": return <svg viewBox="0 0 24 24" style={s} fill={fill} stroke={color} strokeWidth="1.5"><polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18 5.5,22 7,14.5 2,9.5 9,9"/></svg>;
+    case "check": return <svg {...c} style={s}><polyline points="20 6 9 17 4 12"/></svg>;
+    case "x": return <svg {...c} style={s}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+    case "chevron-down": return <svg {...c} style={s}><polyline points="6 9 12 15 18 9"/></svg>;
+    case "chevron-right": return <svg {...c} style={s}><polyline points="9 6 15 12 9 18"/></svg>;
+    case "trash": return <svg {...c} style={s}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4h8v2"/></svg>;
+    case "loader": return <svg {...c} style={s} className="spin"><circle cx="12" cy="12" r="8" opacity="0.25"/><path d="M12 4a8 8 0 018 8"/></svg>;
+    case "ticket": return <svg {...c} style={s}><path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 000 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 000-4V8z"/><line x1="12" y1="6" x2="12" y2="18" strokeDasharray="2 3"/></svg>;
+    case "play": return <svg viewBox="0 0 24 24" style={s} fill={color} stroke="none"><polygon points="6,4 20,12 6,20"/></svg>;
+    case "user": return <svg {...c} style={s}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>;
+    case "clock": return <svg {...c} style={s}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>;
+    case "info": return <svg {...c} style={s}><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="0.5" fill={color}/></svg>;
+    default: return null;
+  }
+}
+
+// =====================================================================================
+// SVG CHART — rating curve (no charting library dependency)
+// =====================================================================================
+function RatingCurve({ data }) {
+  const W = 640, H = 220, PAD_L = 34, PAD_B = 28, PAD_T = 12, PAD_R = 12;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const n = data.length;
+  if (n === 0) return null;
+  const avg = data.reduce((a,b) => a+b.value, 0) / n;
+  const x = i => PAD_L + (n === 1 ? innerW/2 : (i/(n-1)) * innerW);
+  const y = v => PAD_T + innerH - (v/10) * innerH;
+  const points = data.map((d,i) => `${x(i)},${y(d.value)}`).join(" ");
+  const step = Math.max(1, Math.ceil(n/8));
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 220 }}>
+      {[0,2.5,5,7.5,10].map(v => (
+        <g key={v}>
+          <line x1={PAD_L} x2={W-PAD_R} y1={y(v)} y2={y(v)} stroke="#2A251D" strokeDasharray="3 3" />
+          <text x={PAD_L-8} y={y(v)+3} fontSize="9" fill="#8A8272" fontFamily="IBM Plex Mono" textAnchor="end">{v}</text>
+        </g>
+      ))}
+      <line x1={PAD_L} x2={W-PAD_R} y1={y(avg)} y2={y(avg)} stroke="#5A5248" strokeDasharray="4 4" />
+      {data.map((d,i) => i % step === 0 && (
+        <text key={i} x={x(i)} y={H-8} fontSize="9" fill="#8A8272" fontFamily="IBM Plex Mono" textAnchor="middle">{d.label}</text>
+      ))}
+      <polyline points={points} fill="none" stroke="#D4A24C" strokeWidth="2" />
+      {data.map((d,i) => <circle key={i} cx={x(i)} cy={y(d.value)} r="3" fill="#D4A24C"><title>{`${d.label} — ${d.value}`}</title></circle>)}
+    </svg>
+  );
+}
+function StatBar({ label, value, max, color }) {
+  const pct = max ? Math.max(2, (value/max)*100) : 0;
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#8A8272", marginBottom: 4 }}>
+        <span>{label}</span><span>{fmtMinutes(value)}</span>
+      </div>
+      <div style={{ background: "#1E1B16", borderRadius: 4, height: 8, overflow: "hidden" }}>
+        <div style={{ width: pct+"%", height: "100%", background: color, borderRadius: 4 }} />
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================================
+// SHARED STYLES
+// =====================================================================================
+const backBtnStyle = { background: "none", border: "none", color: "#8A8272", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, padding: 0 };
+const sectionTitleStyle = { fontFamily: "'Fraunces', serif", color: "#F2E8D5", fontSize: 17, margin: 0 };
+const pillBtn = active => ({ background: active?"#C0392B":"transparent", color: active?"#fff":"#8A8272", border: `1px solid ${active?"#C0392B":"#383226"}`, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer" });
+const cardStyle = { background: "#1E1B16", border: "1px solid #302B22", borderRadius: 8, padding: 16 };
+const genreTag = { background: "#241F17", color: "#B0A78E", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 10, border: "1px solid #383226" };
+
+// =====================================================================================
+// TICKET CARD (library grid item)
+// =====================================================================================
+function nextUnwatchedEpisode(item) {
+  if (item.type === "movie" || !item.episodesData) return null;
+  const seasons = Object.keys(item.episodesData).map(Number).sort((a,b) => a-b);
+  for (const sn of seasons) {
+    const eps = item.episodesData[sn].slice().sort((a,b) => a.episode-b.episode);
+    const found = eps.find(e => !e.watched);
+    if (found) return { season: sn, episode: found };
+  }
+  return null;
+}
+
+function TicketCard({ item, onClick, onRemove, onQuickWatch }) {
+  const st = STATUS[item.status] || STATUS.planned;
+  const next = item.status === "watching" ? nextUnwatchedEpisode(item) : null;
+  return (
+    <div style={{ background: "#F2E8D5", color: "#201C16", borderRadius: 4, position: "relative", overflow: "hidden", boxShadow: "0 3px 0 rgba(0,0,0,0.25)" }}>
+      <div onClick={onClick} style={{ display: "flex", cursor: "pointer" }}>
+        <div style={{ width: 70, minWidth: 70, height: 104, overflow: "hidden", background: "#14120F" }}>
+          {item.poster ? <img src={item.poster} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> :
+            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#8A8272" }}><Icon name={item.type==="movie"?"film":"tv"} size={20} /></div>}
+        </div>
+        <div style={{ width: 0, borderLeft: "2px dashed #C9BC9C", position: "relative" }}>
+          <div style={{ position: "absolute", top: -6, left: -6, width: 12, height: 12, background: "#14120F", borderRadius: "50%" }} />
+          <div style={{ position: "absolute", bottom: -6, left: -6, width: 12, height: 12, background: "#14120F", borderRadius: "50%" }} />
+        </div>
+        <div style={{ flex: 1, padding: "10px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
+          <div>
+            <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 14.5, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#7A7263", marginTop: 3 }}>{item.year} · {TYPE_LABEL[item.type]}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "#fff", background: st.color, padding: "2px 6px", borderRadius: 3 }}>{st.label}</span>
+            {item.userRating ? <span style={{ display: "flex", alignItems: "center", gap: 2, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#D4A24C" }}><Icon name="star" size={11} color="#D4A24C" fill="#D4A24C" /> {item.userRating}</span> : null}
+          </div>
+        </div>
+      </div>
+      {next && (
+        <button onClick={() => onQuickWatch(item, next)} style={{ width: "100%", border: "none", borderTop: "1px dashed #C9BC9C", background: "#E7DAB9", color: "#5B4A2A", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, padding: "6px 10px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          <Icon name="play" size={10} color="#5B4A2A" /> Marquer S{next.season}E{next.episode.episode} vu
+        </button>
+      )}
+      {onRemove && (
+        <button onClick={(e) => { e.stopPropagation(); onRemove(item.id); }} style={{ position: "absolute", top: 4, right: 4, background: "transparent", border: "none", color: "#B0A78E", cursor: "pointer", padding: 4 }} title="Retirer">
+          <Icon name="trash" size={13} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// =====================================================================================
+// SEARCH / ADD VIEW
+// =====================================================================================
+function SearchView({ onAdd, library, initialQuery, initialKind, consumeInitial }) {
+  const [query, setQuery] = useState(initialQuery || "");
+  const [lang, setLang] = useState("fr");
+  const [kind, setKind] = useState(initialKind || "all");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [addingId, setAddingId] = useState(null);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    if (initialQuery) consumeInitial();
+    // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return; }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try { setResults(await unifiedSearch(query.trim(), kind, lang)); }
+      catch { setResults([]); }
+      setLoading(false);
+    }, 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, lang, kind]);
+
+  const inLib = (source, id) => library.some(l => l.source === source && String(l.externalId) === String(id));
+  const handleAdd = async (r) => {
+    setAddingId(`${r.source}-${r.externalId}`);
+    await onAdd(r);
+    setAddingId(null);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#8A8272" }}><Icon name="search" size={16} /></span>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Chercher une série, un film, un animé…"
+            style={{ width: "100%", padding: "12px 14px 12px 38px", background: "#1E1B16", border: "1px solid #383226", borderRadius: 6, color: "#F2E8D5", fontSize: 14, boxSizing: "border-box" }} />
+          {loading && <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "#8A8272" }}><Icon name="loader" size={16} /></span>}
+        </div>
+        <div style={{ display: "flex", border: "1px solid #383226", borderRadius: 6, overflow: "hidden" }}>
+          {[["fr","FR"],["en","EN"]].map(([k,l]) => <button key={k} onClick={() => setLang(k)} style={{ background: lang===k?"#C0392B":"#1E1B16", color: lang===k?"#fff":"#8A8272", border: "none", padding: "0 14px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, cursor: "pointer" }}>{l}</button>)}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+        {[["all","Tout"],["series","Séries"],["movie","Films"],["anime","Animés"]].map(([k,l]) => (
+          <button key={k} onClick={() => setKind(k)} style={pillBtn(kind===k)}>{l}</button>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 12 }}>
+        {results.map(r => {
+          const already = inLib(r.source, r.externalId);
+          const isAdding = addingId === `${r.source}-${r.externalId}`;
+          return (
+            <div key={`${r.source}-${r.externalId}`} style={{ background: "#1E1B16", border: "1px solid #302B22", borderRadius: 6, display: "flex", gap: 10, padding: 10 }}>
+              <div style={{ width: 50, height: 72, background: "#0E0C0A", flexShrink: 0, overflow: "hidden", borderRadius: 3 }}>
+                {r.poster ? <img src={r.poster} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> :
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#4A4438" }}><Icon name={r.kind==="movie"?"film":"tv"} size={16} /></div>}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                <div style={{ color: "#F2E8D5", fontSize: 13, fontWeight: 600, fontFamily: "'Fraunces', serif", lineHeight: 1.25 }}>{r.title}</div>
+                <div style={{ color: "#8A8272", fontSize: 10.5, fontFamily: "'IBM Plex Mono', monospace", margin: "2px 0 4px" }}>{r.year} · {TYPE_LABEL[r.kind]}{r.rating ? ` · ★ ${r.rating}` : ""}</div>
+                {r.summary && <div style={{ color: "#7A7263", fontSize: 10.5, lineHeight: 1.4, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.summary}</div>}
+                <button disabled={already || isAdding} onClick={() => handleAdd(r)} style={{ marginTop: 8, alignSelf: "flex-start", background: already?"#2E2A21":"#C0392B", color: already?"#8A8272":"#F2E8D5", border: "none", borderRadius: 4, padding: "5px 10px", cursor: already?"default":"pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {isAdding ? <Icon name="loader" size={12} /> : <Icon name={already?"check":"plus"} size={12} />} {already ? "Ajouté" : isAdding ? "Ajout…" : "Ajouter"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        {!loading && query && results.length === 0 && <div style={{ color: "#8A8272", fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }}>Aucun résultat pour « {query} ».</div>}
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================================
+// SHOW DETAIL
+// =====================================================================================
+function ShowDetail({ item, onUpdate, onClose }) {
+  const [seasonsOpen, setSeasonsOpen] = useState({ 1: true });
+  const [expandedEp, setExpandedEp] = useState(null);
+  const [chartMode, setChartMode] = useState("imdb");
+  const [chartScope, setChartScope] = useState("all");
+  const [loadingRatings, setLoadingRatings] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const isMovie = item.type === "movie";
+
+  const toggleWatched = (sn, idx) => { const eps=[...item.episodesData[sn]]; eps[idx]={...eps[idx], watched:!eps[idx].watched}; onUpdate({...item, episodesData:{...item.episodesData,[sn]:eps}}); };
+  const rateEpisode = (sn, idx, val) => { const eps=[...item.episodesData[sn]]; eps[idx]={...eps[idx], userRating: val}; onUpdate({...item, episodesData:{...item.episodesData,[sn]:eps}}); };
+  const setStatus = status => onUpdate({ ...item, status });
+  const setShowRating = val => onUpdate({ ...item, userRating: val });
+  const markAllSeasonWatched = sn => { const eps = item.episodesData[sn].map(e => ({...e, watched:true})); onUpdate({...item, episodesData:{...item.episodesData,[sn]:eps}}); };
+
+  const loadImdbRatings = async () => {
+    if (!item.imdbID) return;
+    setLoadingRatings(true);
+    const updated = { ...item.episodesData };
+    for (const sn of Object.keys(updated)) {
+      const eps = await omdbSeasonRatings(item.imdbID, sn);
+      if (eps) {
+        updated[sn] = updated[sn].map(ep => {
+          const match = eps.find(d => parseInt(d.Episode,10) === ep.episode);
+          return match && match.imdbRating !== "N/A" ? { ...ep, imdbRating: parseFloat(match.imdbRating) } : ep;
+        });
+      }
+      await sleep(150);
+    }
+    onUpdate({ ...item, episodesData: updated });
+    setLoadingRatings(false);
+  };
+
+  let chartData = [];
+  if (item.episodesData) {
+    const seasonKeys = chartScope === "all" ? Object.keys(item.episodesData).sort((a,b)=>a-b) : [chartScope];
+    seasonKeys.forEach(sn => (item.episodesData[sn]||[]).forEach(ep => {
+      const val = chartMode === "imdb" ? ep.imdbRating : ep.userRating;
+      if (val !== null && val !== undefined) chartData.push({ label: `S${sn}E${ep.episode}`, value: val });
+    }));
+  }
+  const hasAnyImdbRating = item.episodesData && Object.values(item.episodesData).some(eps => eps.some(e => e.imdbRating !== null && e.imdbRating !== undefined));
+
+  return (
+    <div>
+      <button onClick={onClose} style={backBtnStyle}>← Retour</button>
+      <div style={{ display: "flex", gap: 20, marginTop: 16, flexWrap: "wrap" }}>
+        <div style={{ width: 150, height: 214, flexShrink: 0, borderRadius: 6, overflow: "hidden", background: "#14120F" }}>
+          {item.poster && <img src={item.poster} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+        </div>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, color: "#F2E8D5", margin: "0 0 4px" }}>{item.title}</h2>
+          <div style={{ color: "#8A8272", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span>{item.year} · {isMovie ? fmtMinutes(item.runtimeMinutes) : `${item.totalSeasons||"?"} saison(s)`}</span>
+            {item.sourceRating ? <span style={{ color: "#D4A24C", display: "flex", alignItems: "center", gap: 3 }}><Icon name="star" size={11} color="#D4A24C" fill="#D4A24C" />{item.sourceRating} <span style={{ color: "#5A5248" }}>({item.sourceLabel})</span></span> : null}
+          </div>
+          {item.genres?.length > 0 && <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 10 }}>{item.genres.map(g => <span key={g} style={genreTag}>{g}</span>)}</div>}
+          {item.summary && (
+            <div style={{ color: "#B0A78E", fontSize: 12.5, lineHeight: 1.55, marginBottom: 14, maxWidth: 560 }}>
+              {summaryOpen || item.summary.length <= 220 ? item.summary : item.summary.slice(0,220) + "…"}
+              {item.summary.length > 220 && <button onClick={() => setSummaryOpen(s=>!s)} style={{ background:"none", border:"none", color:"#D4A24C", cursor:"pointer", fontSize: 11.5, fontFamily: "'IBM Plex Mono', monospace", marginLeft: 6, padding: 0 }}>{summaryOpen ? "réduire" : "lire plus"}</button>}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+            {Object.entries(STATUS).map(([key,s]) => (
+              <button key={key} onClick={() => setStatus(key)} style={{ background: item.status===key?s.color:"transparent", color: item.status===key?"#fff":"#8A8272", border: `1px solid ${item.status===key?s.color:"#383226"}`, borderRadius: 4, padding: "5px 10px", fontSize: 11.5, fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer", textTransform: "uppercase" }}>{s.label}</button>
+            ))}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: "#8A8272", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>Ma note :</span>
+            {[...Array(10)].map((_,i) => <span key={i} onClick={() => setShowRating(i+1)} style={{ cursor: "pointer" }}><Icon name="star" size={15} color={item.userRating>i?"#D4A24C":"#5A5248"} fill={item.userRating>i?"#D4A24C":"none"} /></span>)}
+            {item.userRating ? <span style={{ color: "#D4A24C", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{item.userRating}/10</span> : null}
+          </div>
+        </div>
+      </div>
+
+      {!isMovie && (
+        <>
+          {chartData.length > 1 && (
+            <div style={{ marginTop: 28 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+                <h3 style={sectionTitleStyle}>Courbe des notes</h3>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <select value={chartScope} onChange={e => setChartScope(e.target.value)} style={{ background: "#14120F", color: "#F2E8D5", border: "1px solid #383226", borderRadius: 4, fontSize: 11, fontFamily: "IBM Plex Mono", padding: "3px 6px" }}>
+                    <option value="all">Toutes les saisons</option>
+                    {Object.keys(item.episodesData).sort((a,b)=>a-b).map(sn => <option key={sn} value={sn}>Saison {sn}</option>)}
+                  </select>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => setChartMode("imdb")} style={pillBtn(chartMode==="imdb")}>Notes IMDb</button>
+                    <button onClick={() => setChartMode("mine")} style={pillBtn(chartMode==="mine")}>Mes notes</button>
+                  </div>
+                </div>
+              </div>
+              <RatingCurve data={chartData} />
+            </div>
+          )}
+          {chartData.length <= 1 && chartMode==="imdb" && !hasAnyImdbRating && item.imdbID && (
+            <div style={{ marginTop: 20, color: "#5A5248", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5 }}>Pas encore de notes IMDb chargées — utilise le bouton ci-dessous.</div>
+          )}
+
+          <div style={{ marginTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+            <h3 style={sectionTitleStyle}>Saisons</h3>
+            {item.imdbID && (
+              <button onClick={loadImdbRatings} disabled={loadingRatings} style={{ ...pillBtn(false), display: "flex", alignItems: "center", gap: 6 }}>
+                {loadingRatings ? <Icon name="loader" size={12} /> : <Icon name="star" size={12} />} {loadingRatings ? "Chargement…" : "Charger les notes IMDb"}
+              </button>
+            )}
+          </div>
+          {Array.from({ length: item.totalSeasons || 1 }, (_,i) => i+1).map(sn => item.episodesData[sn] && (
+            <div key={sn} style={{ marginTop: 8, border: "1px solid #302B22", borderRadius: 6, overflow: "hidden" }}>
+              <div onClick={() => setSeasonsOpen(s => ({...s, [sn]: !s[sn]}))} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#1E1B16", cursor: "pointer" }}>
+                <span style={{ color: "#F2E8D5", fontFamily: "'Fraunces', serif", fontSize: 14.5 }}>Saison {sn} <span style={{ color: "#5A5248", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>({item.episodesData[sn].filter(e=>e.watched).length}/{item.episodesData[sn].length} vus)</span></span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button onClick={e => { e.stopPropagation(); markAllSeasonWatched(sn); }} style={{ ...pillBtn(false), fontSize: 10 }}>Tout marquer vu</button>
+                  <Icon name={seasonsOpen[sn]?"chevron-down":"chevron-right"} size={16} color="#8A8272" />
+                </div>
+              </div>
+              {seasonsOpen[sn] && (
+                <div>
+                  {item.episodesData[sn].map((ep, idx) => {
+                    const key = `${sn}-${ep.episode}`;
+                    const expanded = expandedEp === key;
+                    return (
+                      <div key={key} style={{ borderTop: "1px solid #221E17" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", flexWrap: "wrap" }}>
+                          <button onClick={() => toggleWatched(sn, idx)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                            <div style={{ width: 18, height: 18, borderRadius: "50%", border: `1.5px solid ${ep.watched?"#4B7A51":"#5A5248"}`, background: ep.watched?"#4B7A51":"transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>{ep.watched && <Icon name="check" size={11} color="#fff" />}</div>
+                          </button>
+                          {ep.image && <img src={ep.image} alt="" loading="lazy" style={{ width: 48, height: 27, objectFit: "cover", borderRadius: 3, cursor: "pointer" }} onClick={() => setExpandedEp(expanded ? null : key)} />}
+                          <span style={{ color: "#8A8272", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, width: 26 }}>E{ep.episode}</span>
+                          <span onClick={() => (ep.summary) && setExpandedEp(expanded?null:key)} style={{ color: "#F2E8D5", fontSize: 13, flex: 1, minWidth: 100, cursor: ep.summary?"pointer":"default", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ep.title}</span>
+                          <span style={{ color: "#5A5248", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5 }}>{ep.released || "—"}</span>
+                          {ep.imdbRating != null && <span style={{ color: "#D4A24C", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, display: "flex", alignItems: "center", gap: 2 }}><Icon name="star" size={10} color="#D4A24C" fill="#D4A24C" /> {ep.imdbRating}</span>}
+                          <select value={ep.userRating || ""} onChange={e => rateEpisode(sn, idx, e.target.value?parseInt(e.target.value,10):null)} style={{ background: "#14120F", color: "#F2E8D5", border: "1px solid #383226", borderRadius: 3, fontSize: 11, fontFamily: "IBM Plex Mono", padding: "2px 4px" }}>
+                            <option value="">–</option>
+                            {[...Array(10)].map((_,i) => <option key={i} value={i+1}>{i+1}</option>)}
+                          </select>
+                        </div>
+                        {expanded && ep.summary && (
+                          <div style={{ padding: "0 14px 12px 62px", color: "#8A8272", fontSize: 11.5, lineHeight: 1.5, maxWidth: 560 }}>{ep.summary}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+// =====================================================================================
+// CALENDAR VIEW
+// =====================================================================================
+function CalendarView({ library, onOpen }) {
+  const today = todayMidnight();
+  const upcoming = [], recent = [];
+  library.forEach(item => {
+    if (item.type === "movie" || !item.episodesData) return;
+    Object.entries(item.episodesData).forEach(([sn, eps]) => eps.forEach(ep => {
+      const d = parseDate(ep.released);
+      if (!d) return;
+      const entry = { item, season: sn, ep, date: d };
+      if (d.getTime() >= today.getTime()) upcoming.push(entry);
+      else if (!ep.watched) recent.push(entry);
+    }));
+  });
+  upcoming.sort((a,b) => a.date-b.date);
+  recent.sort((a,b) => b.date-a.date);
+  const Row = ({ e }) => (
+    <div onClick={() => onOpen(e.item)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#1E1B16", borderRadius: 6, marginBottom: 8, cursor: "pointer" }}>
+      {e.ep.image ? <img src={e.ep.image} alt="" loading="lazy" style={{ width: 56, height: 32, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} /> :
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#D4A24C", background: "#14120F", borderRadius: 4, padding: "6px 8px", textAlign: "center", minWidth: 62 }}>{fmtDate(e.date)}</div>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: "#F2E8D5", fontSize: 13.5, fontFamily: "'Fraunces', serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.item.title}</div>
+        <div style={{ color: "#8A8272", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>S{e.season}E{e.ep.episode} — {e.ep.title} · {fmtDate(e.date)}</div>
+      </div>
+    </div>
+  );
+  return (
+    <div>
+      <h3 style={{ ...sectionTitleStyle, marginBottom: 10 }}>À venir</h3>
+      {upcoming.length === 0 && <div style={{ color: "#5A5248", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, marginBottom: 20 }}>Aucune date future connue pour l'instant.</div>}
+      {upcoming.map((e,i) => <Row key={i} e={e} />)}
+      {recent.length > 0 && <><h3 style={{ ...sectionTitleStyle, marginTop: 26, marginBottom: 10 }}>En retard (diffusés, non vus)</h3>{recent.slice(0,20).map((e,i) => <Row key={i} e={e} />)}</>}
+    </div>
+  );
+}
+
+// =====================================================================================
+// PROFILE / STATS VIEW
+// =====================================================================================
+function ProfileView({ library }) {
+  const stats = useMemo(() => computeStats(library), [library]);
+  const maxCat = Math.max(stats.minutesByType.series, stats.minutesByType.movie, stats.minutesByType.anime, 1);
+  return (
+    <div>
+      <h3 style={sectionTitleStyle}>Profil</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 10, margin: "16px 0 24px" }}>
+        {[
+          ["Temps total", fmtMinutes(stats.totalMinutes)],
+          ["Titres suivis", stats.totalShows],
+          ["Terminés", stats.showsCompleted],
+          ["Épisodes vus", stats.episodesWatched],
+          ["Note moyenne", stats.avgRating ? `${stats.avgRating}/10` : "—"],
+        ].map(([label,val]) => (
+          <div key={label} style={{ ...cardStyle, textAlign: "center" }}>
+            <div style={{ color: "#D4A24C", fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 600 }}>{val}</div>
+            <div style={{ color: "#8A8272", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, textTransform: "uppercase", marginTop: 4 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <div style={{ color: "#F2E8D5", fontFamily: "'Fraunces', serif", fontSize: 15, marginBottom: 14 }}>Temps par type</div>
+        <StatBar label="Séries" value={stats.minutesByType.series} max={maxCat} color="#C0392B" />
+        <StatBar label="Films" value={stats.minutesByType.movie} max={maxCat} color="#4B7A51" />
+        <StatBar label="Animés" value={stats.minutesByType.anime} max={maxCat} color="#D4A24C" />
+      </div>
+
+      {stats.topRated.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ color: "#F2E8D5", fontFamily: "'Fraunces', serif", fontSize: 15, marginBottom: 10 }}>Tes coups de cœur</div>
+          {stats.topRated.map(item => (
+            <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "#1E1B16", borderRadius: 6, marginBottom: 6 }}>
+              <div style={{ width: 32, height: 46, background: "#0E0C0A", borderRadius: 3, overflow: "hidden", flexShrink: 0 }}>{item.poster && <img src={item.poster} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}</div>
+              <span style={{ color: "#F2E8D5", fontFamily: "'Fraunces', serif", fontSize: 13, flex: 1 }}>{item.title}</span>
+              <span style={{ color: "#D4A24C", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 3 }}><Icon name="star" size={11} color="#D4A24C" fill="#D4A24C" />{item.userRating}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={() => exportBackup(library)} style={{ ...pillBtn(true), display: "flex", alignItems: "center", gap: 6, padding: "8px 16px" }}>
+        <Icon name="download" size={13} /> Exporter une sauvegarde (JSON)
+      </button>
+    </div>
+  );
+}
+
+// =====================================================================================
+// SUGGESTIONS VIEW
+// =====================================================================================
+function SuggestionsView({ library, onSearchFor }) {
+  const suggestions = useMemo(() => {
+    const genreCount = {};
+    library.forEach(item => {
+      if (item.status === "dropped") return;
+      const weight = item.userRating ? item.userRating/5 : 1;
+      (item.genres||[]).forEach(g => { genreCount[g] = (genreCount[g]||0) + weight; });
+    });
+    const topGenres = Object.entries(genreCount).sort((a,b) => b[1]-a[1]).slice(0,5).map(g => g[0]);
+    const inLib = t => library.some(l => l.title.toLowerCase() === t.toLowerCase());
+    let scored = CURATED.filter(c => !inLib(c.title)).map(c => ({ ...c, score: c.genres.filter(g => topGenres.includes(g)).length }));
+    if (topGenres.length === 0) return { personalized: false, items: CURATED.filter(c => !inLib(c.title)).slice(0,8) };
+    scored = scored.filter(c => c.score > 0).sort((a,b) => b.score-a.score);
+    return { personalized: scored.length > 0, items: (scored.length ? scored : CURATED.filter(c=>!inLib(c.title))).slice(0,8) };
+  }, [library]);
+
+  return (
+    <div>
+      <h3 style={sectionTitleStyle}>Suggestions</h3>
+      <div style={{ color: "#8A8272", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, margin: "8px 0 18px" }}>
+        {suggestions.personalized ? "Basées sur les genres que tu suis le plus." : "Sélection populaire pour démarrer — note quelques titres pour des suggestions personnalisées."}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px,1fr))", gap: 10 }}>
+        {suggestions.items.map(s => (
+          <div key={s.title} style={{ ...cardStyle, padding: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <Icon name={s.kind==="movie"?"film":s.kind==="anime"?"sparkles":"tv"} size={14} color="#D4A24C" />
+              <span style={{ color: "#F2E8D5", fontFamily: "'Fraunces', serif", fontSize: 14 }}>{s.title}</span>
+            </div>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>{s.genres.map(g => <span key={g} style={genreTag}>{g}</span>)}</div>
+            <button onClick={() => onSearchFor(s.title, s.kind)} style={{ ...pillBtn(false), display: "flex", alignItems: "center", gap: 5 }}><Icon name="search" size={11} /> Rechercher</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================================
+// IMPORT VIEW
+// =====================================================================================
+function ImportView({ library, onImportConfirm }) {
+  const [grouped, setGrouped] = useState([]);
+  const [rawCount, setRawCount] = useState(0);
+  const [step, setStep] = useState("upload");
+  const fileRef = useRef(null);
+
+  const detectField = (row, candidates) => {
+    const keys = Object.keys(row);
+    for (const c of candidates) { const found = keys.find(k => k.toLowerCase().replace(/[^a-z]/g,"")===c); if (found) return row[found]; }
+    return null;
+  };
+
+  const handleFile = file => {
+    const isJson = file.name.toLowerCase().endsWith(".json");
+    const reader = new FileReader();
+    reader.onload = e => {
+      let rows = [];
+      if (isJson) {
+        try {
+          const data = JSON.parse(e.target.result);
+          const arr = Array.isArray(data) ? data : (data.history || data.episodes || []);
+          rows = arr.map(r => ({ show: r.show?.title || r.series_title || r.show_name || r.title || r.Show || "", season: r.episode?.season || r.season_number || r.Season || r.season || "", episode: r.episode?.number || r.episode_number || r.Episode || r.episode || "", date: r.watched_at || r.watched_date || r.date || r.WatchedDate || "", rating: r.rating || r.Rating || "" }));
+        } catch { rows = []; }
+      } else {
+        const parsed = Papa.parse(e.target.result, { header: true, skipEmptyLines: true });
+        rows = parsed.data.map(row => ({ show: detectField(row, ["showname","seriestitle","show","title","seriesname","name"]), season: detectField(row, ["seasonnumber","season","seasonno"]), episode: detectField(row, ["episodenumber","episode","episodeno","epnumber"]), date: detectField(row, ["watchedat","watcheddate","date","dateviewed","watched"]), rating: detectField(row, ["rating","userrating","note"]) }));
+      }
+      rows = rows.filter(r => r.show && String(r.show).trim());
+      setRawCount(rows.length);
+      const map = {};
+      rows.forEach(r => { const k=String(r.show).trim(); if(!map[k]) map[k]=[]; map[k].push(r); });
+      setGrouped(Object.entries(map).map(([title,rows]) => ({ title, rows, match: null, searching: false, selected: true })));
+      setStep("matching");
+    };
+    reader.readAsText(file);
+  };
+
+  const runMatching = async () => {
+    const updated = [...grouped];
+    for (let i=0;i<updated.length;i++) {
+      updated[i].searching = true; setGrouped([...updated]);
+      try { const r = await unifiedSearch(updated[i].title, "all", "en"); updated[i].match = r[0]||null; updated[i].candidates = r.slice(0,5); }
+      catch { updated[i].match = null; }
+      updated[i].searching = false; setGrouped([...updated]);
+      await sleep(200);
+    }
+  };
+  const confirmImport = () => { onImportConfirm(grouped.filter(g => g.selected && g.match)); setStep("done"); };
+
+  if (step === "upload") return (
+    <div>
+      <h3 style={sectionTitleStyle}>Importer depuis TV Time ou Trakt</h3>
+      <p style={{ color: "#8A8272", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, lineHeight: 1.6, maxWidth: 560 }}>Exporte tes données (CSV ou JSON) depuis TV Time (export GDPR) ou Trakt (paramètres → export), puis dépose le fichier ici.</p>
+      <div onClick={() => fileRef.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault(); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);}} style={{ marginTop: 16, border: "2px dashed #383226", borderRadius: 8, padding: 40, textAlign: "center", cursor: "pointer", color: "#8A8272" }}>
+        <div style={{ display:"flex", justifyContent:"center", marginBottom: 8 }}><Icon name="upload" size={28} /></div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5 }}>Glisse un fichier .csv ou .json ici, ou clique pour choisir</div>
+        <input ref={fileRef} type="file" accept=".csv,.json" style={{ display: "none" }} onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
+      </div>
+    </div>
+  );
+
+  if (step === "matching") {
+    const alreadyMatched = grouped.some(g => g.match !== null || g.candidates);
+    return (
+      <div>
+        <h3 style={sectionTitleStyle}>{grouped.length} série(s)/film(s) détecté(s) — {rawCount} ligne(s)</h3>
+        {!alreadyMatched && <button onClick={runMatching} style={{ ...pillBtn(true), padding: "8px 16px", marginTop: 10, marginBottom: 16 }}>Lancer la correspondance</button>}
+        <div style={{ maxHeight: 420, overflowY: "auto", marginTop: 10 }}>
+          {grouped.map((g,i) => (
+            <div key={g.title} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "#1E1B16", borderRadius: 6, marginBottom: 6, flexWrap: "wrap" }}>
+              <input type="checkbox" checked={g.selected} onChange={() => { const u=[...grouped]; u[i].selected=!u[i].selected; setGrouped(u); }} />
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <div style={{ color: "#F2E8D5", fontSize: 13, fontFamily: "'Fraunces', serif" }}>{g.title}</div>
+                <div style={{ color: "#5A5248", fontSize: 10.5, fontFamily: "'IBM Plex Mono', monospace" }}>{g.rows.length} ligne(s)</div>
+              </div>
+              {g.searching && <Icon name="loader" size={14} color="#8A8272" />}
+              {!g.searching && g.candidates && (
+                <select value={g.match ? `${g.match.source}-${g.match.externalId}` : ""} onChange={e => { const u=[...grouped]; u[i].match = u[i].candidates.find(c => `${c.source}-${c.externalId}`===e.target.value)||null; setGrouped(u); }} style={{ background: "#14120F", color: "#F2E8D5", border: "1px solid #383226", borderRadius: 4, fontSize: 11.5, fontFamily: "IBM Plex Mono", padding: "4px 6px", maxWidth: 220 }}>
+                  <option value="">Aucune correspondance</option>
+                  {g.candidates.map(c => <option key={`${c.source}-${c.externalId}`} value={`${c.source}-${c.externalId}`}>{c.title} ({c.year}) — {TYPE_LABEL[c.kind]}</option>)}
+                </select>
+              )}
+            </div>
+          ))}
+        </div>
+        {alreadyMatched && <button onClick={confirmImport} style={{ ...pillBtn(true), padding: "10px 20px", marginTop: 16, fontSize: 12.5 }}>Importer {grouped.filter(g=>g.selected&&g.match).length} titre(s)</button>}
+      </div>
+    );
+  }
+  return (
+    <div style={{ textAlign: "center", padding: 40 }}>
+      <div style={{ display:"flex", justifyContent:"center", marginBottom: 10 }}><Icon name="check" size={36} color="#4B7A51" /></div>
+      <div style={{ color: "#F2E8D5", fontFamily: "'Fraunces', serif", fontSize: 16 }}>Import terminé.</div>
+    </div>
+  );
+}
+
+// =====================================================================================
+// ERROR BOUNDARY — keeps the app from going blank on an unexpected runtime error
+// =====================================================================================
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error("Séance crash:", error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ minHeight: "100vh", background: "#14120F", color: "#F2E8D5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'IBM Plex Mono', monospace", textAlign: "center" }}>
+          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, marginBottom: 10 }}>Un souci est survenu</div>
+          <div style={{ color: "#8A8272", fontSize: 12, marginBottom: 18, maxWidth: 420 }}>{String(this.state.error.message || this.state.error)}</div>
+          <button onClick={() => { this.setState({ error: null }); }} style={{ ...pillBtn(true), padding: "8px 18px" }}>Réessayer</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// =====================================================================================
+// APP SHELL
+// =====================================================================================
+function App() {
+  const [library, setLibrary] = useState(loadLibrary());
+  const [view, setView] = useState("library");
+  const [selected, setSelected] = useState(null);
+  const [presetSearch, setPresetSearch] = useState(null);
+
+  useEffect(() => { saveLibrary(library); }, [library]);
+
+  const addItem = async (result) => {
+    const item = await buildItem(result);
+    if (!item) return;
+    setLibrary(lib => lib.some(l => l.id===item.id) ? lib : [...lib, item]);
+  };
+  const updateItem = updated => { setLibrary(lib => lib.map(i => i.id===updated.id?updated:i)); setSelected(updated); };
+  const removeItem = id => setLibrary(lib => lib.filter(i => i.id !== id));
+  const quickWatch = (item, next) => {
+    const eps = [...item.episodesData[next.season]];
+    const idx = eps.findIndex(e => e.episode === next.episode.episode);
+    eps[idx] = { ...eps[idx], watched: true };
+    const updated = { ...item, episodesData: { ...item.episodesData, [next.season]: eps } };
+    setLibrary(lib => lib.map(i => i.id===updated.id?updated:i));
+  };
+
+  const handleImportConfirm = async (groups) => {
+    for (const g of groups) {
+      if (library.some(l => l.source===g.match.source && String(l.externalId)===String(g.match.externalId))) continue;
+      const item = await buildItem(g.match);
+      if (!item) continue;
+      item.status = "completed";
+      g.rows.forEach(r => {
+        if (r.rating && !isNaN(parseFloat(r.rating))) item.userRating = parseFloat(r.rating);
+        if (r.season && r.episode && item.episodesData) {
+          const sn = parseInt(r.season,10);
+          const eps = item.episodesData[sn];
+          if (eps) { const ep = eps.find(e => e.episode === parseInt(r.episode,10)); if (ep) ep.watched = true; }
+        }
+      });
+      setLibrary(lib => [...lib, item]);
+      await sleep(150);
+    }
+  };
+
+  const goSearchFor = (title, kind) => { setPresetSearch({ query: title, kind }); setView("search"); setSelected(null); };
+
+  const navItem = (key, icon, label) => (
+    <button onClick={() => { setView(key); setSelected(null); }} style={{ display: "flex", alignItems: "center", gap: 6, background: view===key&&!selected?"#C0392B":"transparent", color: view===key&&!selected?"#fff":"#B0A78E", border: "none", borderRadius: 5, padding: "8px 12px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, cursor: "pointer", textTransform: "uppercase" }}>
+      <Icon name={icon} size={14} /> {label}
+    </button>
+  );
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#14120F" }}>
+      <div style={{ borderBottom: "1px solid #241F17", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="ticket" size={20} color="#D4A24C" />
+          <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 19, color: "#F2E8D5" }}>Séance</span>
+        </div>
+        <nav style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          {navItem("library","play","Bibliothèque")}
+          {navItem("search","search","Ajouter")}
+          {navItem("calendar","calendar","Calendrier")}
+          {navItem("suggestions","sparkles","Suggestions")}
+          {navItem("profile","user","Profil")}
+          {navItem("import","upload","Import")}
+        </nav>
+      </div>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 24px 60px" }}>
+        {selected ? <ShowDetail item={selected} onUpdate={updateItem} onClose={() => setSelected(null)} /> :
+          view === "library" ? (
+            library.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 0", color: "#5A5248" }}>
+                <div style={{ display:"flex", justifyContent:"center", marginBottom: 10 }}><Icon name="ticket" size={32} /></div>
+                <div style={{ fontFamily: "'Fraunces', serif", fontSize: 16, color: "#8A8272" }}>Ta bibliothèque est vide.</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, marginTop: 6 }}>Ajoute un titre, importe tes données, ou jette un œil aux suggestions.</div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 14 }}>
+                {library.slice().sort((a,b) => new Date(b.addedAt)-new Date(a.addedAt)).map(item => <TicketCard key={item.id} item={item} onClick={() => setSelected(item)} onRemove={removeItem} onQuickWatch={quickWatch} />)}
+              </div>
+            )
+          ) : view === "search" ? <SearchView onAdd={addItem} library={library} initialQuery={presetSearch?.query} initialKind={presetSearch?.kind} consumeInitial={() => setPresetSearch(null)} /> :
+          view === "calendar" ? <CalendarView library={library} onOpen={setSelected} /> :
+          view === "suggestions" ? <SuggestionsView library={library} onSearchFor={goSearchFor} /> :
+          view === "profile" ? <ProfileView library={library} /> :
+          <ImportView library={library} onImportConfirm={handleImportConfirm} />}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App /></ErrorBoundary>);
+</script>
+</body>
+</html>
