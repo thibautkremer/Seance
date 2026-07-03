@@ -49,6 +49,7 @@
                     <p class="text-xs text-indigo-300">Vos statistiques globales</p>
                 </div>
             </div>
+
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
                     <div id="stat-hours" class="text-2xl font-black text-indigo-400">0h</div>
@@ -58,6 +59,17 @@
                     <div id="stat-count" class="text-2xl font-black text-emerald-400">0</div>
                     <div class="text-xs text-gray-400 mt-0.5">Épisodes vus</div>
                 </div>
+            </div>
+
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-md space-y-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">📥 Importer des données (TV Time / Trakt)</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Dépose ton fichier d'exportation au format <b>JSON</b> ou <b>CSV</b> pour restaurer instantanément ton catalogue ainsi que l'avancement exact de tes visionnages.</p>
+                
+                <div class="relative border-2 border-dashed border-gray-600 hover:border-indigo-500 rounded-xl p-6 text-center cursor-pointer transition bg-gray-900/40">
+                    <input type="file" id="importFile" accept=".json,.csv" class="absolute inset-0 opacity-0 cursor-pointer" />
+                    <span class="text-xs text-gray-400" id="importStatusText">Sélectionner ou glisser un fichier .json / .csv</span>
+                </div>
+                <div id="importLogs" class="text-[11px] bg-black/30 text-indigo-300 p-2 rounded-lg max-h-24 overflow-y-auto hidden"></div>
             </div>
         </div>
     </main>
@@ -100,7 +112,7 @@
 
         let currentMediaType = 'series';
         let searchTimeout = null;
-        let lastSearchResults = []; // Stocke les résultats temporaires en mémoire
+        let lastSearchResults = [];
         let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
 
         function switchTab(tabName) {
@@ -239,7 +251,7 @@
 
         async function addToLibraryById(mediaId) {
             const media = lastSearchResults.find(m => m.id === mediaId);
-            if (!media || library.some(i => i.id === mediaId)) return;
+            if (!media || library.some(i => i.id === mediaId)) return null;
 
             let episodes = [];
             if (media.type === 'series') {
@@ -262,9 +274,9 @@
             library.push(media);
             localStorage.setItem('personal_tracker_db', JSON.stringify(library));
             
-            // Met à jour l'affichage de l'état du bouton immédiatement
             const input = document.getElementById('searchInput');
-            triggerSearch(input.value);
+            if (input && input.value.length >= 3) triggerSearch(input.value);
+            return media;
         }
 
         function renderLibrary() {
@@ -365,6 +377,141 @@
             document.getElementById('stat-hours').textContent = `${Math.round(totalTime / 60)}h`;
             document.getElementById('stat-count').textContent = watchedCount;
         }
+
+        // --- MOTEUR D'IMPORTATION (JSON & CSV) ---
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusText = document.getElementById('importStatusText');
+            const logsBox = document.getElementById('importLogs');
+            
+            statusText.textContent = "Lecture du fichier...";
+            logsBox.classList.remove('hidden');
+            logsBox.innerHTML = "Début de l'analyse...<br>";
+
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                const content = evt.target.result;
+                let parsedRows = [];
+
+                try {
+                    if (file.name.endsWith('.json')) {
+                        // Traitement Format JSON (Trakt / TV Time classique)
+                        const data = JSON.parse(content);
+                        // Normalisation : On cherche des tableaux de données imbriqués
+                        const targetArray = Array.isArray(data) ? data : (data.shows || data.episodes || data.watched || []);
+                        parsedRows = targetArray.map(item => ({
+                            title: item.show_title || item.title || (item.show ? item.show.title : ''),
+                            season: item.season_number || item.season || 1,
+                            episode: item.episode_number || item.number || item.episode || 1
+                        })).filter(r => r.title);
+                    } else {
+                        // Traitement Format CSV (TV Time classique)
+                        const lines = content.split('\n');
+                        if (lines.length < 2) throw new Error("Fichier CSV vide");
+                        
+                        // Détection dynamique des en-têtes de colonnes
+                        const headers = lines[0].toLowerCase().split(/,|;/).map(h => h.trim().replace(/"/g, ''));
+                        const titleIdx = headers.findIndex(h => h.includes('title') || h.includes('show') || h.includes('série'));
+                        const seasonIdx = headers.findIndex(h => h.includes('season') || h.includes('saison'));
+                        const episodeIdx = headers.findIndex(h => h.includes('episode') || h.includes('épisode'));
+
+                        if (titleIdx === -1) throw new Error("Colonne 'Title' introuvable dans le CSV");
+
+                        for (let i = 1; i < lines.length; i++) {
+                            if (!lines[i].trim()) continue;
+                            const columns = lines[i].split(/,|;/).map(c => c.trim().replace(/"/g, ''));
+                            if (columns[titleIdx]) {
+                                parsedRows.push({
+                                    title: columns[titleIdx],
+                                    season: seasonIdx !== -1 ? parseInt(columns[seasonIdx]) || 1 : 1,
+                                    episode: episodeIdx !== -1 ? parseInt(columns[episodeIdx]) || 1 : 1
+                                });
+                            }
+                        }
+                    }
+
+                    if (parsedRows.length === 0) {
+                        throw new Error("Aucune ligne de données valide extraite.");
+                    }
+
+                    // Regroupement par série pour éviter de multiplier les appels réseaux API inutilement
+                    const groupedData = {};
+                    parsedRows.forEach(row => {
+                        if (!groupedData[row.title]) groupedData[row.title] = [];
+                        groupedData[row.title].push(row);
+                    });
+
+                    const seriesNames = Object.keys(groupedData);
+                    logsBox.innerHTML += `Trouvé : ${seriesNames.length} séries distinctes (${parsedRows.length} entrées d'épisodes).<br>Importation en tâche de fond active...<br>`;
+
+                    let importedCount = 0;
+                    
+                    // Résolution séquentielle asynchrone des correspondances auprès de TVMaze
+                    for (const showTitle of seriesNames) {
+                        logsBox.innerHTML += `Recherche de correspondance : "${showTitle}"... `;
+                        logsBox.scrollTop = logsBox.scrollHeight;
+
+                        try {
+                            const searchRes = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(showTitle)}`);
+                            const searchData = await searchRes.json();
+
+                            if (searchData && searchData.length > 0) {
+                                const targetShow = searchData[0].show;
+                                
+                                // Vérification si déjà présent
+                                let existingMedia = library.find(i => i.id === `tv-${targetShow.id}`);
+                                
+                                if (!existingMedia) {
+                                    // Simulation de la structure de l'objet pour forcer l'ajout dans lastSearchResults
+                                    const mediaObj = {
+                                        id: `tv-${targetShow.id}`,
+                                        apiId: targetShow.id,
+                                        title: targetShow.name,
+                                        type: 'series',
+                                        image: targetShow.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image',
+                                        summary: targetShow.summary ? targetShow.summary.replace(/<[^>]*>/g, '') : '',
+                                        rating: targetShow.rating?.average || 0
+                                    };
+                                    lastSearchResults.push(mediaObj);
+                                    existingMedia = await addToLibraryById(mediaObj.id);
+                                }
+
+                                if (existingMedia && existingMedia.episodes) {
+                                    // Synchronisation de l'avancement des épisodes importés
+                                    const history = groupedData[showTitle];
+                                    history.forEach(h => {
+                                        const epMatch = existingMedia.episodes.find(e => e.season === h.season && e.number === h.episode);
+                                        if (epMatch) epMatch.watched = true;
+                                    });
+                                    importedCount++;
+                                    logsBox.innerHTML += `<span class="text-emerald-400">Succès</span><br>`;
+                                } else {
+                                    logsBox.innerHTML += `<span class="text-yellow-400">Échec (Données d'épisodes vides)</span><br>`;
+                                }
+                            } else {
+                                logsBox.innerHTML += `<span class="text-red-400">Introuvable</span><br>`;
+                            }
+                        } catch (err) {
+                            logsBox.innerHTML += `<span class="text-red-500">Erreur réseau</span><br>`;
+                        }
+                    }
+
+                    // Sauvegarde finale de la base locale consolidée
+                    localStorage.setItem('personal_tracker_db', JSON.stringify(library));
+                    statusText.textContent = "✓ Importation terminée !";
+                    logsBox.innerHTML += `<br><b class="text-emerald-400">Terminé ! ${importedCount}/${seriesNames.length} séries synchronisées avec succès.</b>`;
+
+                } catch (err) {
+                    statusText.textContent = "❌ Échec de l'importation";
+                    logsBox.innerHTML += `<span class="text-red-500">Erreur critique : ${err.message}</span>`;
+                }
+                logsBox.scrollTop = logsBox.scrollHeight;
+            };
+
+            reader.readAsText(file);
+        });
     </script>
 </body>
 </html>
