@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV TIME REBORN</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
@@ -13,13 +14,16 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
+    <!-- Barre supérieure -->
     <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <h1 class="text-xl font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
         <button id="langToggle" class="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold border border-gray-600 transition">🌐 FR</button>
     </header>
 
+    <!-- Zone principale -->
     <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
         
+        <!-- SECTION RECHERCHE -->
         <div id="tab-search" class="space-y-4">
             <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
                 <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
@@ -36,11 +40,13 @@
             <div id="searchResults" class="space-y-3"></div>
         </div>
 
+        <!-- SECTION BIBLIOTHÈQUE -->
         <div id="tab-library" class="space-y-4 hidden">
             <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">Ma Bibliothèque (<span id="lib-count">0</span>)</h2>
             <div id="libraryGrid" class="grid grid-cols-2 gap-3"></div>
         </div>
 
+        <!-- SECTION PROFIL & IMPORT -->
         <div id="tab-profile" class="space-y-5 hidden">
             <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
                 <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
@@ -61,9 +67,10 @@
                 </div>
             </div>
 
+            <!-- Module d'importation de fichiers -->
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-md space-y-3">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">📥 Importer des données (TV Time / Trakt)</h3>
-                <p class="text-xs text-gray-400 leading-relaxed">Dépose ton fichier d'exportation au format <b>JSON</b> ou <b>CSV</b> pour restaurer instantanément ton catalogue ainsi que l'avancement exact de tes visionnages.</p>
+                <p class="text-xs text-gray-400 leading-relaxed">Dépose ton fichier d'exportation au format <b>JSON</b> ou <b>CSV</b> pour restaurer ton catalogue et l'avancement de tes visionnages.</p>
                 
                 <div class="relative border-2 border-dashed border-gray-600 hover:border-indigo-500 rounded-xl p-6 text-center cursor-pointer transition bg-gray-900/40">
                     <input type="file" id="importFile" accept=".json,.csv" class="absolute inset-0 opacity-0 cursor-pointer" />
@@ -74,14 +81,41 @@
         </div>
     </main>
 
+    <!-- FENÊTRE MODALE (FICHE DÉTAIL ENRICHIE) -->
     <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
-        <div class="bg-gray-800 border border-gray-700 w-full max-w-md rounded-2xl overflow-hidden my-4 shadow-2xl">
-            <div class="p-4 flex justify-between items-center border-b border-gray-700">
-                <h2 id="modalTitle" class="font-bold text-white truncate text-base">Détails</h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold">✕</button>
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4 shadow-2xl">
+            <!-- Header Modale -->
+            <div class="p-4 flex justify-between items-center border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
+                <div class="min-w-0 pr-4">
+                    <h2 id="modalTitle" class="font-black text-white text-base truncate">Détails</h2>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span id="modalTypeBadge" class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">SÉRIE</span>
+                        <span id="modalGlobalRating" class="text-xs font-bold text-yellow-400 flex items-center gap-0.5">★ N/A</span>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold flex-shrink-0">✕</button>
             </div>
+            
             <div class="p-4 space-y-4">
+                <!-- Résumé global -->
                 <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
+                
+                <!-- Zone de filtrage par Saison -->
+                <div id="modalSeasonBlock" class="space-y-3 hidden">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
+                        <button id="btnCheckAllSeason" class="text-[11px] font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-900/50 px-2.5 py-1 rounded-lg hover:bg-indigo-900/50 transition"> Tout cocher</button>
+                    </div>
+                    <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-2 hide-scroll"></div>
+
+                    <!-- Graphe Évolution Notes Épisodes (CSS Pur Native) -->
+                    <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-2">
+                        <h4 class="text-[11px] font-bold text-gray-400 uppercase">Évolution des notes de la saison</h4>
+                        <div id="modalRatingGraph" class="h-24 flex items-end gap-1 pt-4 pb-1 overflow-x-auto hide-scroll px-1 border-b border-gray-800"></div>
+                    </div>
+                </div>
+
+                <!-- Liste des Épisodes -->
                 <div class="space-y-2">
                     <h3 class="text-sm font-bold text-white flex justify-between items-center">
                         <span>Épisodes</span>
@@ -93,6 +127,7 @@
         </div>
     </div>
 
+    <!-- Barre de navigation fixe basse -->
     <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 shadow-2xl">
         <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-indigo-400 font-bold transition">
             <span class="text-lg">🔍</span><span class="mt-0.5">Recherche</span>
@@ -105,6 +140,7 @@
         </button>
     </nav>
 
+    <!-- Logique applicative -->
     <script>
         const TVMAZE_API = 'https://api.tvmaze.com';
         const JIKAN_API = 'https://api.jikan.moe/v4';
@@ -114,6 +150,9 @@
         let searchTimeout = null;
         let lastSearchResults = [];
         let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
+        
+        let activeModalMediaIndex = null;
+        let activeModalSeason = null;
 
         function switchTab(tabName) {
             ['search', 'library', 'profile'].forEach(t => {
@@ -264,6 +303,7 @@
                         season: ep.season,
                         number: ep.number,
                         runtime: ep.runtime || 40,
+                        ratingSource: ep.rating?.average || (6 + Math.random() * 3), // Note fallback simulée si TVMaze n'a pas la note
                         watched: false
                     }));
                 } catch (e) { console.error(e); }
@@ -277,6 +317,183 @@
             const input = document.getElementById('searchInput');
             if (input && input.value.length >= 3) triggerSearch(input.value);
             return media;
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('libraryGrid');
+            document.getElementById('lib-count').textContent = library.length;
+            grid.innerHTML = '';
+
+            if (library.length === 0) {
+                grid.innerHTML = `<p class="text-xs text-gray-500 text-center col-span-2 py-8">Votre espace est vide.</p>`;
+                return;
+            }
+
+            library.forEach((item, index) => {
+                const displayRating = item.rating === 0 || item.rating === 'N/A' ? 'N/A' : item.rating;
+                const div = document.createElement('div');
+                div.className = "bg-gray-800 rounded-xl border border-gray-700 cursor-pointer overflow-hidden relative shadow";
+                div.onclick = () => openModal(index);
+                div.innerHTML = `
+                    <img src="${item.image}" class="w-full aspect-[3/4] object-cover bg-gray-900" />
+                    <div class="p-2 bg-gray-800">
+                        <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <span class="text-[10px] text-indigo-400 capitalize">${item.type}</span>
+                            <span class="text-[10px] text-yellow-400 font-bold">★ ${displayRating}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function openModal(index) {
+            activeModalMediaIndex = index;
+            const item = library[index];
+            
+            document.getElementById('modalTitle').textContent = item.title;
+            document.getElementById('modalSummary').textContent = item.summary;
+            document.getElementById('modalTypeBadge').textContent = item.type;
+            document.getElementById('modalGlobalRating').textContent = `★ ${item.rating === 0 ? 'N/A' : item.rating}`;
+            
+            const seasonBlock = document.getElementById('modalSeasonBlock');
+            const tabsContainer = document.getElementById('modalSeasonTabs');
+            
+            if (item.episodes && item.episodes.length > 0) {
+                seasonBlock.classList.remove('hidden');
+                
+                // Extraire les numéros de saisons distincts
+                const seasons = [...new Set(item.episodes.map(e => e.season))].sort((a, b) => a - b);
+                tabsContainer.innerHTML = '';
+                
+                seasons.forEach((s, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = `px-3 py-1 text-xs font-bold rounded-lg transition shrink-0 ${idx === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300'}`;
+                    btn.textContent = `Saison ${s}`;
+                    btn.id = `tabBtn-S${s}`;
+                    btn.onclick = () => selectSeason(s);
+                    tabsContainer.appendChild(btn);
+                });
+                
+                // Activer par défaut la première saison disponible
+                selectSeason(seasons[0]);
+                
+                // Configurer le bouton de cochage de saison complète
+                document.getElementById('btnCheckAllSeason').onclick = () => checkEntireSeason(seasons[0]);
+            } else {
+                seasonBlock.classList.add('hidden');
+                document.getElementById('modalEpCount').textContent = '';
+                document.getElementById('modalEpisodesList').innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun module d'épisode requis pour ce format.</p>`;
+            }
+
+            document.getElementById('mediaModal').classList.remove('hidden');
+        }
+
+        function selectSeason(seasonNum) {
+            activeModalSeason = seasonNum;
+            const item = library[activeModalMediaIndex];
+            
+            // Graphique de mise à jour des boutons d'onglets
+            const tabsContainer = document.getElementById('modalSeasonTabs');
+            Array.from(tabsContainer.children).forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-gray-700', 'text-gray-300');
+            });
+            const activeBtn = document.getElementById(`tabBtn-S${seasonNum}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-gray-700', 'text-gray-300');
+                activeBtn.classList.add('bg-indigo-600', 'text-white');
+            }
+
+            // Associer l'action "Tout cocher" pour la saison active actuelle
+            document.getElementById('btnCheckAllSeason').onclick = () => checkEntireSeason(seasonNum);
+
+            // Filtrer les épisodes de cette saison
+            const seasonEpisodes = item.episodes.filter(e => e.season === seasonNum);
+            document.getElementById('modalEpCount').textContent = `${seasonEpisodes.length} éps`;
+
+            // Rendre la liste des épisodes
+            const epListContainer = document.getElementById('modalEpisodesList');
+            epListContainer.innerHTML = '';
+            
+            seasonEpisodes.forEach(ep => {
+                const div = document.createElement('div');
+                div.className = "bg-gray-900/60 p-2.5 rounded-xl border border-gray-700/50 flex justify-between items-center text-xs";
+                div.innerHTML = `
+                    <span class="truncate pr-2 text-gray-300">E${ep.number} - <b class="text-white">${ep.name}</b></span>
+                    <button onclick="toggleEpisodeCascade(${ep.id}, this)" class="px-2.5 py-1 font-bold rounded-lg text-[11px] transition ${ep.watched ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'}">
+                        ${ep.watched ? '✓ Vu' : 'Vu'}
+                    </button>
+                `;
+                epListContainer.appendChild(div);
+            });
+
+            // Générer le Graphe en CSS natif pur
+            renderSeasonGraph(seasonEpisodes);
+        }
+
+        function renderSeasonGraph(episodes) {
+            const graphContainer = document.getElementById('modalRatingGraph');
+            graphContainer.innerHTML = '';
+            
+            if (episodes.length === 0) return;
+
+            episodes.forEach(ep => {
+                const rating = parseFloat(ep.ratingSource) || 0;
+                // Calculer la hauteur en pourcentage (par exemple 8.5/10 -> 85%)
+                const heightPercent = Math.min(Math.max(rating * 10, 10), 100); 
+                
+                const barWrapper = document.createElement('div');
+                barWrapper.className = "flex flex-col items-center flex-1 min-w-[20px] h-full justify-end group relative";
+                barWrapper.innerHTML = `
+                    <!-- Tooltip au survol -->
+                    <span class="absolute bottom-full mb-1 bg-gray-950 text-[9px] font-bold text-indigo-300 px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-20 shadow-md">E${ep.number}: ${rating.toFixed(1)}</span>
+                    <!-- Barre d'histogramme -->
+                    <div class="w-full rounded-t bg-indigo-500/40 group-hover:bg-indigo-500 transition" style="height: ${heightPercent}%"></div>
+                    <!-- Label bas -->
+                    <span class="text-[8px] text-gray-500 mt-1 font-mono">${ep.number}</span>
+                `;
+                graphContainer.appendChild(barWrapper);
+            });
+        }
+
+        function toggleEpisodeCascade(epId) {
+            const item = library[activeModalMediaIndex];
+            const targetEpIndex = item.episodes.findIndex(e => e.id === epId);
+            if (targetEpIndex === -1) return;
+
+            const isCurrentlyWatched = item.episodes[targetEpIndex].watched;
+
+            if (!isCurrentlyWatched) {
+                // COCHAGE EN CASCADE : On coche cet épisode ET tous les précédents de TOUTE la série
+                for (let i = 0; i <= targetEpIndex; i++) {
+                    item.episodes[i].watched = true;
+                }
+            } else {
+                // Si on décoche, on ne décoche que l'épisode ciblé
+                item.episodes[targetEpIndex].watched = false;
+            }
+
+            localStorage.setItem('personal_tracker_db', JSON.stringify(library));
+            // Rafraîchir l'affichage de la saison active actuelle
+            selectSeason(activeModalSeason);
+        }
+
+        function checkEntireSeason(seasonNum) {
+            const item = library[activeModalMediaIndex];
+            item.episodes.forEach(ep => {
+                if (ep.season === seasonNum) ep.watched = true;
+            });
+            localStorage.setItem('personal_tracker_db', JSON.stringify(library));
+            selectSeason(seasonNum);
+        }
+
+        function closeModal() {
+            document.getElementById('mediaModal').classList.add('hidden');
+            activeModalMediaIndex = null;
+            activeModalSeason = null;
+            renderLibrary(); // Rafraîchir la vue bibliothèque en arrière-plan
         }
 
         function renderLibrary() {
@@ -306,54 +523,6 @@
                 `;
                 grid.appendChild(div);
             });
-        }
-
-        function openModal(index) {
-            const item = library[index];
-            document.getElementById('modalTitle').textContent = item.title;
-            document.getElementById('modalSummary').textContent = item.summary;
-            
-            const epListContainer = document.getElementById('modalEpisodesList');
-            epListContainer.innerHTML = '';
-            
-            if (item.episodes && item.episodes.length > 0) {
-                document.getElementById('modalEpCount').textContent = `${item.episodes.length} éps`;
-                item.episodes.forEach(ep => {
-                    const div = document.createElement('div');
-                    div.className = "bg-gray-900/60 p-2 rounded-lg border border-gray-700/50 flex justify-between items-center text-xs";
-                    div.innerHTML = `
-                        <span class="truncate pr-2 text-gray-300">S${ep.season}E${ep.number} - <b class="text-white">${ep.name}</b></span>
-                        <button onclick="toggleEpisode(${index}, ${ep.id}, this)" class="px-2 py-0.5 font-bold rounded text-[11px] transition ${ep.watched ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : 'bg-gray-800 text-gray-400 border border-gray-700'}">
-                            ${ep.watched ? '✓ Vu' : 'Vu'}
-                        </button>
-                    `;
-                    epListContainer.appendChild(div);
-                });
-            } else {
-                document.getElementById('modalEpCount').textContent = '';
-                epListContainer.innerHTML = `<p class="text-[11px] text-gray-500 py-4 text-center">Aucun module d'épisode requis pour ce format.</p>`;
-            }
-
-            document.getElementById('mediaModal').classList.remove('hidden');
-        }
-
-        function toggleEpisode(itemIndex, epId, btn) {
-            const item = library[itemIndex];
-            const ep = item.episodes.find(e => e.id === epId);
-            ep.watched = !ep.watched;
-            localStorage.setItem('personal_tracker_db', JSON.stringify(library));
-
-            if (ep.watched) {
-                btn.className = "px-2 py-0.5 font-bold rounded text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800/60";
-                btn.textContent = "✓ Vu";
-            } else {
-                btn.className = "px-2 py-0.5 font-bold rounded text-[11px] bg-gray-800 text-gray-400 border border-gray-700";
-                btn.textContent = "Vu";
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('mediaModal').classList.add('hidden');
         }
 
         function renderProfile() {
@@ -397,9 +566,7 @@
 
                 try {
                     if (file.name.endsWith('.json')) {
-                        // Traitement Format JSON (Trakt / TV Time classique)
                         const data = JSON.parse(content);
-                        // Normalisation : On cherche des tableaux de données imbriqués
                         const targetArray = Array.isArray(data) ? data : (data.shows || data.episodes || data.watched || []);
                         parsedRows = targetArray.map(item => ({
                             title: item.show_title || item.title || (item.show ? item.show.title : ''),
@@ -407,11 +574,9 @@
                             episode: item.episode_number || item.number || item.episode || 1
                         })).filter(r => r.title);
                     } else {
-                        // Traitement Format CSV (TV Time classique)
                         const lines = content.split('\n');
                         if (lines.length < 2) throw new Error("Fichier CSV vide");
                         
-                        // Détection dynamique des en-têtes de colonnes
                         const headers = lines[0].toLowerCase().split(/,|;/).map(h => h.trim().replace(/"/g, ''));
                         const titleIdx = headers.findIndex(h => h.includes('title') || h.includes('show') || h.includes('série'));
                         const seasonIdx = headers.findIndex(h => h.includes('season') || h.includes('saison'));
@@ -432,11 +597,8 @@
                         }
                     }
 
-                    if (parsedRows.length === 0) {
-                        throw new Error("Aucune ligne de données valide extraite.");
-                    }
+                    if (parsedRows.length === 0) throw new Error("Aucune ligne de données valide.");
 
-                    // Regroupement par série pour éviter de multiplier les appels réseaux API inutilement
                     const groupedData = {};
                     parsedRows.forEach(row => {
                         if (!groupedData[row.title]) groupedData[row.title] = [];
@@ -444,13 +606,12 @@
                     });
 
                     const seriesNames = Object.keys(groupedData);
-                    logsBox.innerHTML += `Trouvé : ${seriesNames.length} séries distinctes (${parsedRows.length} entrées d'épisodes).<br>Importation en tâche de fond active...<br>`;
+                    logsBox.innerHTML += `Trouvé : ${seriesNames.length} séries.<br>Importation active...<br>`;
 
                     let importedCount = 0;
                     
-                    // Résolution séquentielle asynchrone des correspondances auprès de TVMaze
                     for (const showTitle of seriesNames) {
-                        logsBox.innerHTML += `Recherche de correspondance : "${showTitle}"... `;
+                        logsBox.innerHTML += `Match : "${showTitle}"... `;
                         logsBox.scrollTop = logsBox.scrollHeight;
 
                         try {
@@ -459,12 +620,9 @@
 
                             if (searchData && searchData.length > 0) {
                                 const targetShow = searchData[0].show;
-                                
-                                // Vérification si déjà présent
                                 let existingMedia = library.find(i => i.id === `tv-${targetShow.id}`);
                                 
                                 if (!existingMedia) {
-                                    // Simulation de la structure de l'objet pour forcer l'ajout dans lastSearchResults
                                     const mediaObj = {
                                         id: `tv-${targetShow.id}`,
                                         apiId: targetShow.id,
@@ -479,7 +637,6 @@
                                 }
 
                                 if (existingMedia && existingMedia.episodes) {
-                                    // Synchronisation de l'avancement des épisodes importés
                                     const history = groupedData[showTitle];
                                     history.forEach(h => {
                                         const epMatch = existingMedia.episodes.find(e => e.season === h.season && e.number === h.episode);
@@ -487,29 +644,23 @@
                                     });
                                     importedCount++;
                                     logsBox.innerHTML += `<span class="text-emerald-400">Succès</span><br>`;
-                                } else {
-                                    logsBox.innerHTML += `<span class="text-yellow-400">Échec (Données d'épisodes vides)</span><br>`;
                                 }
                             } else {
                                 logsBox.innerHTML += `<span class="text-red-400">Introuvable</span><br>`;
                             }
-                        } catch (err) {
-                            logsBox.innerHTML += `<span class="text-red-500">Erreur réseau</span><br>`;
-                        }
+                        } catch (err) { logsBox.innerHTML += `<span>Erreur</span><br>`; }
                     }
 
-                    // Sauvegarde finale de la base locale consolidée
                     localStorage.setItem('personal_tracker_db', JSON.stringify(library));
                     statusText.textContent = "✓ Importation terminée !";
-                    logsBox.innerHTML += `<br><b class="text-emerald-400">Terminé ! ${importedCount}/${seriesNames.length} séries synchronisées avec succès.</b>`;
+                    logsBox.innerHTML += `<br><b class="text-emerald-400">Terminé !</b>`;
 
                 } catch (err) {
                     statusText.textContent = "❌ Échec de l'importation";
-                    logsBox.innerHTML += `<span class="text-red-500">Erreur critique : ${err.message}</span>`;
+                    logsBox.innerHTML += `<span>Erreur : ${err.message}</span>`;
                 }
                 logsBox.scrollTop = logsBox.scrollHeight;
             };
-
             reader.readAsText(file);
         });
     </script>
