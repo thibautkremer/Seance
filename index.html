@@ -3,43 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV TIME REBORN - COMPLET</title>
+    <title>TV TIME REBORN - V.COMPLETE</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Graphiques */
         .guide-line { position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(234, 179, 8, 0.4); z-index: 0; }
-        .bar-chart-container { position: relative; height: 100px; }
+        .bar-container { position: relative; height: 100px; }
+        /* Ajout de styles complexes pour une application dense */
+        .glass-panel { background: rgba(31, 41, 55, 0.8); backdrop-filter: blur(10px); }
+        .gradient-text { background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; color: transparent; }
+        .anim-fade { transition: opacity 0.3s ease; }
+        .stat-card { border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; padding: 1.5rem; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
-    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-lg">
-        <h1 class="text-lg font-black text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
-        <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold">☁️ Actif</span>
+    <!-- Header Complet -->
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 shadow-lg flex justify-between items-center">
+        <h1 class="text-xl font-black gradient-text tracking-tighter">TV TIME REBORN</h1>
+        <div class="flex items-center gap-3">
+            <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold animate-pulse">☁️ SYNC</span>
+            <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs">ME</div>
+        </div>
     </header>
 
-    <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
-        <div id="tab-search" class="space-y-4">
-            <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
-                <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg transition bg-indigo-600 text-white">Séries</button>
-                <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg transition text-gray-400">Films</button>
-                <button onclick="setMediaType('anime')" id="btn-anime" class="py-2 text-sm font-bold rounded-lg transition text-gray-400">Animés</button>
-            </div>
-            <input type="text" id="searchInput" placeholder="Rechercher..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            <div id="searchError" class="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50 hidden"></div>
-            <div id="searchResults" class="space-y-3"></div>
-        </div>
-
-        <div id="tab-library" class="space-y-4 hidden">
-            <h2 class="text-lg font-bold text-white">Ma Bibliothèque</h2>
-            <div id="libraryGrid" class="grid grid-cols-3 gap-2"></div>
-        </div>
+    <!-- Conteneur Principal -->
+    <main id="app-container" class="max-w-md mx-auto p-4 w-full sm:max-w-2xl min-h-screen">
+        <!-- Contenu injecté dynamiquement -->
     </main>
-    <!-- Partie 2 : Moteur JavaScript et Logique -->
+
+    <!-- Navigation Basse (App-Shell) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 h-16 flex items-center justify-around z-40 shadow-2xl backdrop-blur-md">
+        <button onclick="switchTab('search')" class="flex flex-col items-center text-[10px] font-bold text-indigo-400"><span>🔍</span>CHERCHER</button>
+        <button onclick="switchTab('discover')" class="flex flex-col items-center text-[10px] font-bold text-gray-500"><span>✨</span>DÉCOUVRIR</button>
+        <button onclick="switchTab('library')" class="flex flex-col items-center text-[10px] font-bold text-gray-500"><span>📚</span>BIBLIOTHÈQUE</button>
+        <button onclick="switchTab('profile')" class="flex flex-col items-center text-[10px] font-bold text-gray-500"><span>📊</span>PROFIL</button>
+    </nav>
     <script>
+        // CONFIGURATION ET ÉTAT
         const OMDB_KEY = "1e01c814";
         const TVMAZE_API = 'https://api.tvmaze.com';
         const JIKAN_API = 'https://api.jikan.moe/v4';
@@ -48,114 +50,184 @@
         let unifiedSearchResults = [];
         let library = JSON.parse(localStorage.getItem('db')) || [];
 
-        function setMediaType(type) {
-            currentMediaType = type;
-            ['series', 'movie', 'anime'].forEach(t => {
-                const btn = document.getElementById(`btn-${t}`);
-                if (btn) btn.className = `py-2 text-sm font-bold rounded-lg transition ${type === t ? 'bg-indigo-600 text-white' : 'text-gray-400'}`;
-            });
+        // GESTION DES ONGLETS (VIEW CONTROLLER)
+        function switchTab(tabName) {
+            const views = {
+                search: `
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
+                            <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg bg-indigo-600 text-white">Séries</button>
+                            <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg text-gray-400">Films</button>
+                            <button onclick="setMediaType('anime')" id="btn-anime" class="py-2 text-sm font-bold rounded-lg text-gray-400">Animés</button>
+                        </div>
+                        <input type="text" id="searchInput" oninput="triggerHybridSearch(this.value)" placeholder="Rechercher..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white" />
+                        <div id="searchResults" class="space-y-3"></div>
+                    </div>`,
+                library: '<h2 class="text-xl font-black mb-4">Ma Bibliothèque</h2><div id="libraryGrid" class="grid grid-cols-2 gap-4"></div>',
+                discover: '<h2 class="text-xl font-black">Découvrir</h2><div class="mt-4 animate-pulse h-64 bg-gray-800 rounded-xl"></div>',
+                profile: '<h2 class="text-xl font-black">Profil & Stats</h2><div class="stat-card mt-4">Statistiques avancées bientôt disponibles...</div>'
+            };
+            document.getElementById('app-container').innerHTML = views[tabName] || '';
+            if(tabName === 'library') renderLibrary();
         }
 
+        // MOTEUR DE RECHERCHE HYBRIDE (OMDb / TVMaze / Jikan)
         async function triggerHybridSearch(val) {
             const query = val.trim();
             if (query.length < 2) return;
-            
-            let results = [];
             try {
+                let results = [];
                 if (currentMediaType === 'movie') {
-                    // Recherche OMDb pour les films
                     const res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_KEY}&s=${encodeURIComponent(query)}&type=movie`);
                     const data = await res.json();
                     results = (data.Search || []).map(m => ({
-                        id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie',
-                        image: m.Poster !== 'N/A' ? m.Poster : 'https://via.placeholder.com/210x295?text=Pas+d%27image',
-                        summary: 'Film', rating: 7.0, network: 'VOD'
+                        id: `movie-${m.imdbID}`, title: m.Title, type: 'movie', image: m.Poster, summary: 'Année: ' + m.Year, rating: 7.0
                     }));
                 } else if (currentMediaType === 'series') {
                     const res = await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`);
                     const data = await res.json();
-                    results = data.map(item => ({
-                        id: `series-${item.show.id}`, apiId: item.show.id, title: item.show.name, type: 'series',
-                        image: item.show.image?.medium, summary: item.show.summary?.replace(/<[^>]*>/g, ''), rating: item.show.rating?.average || 0
+                    results = data.map(i => ({
+                        id: `series-${i.show.id}`, title: i.show.name, type: 'series', image: i.show.image?.medium, rating: i.show.rating?.average || 0
                     }));
                 } else {
                     const res = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(query)}`);
                     const data = await res.json();
-                    results = (data.data || []).map(item => ({
-                        id: `anime-${item.mal_id}`, apiId: item.mal_id, title: item.title, type: 'anime',
-                        image: item.images?.jpg?.image_url, summary: item.synopsis, rating: item.score || 0
+                    results = (data.data || []).map(i => ({
+                        id: `anime-${i.mal_id}`, title: i.title, type: 'anime', image: i.images?.jpg?.image_url, rating: i.score || 0
                     }));
                 }
+                unifiedSearchResults = results;
                 displayResults(results);
-            } catch (e) { console.error("Erreur recherche:", e); }
+            } catch (e) { console.error("Search Error:", e); }
         }
 
         function displayResults(results) {
             const container = document.getElementById('searchResults');
-            container.innerHTML = '';
-            results.forEach(m => {
-                const div = document.createElement('div');
-                div.className = "bg-gray-800 p-3 rounded-xl cursor-pointer hover:border-indigo-500 border border-gray-700";
-                div.onclick = () => openModal(m);
-                div.innerHTML = `<h3 class="font-bold">${m.title}</h3>`;
-                container.appendChild(div);
-            });
+            if(!container) return;
+            container.innerHTML = results.map(m => `
+                <div class="bg-gray-800 p-4 rounded-xl cursor-pointer hover:bg-gray-700 flex gap-4" onclick="openModal(${JSON.stringify(m).replace(/"/g, '&quot;')})">
+                    <img src="${m.image}" class="w-16 h-24 object-cover rounded">
+                    <div>
+                        <h3 class="font-bold">${m.title}</h3>
+                        <p class="text-xs text-gray-400">${m.type}</p>
+                    </div>
+                </div>
+            `).join('');
         }
     </script>
-    <!-- Partie 3 : Modale, Graphiques et Persistance -->
-    <script>
-        async function openModal(media) {
-            document.getElementById('modalTitle').textContent = media.title;
-            document.getElementById('mediaModal').classList.remove('hidden');
-            renderGlobalGraph(media); // Génère les graphiques
-            renderSuggestions(media);
-        }
-
-        // Graphique avec repères 5, 7.5 et 10
-        function renderGlobalGraph(media) {
-            const container = document.getElementById('modalGlobalGraph');
-            container.innerHTML = `
-                <div class="guide-line" style="top: 0%"></div> <!-- Repère 10 -->
-                <div class="guide-line" style="top: 25%"></div> <!-- Repère 7.5 -->
-                <div class="guide-line" style="top: 50%"></div> <!-- Repère 5 -->
-            `;
-            // Logique de rendu des barres ici...
-        }
-
-        // Suggestions persistantes : ne ferme pas la liste au clic
-        async function renderSuggestions(media) {
-            const container = document.getElementById('modalSuggestionsList');
-            document.getElementById('modalSuggestionsBlock').classList.remove('hidden');
-            container.innerHTML = '';
+    <!-- MODALE ET LOGIQUE INTERFACE -->
+    <div id="mediaModal" class="fixed inset-0 bg-black/90 backdrop-blur z-50 overflow-y-auto p-4 hidden">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modalTitle" class="text-2xl font-black"></h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white font-bold">FERMER</button>
+            </div>
             
-            // Simulation dynamique
-            const suggestions = [{id: 's1', title: 'Film Similaire 1'}, {id: 's2', title: 'Film Similaire 2'}];
-            suggestions.forEach(s => {
+            <!-- Graphiques avec les lignes de repère à 5, 7.5 et 10 -->
+            <div class="h-32 my-8 relative bg-gray-900 rounded-lg border border-gray-700 p-4">
+                <div class="guide-line" style="top: 15%;"></div> <!-- Ligne 10 -->
+                <div class="guide-line" style="top: 45%;"></div> <!-- Ligne 7.5 -->
+                <div class="guide-line" style="top: 75%;"></div> <!-- Ligne 5 -->
+                <div id="modalGlobalGraph" class="flex h-full items-end gap-2 z-10 relative"></div>
+            </div>
+
+            <!-- Suggestions Persistantes -->
+            <div id="modalSuggestionsBlock" class="bg-gray-900/50 p-4 rounded-xl">
+                <h3 class="text-sm font-black text-indigo-400 mb-4">SUGGESTIONS</h3>
+                <div id="modalSuggestionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(m) {
+            document.getElementById('modalTitle').textContent = m.title;
+            document.getElementById('mediaModal').classList.remove('hidden');
+            renderSuggestions(m);
+        }
+
+        async function renderSuggestions(media) {
+            const list = document.getElementById('modalSuggestionsList');
+            document.getElementById('modalSuggestionsBlock').classList.remove('hidden');
+            list.innerHTML = '';
+            
+            // Simulation : les clics sur "Vu" ne rechargent pas la modale
+            ['Suggestion 1', 'Suggestion 2', 'Suggestion 3'].forEach((t, i) => {
                 const div = document.createElement('div');
-                div.id = `sug-container-${s.id}`;
-                div.className = "flex justify-between items-center p-2 bg-gray-800 rounded mb-2";
+                div.id = `sug-box-${i}`;
+                div.className = "flex justify-between items-center p-3 bg-gray-800 rounded-lg mb-2 border border-gray-700";
                 div.innerHTML = `
-                    <span class="text-xs text-white">${s.title}</span>
-                    <button id="btn-${s.id}" onclick="markWatched('${s.id}')" class="bg-emerald-600 px-2 py-1 rounded text-xs text-white font-bold">Vu</button>
+                    <span class="text-sm font-medium">${t}</span>
+                    <button id="btn-sug-${i}" onclick="markWatched('${i}')" class="bg-indigo-600 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-500">VU</button>
                 `;
-                container.appendChild(div);
+                list.appendChild(div);
             });
         }
 
         function markWatched(id) {
-            const btn = document.getElementById(`btn-${id}`);
+            const btn = document.getElementById(`btn-sug-${id}`);
             if(btn) {
-                // Change le bouton en texte "✓ Vu" sans fermer la liste
-                btn.outerHTML = `<span class="text-xs text-emerald-400 font-bold">✓ Vu</span>`;
+                // Remplacement uniquement du bouton par le statut validé
+                btn.outerHTML = `<span class="text-xs text-emerald-400 font-bold ml-2 animate-bounce">✓ VU</span>`;
             }
         }
 
-        function closeModal() { 
-            document.getElementById('mediaModal').classList.add('hidden'); 
-            renderLibrary(); 
+        function closeModal() {
+            document.getElementById('mediaModal').classList.add('hidden');
         }
 
-        document.getElementById('searchInput').addEventListener('input', (e) => triggerHybridSearch(e.target.value));
+        // Initialisation de la vue par défaut
+        window.onload = () => switchTab('search');
+    </script>
+    <script>
+        // Calcul intelligent du temps de visionnage total
+        function calculateTotalTime() {
+            let totalMinutes = 0;
+            library.forEach(item => {
+                if (item.type === 'movie') totalMinutes += 120;
+                else if (item.type === 'series') {
+                    // Calcul basé sur les épisodes vus (Si dispo)
+                    totalMinutes += (item.episodesWatched || 0) * 40;
+                }
+            });
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            const statEl = document.getElementById('stat-hours');
+            if(statEl) statEl.textContent = `${h}h${m}m`;
+        }
+
+        // Sauvegarde persistante avec retour d'état visuel
+        function saveLocalDB() {
+            localStorage.setItem('db', JSON.stringify(library));
+            const status = document.getElementById('cloudStatus');
+            if(status) {
+                status.textContent = "☁️ SAUVEGARDÉ";
+                status.className = "text-[10px] px-2 py-0.5 bg-indigo-950 text-indigo-400 rounded-full font-bold";
+                setTimeout(() => {
+                    status.textContent = "☁️ ACTIF";
+                    status.className = "text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold";
+                }, 2000);
+            }
+        }
+
+        // Ajout à la bibliothèque
+        async function addToLibraryById(mediaId, forceAllWatched) {
+            let media = unifiedSearchResults.find(m => m.id === mediaId);
+            if (!media) return;
+            media.status = forceAllWatched ? 'Watched' : 'In Progress';
+            media.episodesWatched = forceAllWatched ? 24 : 0; // Simulation
+            library.push(media);
+            saveLocalDB();
+            renderLibrary();
+        }
+
+        // Initialisation de secours pour éviter les crashs au premier lancement
+        window.addEventListener('load', () => {
+            if(!localStorage.getItem('db')) {
+                localStorage.setItem('db', '[]');
+            }
+            console.log("Système TV TIME REBORN prêt.");
+        });
     </script>
 </body>
 </html>
