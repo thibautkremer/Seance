@@ -13,6 +13,8 @@
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-content { transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out; }
+        .hidden { display: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
@@ -98,6 +100,13 @@
 
         <!-- SECTION PROFIL -->
         <div id="tab-profile" class="space-y-5 hidden">
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="exportLibrary()" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 text-gray-300 text-xs font-bold py-3 rounded-xl transition">💾 Exporter JSON</button>
+                <label class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-3 rounded-xl transition text-center cursor-pointer">
+                    📂 Importer JSON
+                    <input type="file" onchange="importLibrary(event)" class="hidden" accept=".json" />
+                </label>
+            </div>
             <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
                 <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
                 <div>
@@ -293,15 +302,33 @@
         }
 
         function switchTab(tabName) {
+            // Masquer tous les onglets
             ['search', 'discover', 'calendar', 'library', 'profile'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const nav = document.getElementById(`nav-${t}`);
                 if (el) el.classList.add('hidden');
-                if (nav) { nav.classList.remove('text-indigo-400', 'font-bold'); nav.classList.add('text-gray-400'); }
+                if (nav) { 
+                    nav.classList.remove('text-indigo-400', 'font-bold'); 
+                    nav.classList.add('text-gray-400'); 
+                }
             });
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        
+            // Afficher l'onglet cible
+            const target = document.getElementById(`tab-${tabName}`);
+            target.classList.remove('hidden');
+            target.style.opacity = '0';
+            target.style.transform = 'translateY(5px)';
+            
             document.getElementById(`nav-${tabName}`).classList.add('text-indigo-400', 'font-bold');
-
+        
+            // Animation fluide
+            setTimeout(() => {
+                target.style.transition = 'all 0.2s ease-out';
+                target.style.opacity = '1';
+                target.style.transform = 'translateY(0)';
+            }, 10);
+        
+            // Chargement des données
             if (tabName === 'library') renderLibrary();
             if (tabName === 'profile') renderProfile();
             if (tabName === 'discover') renderDiscoverTab(false);
@@ -1148,6 +1175,36 @@
                 dAnimes.setAttribute('stroke-dasharray', `${pctAnimes}, 100`);
                 dAnimes.setAttribute('stroke-dashoffset', `-${pctSeries + pctMovies}`);
             }
+        }
+
+       // Fonction d'exportation
+        function exportLibrary() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(localStorage.getItem('personal_tracker_db') || "[]");
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "tv_time_backup.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+        
+        // Fonction d'importation
+        function importLibrary(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    localStorage.setItem('personal_tracker_db', JSON.stringify(importedData));
+                    library = importedData;
+                    alert("Bibliothèque importée avec succès !");
+                    location.reload();
+                } catch (err) {
+                    alert("Erreur lors de l'importation du fichier.");
+                }
+            };
+            reader.readAsText(file);
         }
     </script>
 </body>
