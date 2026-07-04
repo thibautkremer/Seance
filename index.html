@@ -5,461 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV TIME REBORN</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111827'/><path d='M30 45 L35 90 L65 90 L70 45 Z' fill='%23EF4444'/><path d='M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90' stroke='%23FFFFFF' stroke-width='4'/><circle cx='35' cy='35' r='12' fill='%23FBBF24'/><circle cx='50' cy='30' r='14' fill='%23FFFFFF'/><circle cx='65' cy='35' r='12' fill='%23FBBF24'/><rect x='25' y='45' width='50' height='12' rx='6' fill='%23374151'/><rect x='28' y='48' width='20' height='6' rx='3' fill='%233B82F6'/><rect x='52' y='48' width='20' height='6' rx='3' fill='%23EF4444'/></svg>">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111827'/><path d='M30 45 L35 90 L65 90 L70 45 Z' fill='%23EF4444'/><path d='M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90' stroke='%23FFFFFF' stroke-width='4'/><circle cx='35' cy='32' r='11' fill='%23FBBF24'/><circle cx='50' cy='28' r='13' fill='%23FFFFFF'/><circle cx='65' cy='32' r='11' fill='%23FBBF24'/><rect x='23' y='42' width='54' height='12' rx='6' fill='%231F2937'/><rect x='26' y='45' width='22' height='6' rx='3' fill='%233B82F6'/><rect x='52' y='45' width='22' height='6' rx='3' fill='%23EF4444'/></svg>">
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .guide-line { position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(234, 179, 8, 0.4); z-index: 0; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
-    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-2.5 flex justify-between items-center shadow-md">
-        <div class="flex items-center gap-2">
-            <svg class="w-8 h-8 drop-shadow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <path d="M30 45 L35 90 L65 90 L70 45 Z" fill="#EF4444"/>
-                <path d="M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90" stroke="#FFFFFF" stroke-width="4"/>
-                <circle cx="35" cy="32" r="11" fill="#FBBF24"/>
-                <circle cx="50" cy="28" r="13" fill="#FFFFFF"/>
-                <circle cx="65" cy="32" r="11" fill="#FBBF24"/>
-                <rect x="23" y="42" width="54" height="12" rx="6" fill="#1F2937"/>
-                <rect x="26" y="45" width="22" height="6" rx="3" fill="#3B82F6"/>
-                <rect x="52" y="45" width="22" height="6" rx="3" fill="#EF4444"/>
-            </svg>
-            <h1 class="text-lg font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
-        </div>
-        <div class="flex items-center gap-2">
-            <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold flex items-center gap-1">☁️ Actif</span>
-        </div>
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 shadow-lg flex justify-between items-center">
+        <h1 class="text-lg font-black text-indigo-400">TV TIME <span class="text-white text-xs px-2 bg-indigo-600 rounded">REBORN</span></h1>
+        <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold">☁️ Actif</span>
     </header>
 
-    <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
-        <div id="tab-search" class="space-y-4">
-            <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
-                <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
-                <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg capitalize transition text-gray-400">Films</button>
-                <button onclick="setMediaType('anime')" id="btn-anime" class="py-2 text-sm font-bold rounded-lg capitalize transition text-gray-400">Animés</button>
+    <main id="app-container" class="max-w-md mx-auto p-4 w-full sm:max-w-2xl min-h-screen">
+        </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 h-16 flex items-center justify-around z-40 shadow-2xl">
+        <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-[10px] font-bold text-gray-400"><span>🔍</span>CHERCHER</button>
+        <button onclick="switchTab('discover')" id="nav-discover" class="flex flex-col items-center text-[10px] font-bold text-gray-400"><span>✨</span>DÉCOUVRIR</button>
+        <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center text-[10px] font-bold text-gray-400"><span>📅</span>À VENIR</button>
+        <button onclick="switchTab('library')" id="nav-library" class="flex flex-col items-center text-[10px] font-bold text-gray-400"><span>📚</span>SUIVIS</button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-[10px] font-bold text-gray-400"><span>📊</span>PROFIL</button>
+    </nav>
+
+    <div id="mediaModal" class="fixed inset-0 bg-black/90 backdrop-blur z-50 overflow-y-auto p-4 hidden">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl mx-auto">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4"></h2>
+            <div id="modalSuggestionsBlock" class="hidden bg-gray-900 p-4 rounded-xl mb-4">
+                <h3 class="text-sm font-bold text-indigo-400 mb-2">SUGGESTIONS</h3>
+                <div id="modalSuggestionsList"></div>
             </div>
-
-            <div class="relative">
-                <input type="text" id="searchInput" placeholder="Rechercher un film, une série ou un animé..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                <div id="searchLoading" class="absolute right-4 top-3.5 text-indigo-400 text-sm animate-pulse hidden">Chargement...</div>
-            </div>
-
-            <div id="searchError" class="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50 hidden"></div>
-            <div id="searchResults" class="space-y-3"></div>
-        </div>
-
-        <div id="tab-discover" class="space-y-4 hidden">
-            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm space-y-3">
-                <div>
-                    <h2 id="discoverTitle" class="text-base font-bold text-white">✨ Pour vous</h2>
-                    <p id="discoverSub" class="text-xs text-gray-400">Propositions personnalisées selon vos préférences.</p>
-                </div>
-                <div class="grid grid-cols-3 gap-1.5 pt-1">
-                    <button id="btnDiscoverMix" onclick="changeDiscoverFilter('mix')" class="text-[11px] bg-indigo-600 text-white py-2 px-1 rounded-lg font-bold transition shadow-sm">🎲 Pour Toi</button>
-                    <button id="btnDiscoverTrending" onclick="changeDiscoverFilter('trending')" class="text-[11px] bg-gray-900 text-gray-400 py-2 px-1 rounded-lg font-bold border border-gray-700 transition">🔥 Ce Moment</button>
-                    <button id="btnDiscoverUnreleased" onclick="changeDiscoverFilter('unreleased')" class="text-[11px] bg-gray-900 text-gray-400 py-2 px-1 rounded-lg font-bold border border-gray-700 transition">📅 À Venir</button>
-                </div>
-            </div>
-            <div id="discoverGrid" class="space-y-3"></div>
-        </div>
-
-        <div id="tab-calendar" class="space-y-4 hidden">
-            <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">📅 Mon Calendrier de Sorties</h2>
-            <div id="calendarTimeline" class="space-y-3"></div>
-        </div>
-
-        <div id="tab-library" class="space-y-4 hidden">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
-                <h2 class="text-lg font-bold text-white">Suivis (<span id="lib-count">0</span>)</h2>
-                <select id="libraryFilterSelect" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 text-gray-300 font-medium">
-                    <option value="all">Tout afficher</option>
-                    <option value="in_progress" selected>En cours</option>
-                    <option value="watched">Terminés</option>
-                    <option value="series">Séries</option>
-                    <option value="movie">Films</option>
-                    <option value="anime">Animés</option>
-                </select>
-            </div>
-            <div id="libraryGrid" class="grid grid-cols-3 gap-2"></div>
-        </div>
-
-        <div id="tab-profile" class="space-y-5 hidden">
-            <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 p-5 rounded-2xl border border-indigo-500/20 flex items-center gap-4 shadow-xl">
-                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
-                <div>
-                    <h2 class="text-lg font-bold text-white">Mon Profil Perso</h2>
-                    <p class="text-xs text-indigo-300">Statistiques de visionnage</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex items-center gap-4 justify-around">
-                <div class="relative w-24 h-24 flex-shrink-0">
-                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                        <path class="text-gray-700" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path id="donutSeries" class="text-emerald-500 transition-all duration-500" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path id="donutMovies" class="text-amber-500 transition-all duration-500" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path id="donutAnimes" class="text-purple-500 transition-all duration-500" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <div class="absolute inset-0 flex items-center justify-center text-[10px] uppercase tracking-wider font-bold text-gray-400">Mix</div>
-                </div>
-                <div class="text-xs space-y-1 w-full">
-                    <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Séries</span><b id="pct-series">0%</b></div>
-                    <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Films</span><b id="pct-movies">0%</b></div>
-                    <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Animés</span><b id="pct-animes">0%</b></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
-                    <div id="stat-hours" class="text-sm font-black text-indigo-400">0 heure</div>
-                    <div class="text-xs text-gray-400 mt-0.5">Temps de visionnage calculé</div>
-                </div>
-                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md"><div id="stat-series" class="text-2xl font-black text-emerald-400">0</div><div class="text-xs text-gray-400 mt-0.5">Séries</div></div>
-                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md"><div id="stat-movies" class="text-2xl font-black text-amber-400">0</div><div class="text-xs text-gray-400 mt-0.5">Films</div></div>
-            </div>
-        </div>
-    </main>
-
-    <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
-        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4 shadow-2xl">
-            <div class="p-4 flex gap-3 border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
-                <img id="modalPoster" src="" class="w-12 h-16 object-cover rounded bg-gray-900 border border-gray-700 flex-shrink-0 shadow-sm" />
-                <div class="min-w-0 flex-1 flex flex-col justify-center">
-                    <div class="flex justify-between items-start gap-1">
-                        <h2 id="modalTitle" class="font-black text-white text-base truncate">Détails</h2>
-                        <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold flex-shrink-0">✕</button>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[11px]">
-                        <span id="modalTypeBadge" class="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">SÉRIE</span>
-                        <span id="modalStatusBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">STATUT : N/A</span>
-                        <span id="modalNetworkBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-900 text-indigo-300 border border-gray-700 truncate max-w-[100px]">N/A</span>
-                        
-                        <div class="flex flex-col gap-0.5 min-w-[60px]">
-                            <span id="modalGlobalRating" class="text-xs font-bold text-yellow-400 flex items-center gap-0.5">★ N/A</span>
-                            <div class="w-16 h-1 bg-gray-700 rounded-full overflow-hidden">
-                                <div id="modalGlobalRatingBar" class="h-full bg-yellow-400" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        <span id="modalPremiereDate" class="text-[11px] text-gray-400 bg-gray-900/60 px-2 py-0.5 rounded border border-gray-700/40">Sortie : N/A</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-4 space-y-4">
-                <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
-                
-                <div class="flex gap-2">
-                    <button id="modalViewSuggestionsBtn" class="w-full py-2 bg-indigo-900/40 border border-indigo-700/50 text-indigo-300 hover:bg-indigo-900/60 font-bold rounded-xl text-xs transition">
-                        💡 Voir des suggestions similaires
-                    </button>
-                </div>
-
-                <div id="modalSuggestionsBlock" class="space-y-3 hidden bg-gray-900/50 p-3 rounded-xl border border-indigo-500/10">
-                    <div id="modalSuggestionsList" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1 hide-scroll"></div>
-                </div>
-
-                <div id="modalSeriesContent" class="space-y-4 hidden">
-                    <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
-                        <h4 class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">📊 Évolution des Notes (Épisodes)</h4>
-                        <div class="flex gap-2 items-stretch">
-                            <div class="flex flex-col justify-between text-[9px] font-mono font-bold text-gray-500 pr-1 border-r border-gray-800 py-0.5 text-right select-none w-4 h-24">
-                                <span>10</span><span>7.5</span><span>5</span><span>2.5</span><span>0</span>
-                            </div>
-                            <div class="flex-1 h-24 relative">
-                                <div class="absolute inset-x-0 top-[2px] border-b border-dashed border-yellow-600/30 z-0"></div>
-                                <div class="absolute inset-x-0 top-[24px] border-b border-dashed border-yellow-600/20 z-0"></div>
-                                <div class="absolute inset-x-0 top-[48px] border-b border-dashed border-yellow-600/30 z-0"></div>
-                                <div id="modalGlobalGraph" class="absolute inset-0 flex items-end gap-[2px] pt-1 pb-1 overflow-x-auto hide-scroll px-1 z-10"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="modalSeasonSelectionRow" class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
-                            <button id="btnCheckAllSeason" class="text-[11px] font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-900/50 px-2.5 py-1 rounded-lg hover:bg-indigo-900/50 transition">Tout cocher</button>
-                        </div>
-                        <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
-                    </div>
-
-                    <div class="bg-gray-900 p-3 rounded-xl border border-gray-700/60 space-y-1.5">
-                        <h4 id="seasonGraphTitle" class="text-[11px] font-bold text-gray-400 uppercase">📈 Évolution de la Saison</h4>
-                        <div class="flex gap-2 items-stretch">
-                            <div class="flex flex-col justify-between text-[9px] font-mono font-bold text-gray-500 pr-1 border-r border-gray-800 py-0.5 text-right select-none w-4 h-20">
-                                <span>10</span><span>7.5</span><span>5</span><span>0</span>
-                            </div>
-                            <div class="flex-1 h-20 relative">
-                                <div class="absolute inset-x-0 top-[2px] border-b border-dashed border-yellow-600/30 z-0"></div>
-                                <div class="absolute inset-x-0 top-[20px] border-b border-dashed border-yellow-600/20 z-0"></div>
-                                <div class="absolute inset-x-0 top-[40px] border-b border-dashed border-yellow-600/30 z-0"></div>
-                                <div id="modalSeasonGraph" class="absolute inset-0 flex items-end gap-1 pt-1 pb-1 overflow-x-auto hide-scroll px-1 z-10"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="modalEpisodesBlock" class="space-y-2">
-                    <h3 class="text-sm font-bold text-white flex justify-between items-center">
-                        <span>Épisodes</span><span id="modalEpCount" class="text-xs font-normal text-gray-400"></span>
-                    </h3>
-                    <div id="modalEpisodesList" class="max-h-60 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 pt-2" id="modalActionButtonsGrid">
-                    <button id="modalActionFollowBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-500 transition shadow">A regarder</button>
-                    <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-500 transition shadow">Déjà Tout Vu</button>
-                </div>
-            </div>
+            <button onclick="closeModal()" class="w-full py-2 bg-gray-700 rounded-lg font-bold">Fermer</button>
         </div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 shadow-2xl px-1">
-        <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-indigo-400 font-bold"><span>🔍</span><span class="mt-0.5 text-[11px]">Chercher</span></button>
-        <button onclick="switchTab('discover')" id="nav-discover" class="flex flex-col items-center text-xs text-gray-400"><span>✨</span><span class="mt-0.5 text-[11px]">Découvrir</span></button>
-        <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center text-xs text-gray-400"><span>📅</span><span class="mt-0.5 text-[11px]">À Venir</span></button>
-        <button onclick="switchTab('library')" id="nav-library" class="flex flex-col items-center text-xs text-gray-400"><span>📚</span><span class="mt-0.5 text-[11px]">Suivis</span></button>
-        <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-xs text-gray-400"><span>📊</span><span class="mt-0.5 text-[11px]">Profil</span></button>
-    </nav>
-
     <script>
-        // METS TA CLÉ API TMDB ICI :
-        const TMDB_API_KEY = "VOTRE_CLE_API_TMDB"; 
-
+        const OMDB_KEY = "1e01c814";
         const TVMAZE_API = 'https://api.tvmaze.com';
-        const JIKAN_API = 'https://api.jikan.moe/v4';
 
-        let currentMediaType = 'series';
-        let unifiedSearchResults = []; 
-        let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
-        let showsCache = [];
-        let discoverFilter = 'mix'; 
-        let activeModalMediaIndex = null;
-        let activeModalSeason = null;
-
-        window.addEventListener('DOMContentLoaded', async () => { preloadShowsCache(); });
-        async function preloadShowsCache() {
-            try { const res = await fetch(`${TVMAZE_API}/shows?page=1`); if(res.ok) showsCache = await res.json(); } catch(e){}
-        }
-        function saveLocalDB() { localStorage.setItem('personal_tracker_db', JSON.stringify(library)); }
-
+        // Fonction de navigation centrale
         function switchTab(tabName) {
-            ['search', 'discover', 'calendar', 'library', 'profile'].forEach(t => {
-                const el = document.getElementById(`tab-${t}`); const nav = document.getElementById(`nav-${t}`);
-                if (el) el.classList.add('hidden');
-                if (nav) { nav.classList.remove('text-indigo-400', 'font-bold'); nav.classList.add('text-gray-400'); }
-            });
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-            document.getElementById(`nav-${tabName}`).classList.add('text-indigo-400', 'font-bold');
-            if (tabName === 'library') renderLibrary();
-            if (tabName === 'profile') renderProfile();
-            if (tabName === 'discover') renderDiscoverTab(false);
-            if (tabName === 'calendar') renderCalendarTab();
+            const views = {
+                search: `<div class="space-y-4">
+                            <input type="text" oninput="triggerHybridSearch(this.value)" placeholder="Rechercher..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white" />
+                            <div id="searchResults" class="space-y-3"></div>
+                         </div>`,
+                library: '<h2 class="text-xl font-black">Suivis</h2>',
+                calendar: '<h2 class="text-xl font-black">À Venir</h2>',
+                discover: '<h2 class="text-xl font-black">Découvrir</h2>',
+                profile: '<h2 class="text-xl font-black">Profil</h2>'
+            };
+            document.getElementById('app-container').innerHTML = views[tabName] || '';
+            document.querySelectorAll('nav button').forEach(b => b.classList.replace('text-indigo-400', 'text-gray-400'));
+            document.getElementById('nav-' + tabName).classList.replace('text-gray-400', 'text-indigo-400');
         }
 
-        function setMediaType(type) {
-            currentMediaType = type;
-            ['series', 'movie', 'anime'].forEach(t => {
-                const btn = document.getElementById(`btn-${t}`);
-                if (btn) btn.className = `py-2 text-sm font-bold rounded-lg capitalize transition ${type === t ? 'bg-indigo-600 text-white shadow' : 'text-gray-400'}`;
-            });
-            displayUnifiedResults();
+        async function triggerHybridSearch(query) {
+            if (query.length < 2) return;
+            const res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_KEY}&s=${encodeURIComponent(query)}&type=movie`);
+            const data = await res.json();
+            const results = (data.Search || []).map(m => ({ title: m.Title, id: m.imdbID }));
+            document.getElementById('searchResults').innerHTML = results.map(r => `
+                <div class="bg-gray-800 p-3 rounded-lg cursor-pointer" onclick="openModal({title: '${r.title}'})">${r.title}</div>
+            `).join('');
         }
 
-        document.getElementById('searchInput')?.addEventListener('input', (e) => {
-            clearTimeout(window.searchTimeout);
-            window.searchTimeout = setTimeout(() => { triggerHybridSearch(e.target.value); }, 400);
-        });
-
-        // RECHERCHE INTEGRANT TMDB POUR LES FILMS
-        async function triggerHybridSearch(val) {
-            const loader = document.getElementById('searchLoading');
-            const errBox = document.getElementById('searchError');
-            const query = val.trim().toLowerCase();
-
-            if (query.length < 2) { unifiedSearchResults = []; document.getElementById('searchResults').innerHTML = ''; return; }
-            loader.classList.remove('hidden'); errBox.classList.add('hidden');
-
-            try {
-                let tvmazePromise = Promise.resolve([]);
-                let tmdbPromise = Promise.resolve({ results: [] });
-                let jikanPromise = Promise.resolve({ data: [] });
-
-                if (currentMediaType === 'series') {
-                    tvmazePromise = fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []);
-                } else if (currentMediaType === 'movie') {
-                    if (TMDB_API_KEY && TMDB_API_KEY !== "VOTRE_CLE_API_TMDB") {
-                        tmdbPromise = fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`).then(r => r.json()).catch(() => ({ results: [] }));
-                    } else {
-                        // Fallback TVMaze
-                        tvmazePromise = fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []);
-                    }
-                } else if (currentMediaType === 'anime') {
-                    jikanPromise = fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(query)}&limit=15`).then(r => r.json()).catch(() => ({ data: [] }));
-                }
-
-                const [tvmazeData, tmdbData, jikanData] = await Promise.all([tvmazePromise, tmdbPromise, jikanPromise]);
-
-                const parsedTvmaze = (tvmazeData || []).map(item => {
-                    if (!item || !item.show) return null; const s = item.show;
-                    return {
-                        id: `series-${s.id}`, apiId: s.id, title: s.name, type: 'series',
-                        image: s.image?.medium || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
-                        summary: s.summary ? s.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
-                        rating: s.rating?.average || 0, genres: s.genres || ['Drama'], premiered: s.premiered || '', status: s.status || 'Running', network: s.network ? s.network.name : 'Streaming'
-                    };
-                }).filter(Boolean);
-
-                const parsedTmdb = ((tmdbData && tmdbData.results) || []).map(m => ({
-                    id: `movie-${m.id}`, apiId: m.id, title: m.title, type: 'movie',
-                    image: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : 'https://via.placeholder.com/210x295?text=Pas+d%27image',
-                    summary: m.overview || 'Aucun résumé disponible en français.',
-                    rating: m.vote_average || 0, genres: ['Film'], premiered: m.release_date || '', status: 'Released', network: 'Cinéma/VOD'
-                }));
-
-                const parsedJikan = ((jikanData && jikanData.data) || []).map(item => ({
-                    id: `anime-${item.mal_id}`, apiId: item.mal_id, title: item.title_english || item.title, type: 'anime',
-                    image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
-                    summary: item.synopsis || 'Aucun résumé.', rating: item.score || 0, genres: ['Animation'], premiered: item.aired?.from ? item.aired.from.split('T')[0] : '', status: 'Ended', network: 'Crunchyroll'
-                }));
-
-                unifiedSearchResults = [...parsedTvmaze, ...parsedTmdb, ...parsedJikan];
-                displayUnifiedResults();
-            } catch (err) { errBox.classList.remove('hidden'); } finally { loader.classList.add('hidden'); }
-        }
-
-        function displayUnifiedResults() {
-            const resultsContainer = document.getElementById('searchResults');
-            resultsContainer.innerHTML = '';
-            let filtered = unifiedSearchResults.filter(item => item.type === currentMediaType);
-            filtered.forEach(media => {
-                const ratingPercent = media.rating * 10;
-                const div = document.createElement('div');
-                div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 cursor-pointer hover:border-indigo-500/50 transition";
-                div.onclick = () => openPreviewModal(media);
-                div.innerHTML = `
-                    <img src="${media.image}" class="w-16 h-24 object-cover rounded-lg bg-gray-900 flex-shrink-0" />
-                    <div class="flex-1 min-w-0 flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start gap-1">
-                                <h3 class="font-bold text-white text-sm truncate">${media.title}</h3>
-                                <span class="text-[11px] text-yellow-400 font-bold shrink-0">★ ${media.rating > 0 ? media.rating.toFixed(1) : 'N/A'}</span>
-                            </div>
-                            <span class="inline-block text-[9px] font-bold text-indigo-300 bg-indigo-950/50 px-1.5 py-0.5 rounded border border-indigo-900/40 mt-1">📺 ${media.network}</span>
-                            <p class="text-[11px] text-gray-400 line-clamp-2 mt-1">${media.summary}</p>
-                        </div>
-                    </div>
-                `;
-                resultsContainer.appendChild(div);
-            });
-        }
-
-        async function changeDiscoverFilter(mode) {
-            discoverFilter = mode;
-            renderDiscoverTab(true);
-        }
-
-        async function renderDiscoverTab(forceRefresh = false) {
-            const container = document.getElementById('discoverGrid');
-            if (!container || (!forceRefresh && container.children.length > 0)) return;
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            if (discoverFilter === 'unreleased') {
-                const res = await fetch(`${TVMAZE_API}/shows?page=5`);
-                const data = await res.json();
-                let unreleased = data.filter(item => item.premiered && item.premiered > todayStr);
-                displayDiscoverCards(unreleased.slice(0, 6), container, "Futur 📅");
-            } else if (discoverFilter === 'trending') {
-                const res = await fetch(`${TVMAZE_API}/schedule`);
-                const data = await res.json();
-                let schedule = data.map(item => item.show).filter((s, idx, self) => s && self.findIndex(t => t.id === s.id) === idx);
-                displayDiscoverCards(schedule.slice(0, 6), container, "En ce moment 🔥");
-            } else {
-                const res = await fetch(`${TVMAZE_API}/shows?page=1`);
-                const data = await res.json();
-                displayDiscoverCards(data.slice(10, 16), container, "Pour Toi 🎲");
-            }
-        }
-
-        function displayDiscoverCards(items, container, badgeLabel) {
-            container.innerHTML = '';
-            items.forEach(show => {
-                const norm = {
-                    id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series',
-                    image: show.image?.medium || 'https://via.placeholder.com/210x295?text=No+Image', summary: show.summary || '',
-                    rating: show.rating?.average || 0, genres: show.genres || [], premiered: show.premiered || '', status: show.status, network: show.network ? show.network.name : 'Streaming'
-                };
-                const div = document.createElement('div');
-                div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 cursor-pointer";
-                div.onclick = () => openPreviewModal(norm);
-                div.innerHTML = `<img src="${norm.image}" class="w-14 h-20 object-cover rounded-lg" /><div class="flex-1 min-w-0"><h3 class="font-bold text-white text-sm truncate">${norm.title}</h3><span class="text-[9px] text-indigo-400 font-bold">${badgeLabel}</span></div>`;
-                container.appendChild(div);
-            });
-        }
-
-        // COMPORTEMENT PERSISTANT : LE BOUTON VU DANS LES SUGGESTIONS NE FERME PLUS LA MODALE NI LA LISTE
-        async function renderSuggestions(genre, currentId) {
-            const container = document.getElementById('modalSuggestionsList');
-            document.getElementById('modalSuggestionsBlock').classList.remove('hidden');
-            let pool = showsCache.filter(item => item.genres && item.genres.includes(genre) && `series-${item.id}` !== currentId);
-            container.innerHTML = '';
-            pool.slice(0, 5).forEach(show => {
-                const norm = { id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series', image: show.image?.medium, summary: show.summary, rating: show.rating?.average || 7 };
-                const inLib = library.some(lib => lib.id === norm.id);
-                const div = document.createElement('div');
-                div.className = "bg-gray-800 p-2 rounded-lg flex items-center justify-between";
-                div.innerHTML = `
-                    <span class="text-xs text-white truncate">${norm.title}</span>
-                    <div id="sugBlock-${norm.id}">
-                        ${inLib ? `<span class="text-[10px] text-gray-500 font-bold">Suivi</span>` : `<button onclick="actionSuggestionDirect('${norm.id}')" class="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded font-bold">Vu</button>`}
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        async function actionSuggestionDirect(id) {
-            let cleanId = id.replace('series-', '');
-            let found = showsCache.find(s => String(s.id) === String(cleanId));
-            if (found) {
-                const norm = { id: id, apiId: found.id, title: found.name, type: 'series', image: found.image?.medium, summary: found.summary, rating: found.rating?.average || 7, genres: found.genres };
-                if (!unifiedSearchResults.some(x => x.id === norm.id)) unifiedSearchResults.push(norm);
-                await addToLibraryById(norm.id, true);
-                const btnBox = document.getElementById(`sugBlock-${id}`);
-                if (btnBox) btnBox.innerHTML = `<span class="text-[10px] text-emerald-400 font-bold">✓ Vu</span>`;
-            }
-        }
-
-        async function openPreviewModal(media) {
-            document.getElementById('modalSuggestionsBlock').classList.add('hidden');
-            document.getElementById('modalPoster').src = media.image;
+        function openModal(m) {
+            document.getElementById('modalTitle').textContent = m.title;
             document.getElementById('mediaModal').classList.remove('hidden');
-            // Logique de remplissage classique...
-            document.getElementById('modalTitle').textContent = media.title;
-            document.getElementById('modalTypeBadge').textContent = media.type;
-            document.getElementById('modalGlobalRatingBar').style.width = `${media.rating * 10}%`;
-            document.getElementById('modalGlobalRating').textContent = `★ ${media.rating}`;
-            document.getElementById('modalSummary').textContent = media.summary || 'Aucun résumé.';
-
-            const followBtn = document.getElementById('modalActionFollowBtn');
-            followBtn.onclick = async () => { await addToLibraryById(media.id, false); closeModal(); switchTab('library'); };
-            document.getElementById('modalActionAllWatchedBtn').onclick = async () => { await addToLibraryById(media.id, true); closeModal(); switchTab('library'); };
         }
 
-        async function addToLibraryById(mediaId, forceAllWatched = false) {
-            let media = library.find(m => m.id === mediaId) || unifiedSearchResults.find(m => m.id === mediaId);
-            if (!media) return null;
-            media.status = forceAllWatched ? 'Watched' : 'In Progress';
-            if(!library.some(m => m.id === mediaId)) library.push(media);
-            saveLocalDB();
-            return media;
-        }
+        function closeModal() { document.getElementById('mediaModal').classList.add('hidden'); }
 
-        function closeModal() { document.getElementById('mediaModal').classList.add('hidden'); renderLibrary(); }
-        function renderLibrary() { /* ... */ }
-        function renderProfile() { /* ... */ }
+        // Lancement initial
+        window.onload = () => switchTab('search');
     </script>
 </body>
 </html>
