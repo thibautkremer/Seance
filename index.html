@@ -354,72 +354,41 @@
             const loader = document.getElementById('searchLoading');
             const errBox = document.getElementById('searchError');
             const query = val.trim().toLowerCase();
-
-            if (query.length < 2) { 
-                unifiedSearchResults = []; 
-                document.getElementById('searchResults').innerHTML = ''; 
-                errBox.classList.add('hidden'); 
-                return; 
-            }
+        
+            if (query.length < 2) { unifiedSearchResults = []; document.getElementById('searchResults').innerHTML = ''; errBox.classList.add('hidden'); return; }
             loader.classList.remove('hidden'); errBox.classList.add('hidden');
-
+        
             try {
-                // Double requête TVMaze pour couvrir à la fois les formats natifs et les formats spéciaux / films
-                const tvmazePromise = fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []);
-                const jikanPromise = fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(query)}&limit=20`).then(r => r.json()).catch(() => ({ data: [] }));
-
-                const [tvmazeData, jikanData] = await Promise.all([tvmazePromise, jikanPromise]);
-
-                const parsedTvmaze = (tvmazeData || []).map(item => {
-                    if (!item || !item.show) return null;
-                    const s = item.show;
+                let results = [];
+                if (currentMediaType === 'movie') {
+                    const res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_KEY || '1e01c814'}&s=${encodeURIComponent(query)}&type=movie`);
+                    const data = await res.json();
+                    results = (data.Search || []).map(m => ({
+                        id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie',
+                        image: m.Poster !== 'N/A' ? m.Poster : 'https://via.placeholder.com/210x295',
+                        summary: 'Film trouvé via OMDb', rating: 7.0, network: 'Cinéma/VOD', genres: ['Film']
+                    }));
+                } else {
+                    const tvmazePromise = fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []);
+                    const jikanPromise = fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(query)}&limit=15`).then(r => r.json()).catch(() => ({ data: [] }));
+                    const [tvmazeData, jikanData] = await Promise.all([tvmazePromise, jikanPromise]);
                     
-                    const format = s.type ? s.type.toLowerCase() : '';
-                    // Inclusion des téléfilms et longs formats
-                    const isMovie = format.includes('movie') || format.includes('film') || format.includes('special') || (s.runtime && s.runtime >= 65);
-                    const platform = s.network ? s.network.name : (s.webChannel ? s.webChannel.name : 'Streaming/VOD');
-
-                    return {
-                        id: `${isMovie ? 'movie' : 'series'}-${s.id}`,
-                        apiId: s.id,
-                        title: s.name || 'Inconnu',
-                        type: isMovie ? 'movie' : 'series',
-                        image: s.image?.medium || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
-                        summary: s.summary ? s.summary.replace(/<[^>]*>/g, '') : 'Aucun résumé.',
-                        rating: s.rating?.average || 0,
-                        genres: s.genres || ['Drama'],
-                        premiered: s.premiered || '',
-                        status: s.status || 'Running',
-                        network: platform
-                    };
-                }).filter(Boolean);
-
-                const parsedJikan = ((jikanData && jikanData.data) || []).map(item => {
-                    let studio = 'Crunchyroll';
-                    if (item.studios && item.studios.length > 0) studio = item.studios[0].name;
-
-                    return {
-                        id: `anime-${item.mal_id}`,
-                        apiId: item.mal_id,
-                        title: item.title_english || item.title || 'Inconnu',
-                        type: 'anime',
-                        image: item.images?.jpg?.image_url || 'https://via.placeholder.com/210x295?text=Pas+d%27image',
-                        summary: item.synopsis || 'Aucun résumé.',
-                        rating: item.score || 0,
-                        genres: item.genres?.map(g => g.name) || ['Animation'],
-                        premiered: item.aired?.from ? item.aired.from.split('T')[0] : '',
-                        status: item.airing ? 'Running' : 'Ended',
-                        network: studio
-                    };
-                });
-
-                unifiedSearchResults = [...parsedTvmaze, ...parsedJikan];
+                    const pTv = tvmazeData.map(i => ({
+                        id: `series-${i.show.id}`, apiId: i.show.id, title: i.show.name, type: 'series',
+                        image: i.show.image?.medium || 'https://via.placeholder.com/210x295',
+                        summary: i.show.summary?.replace(/<[^>]*>/g, '') || '', rating: i.show.rating?.average || 0,
+                        network: i.show.network?.name || 'Streaming', genres: i.show.genres || []
+                    }));
+                    const pJik = jikanData.data.map(i => ({
+                        id: `anime-${i.mal_id}`, apiId: i.mal_id, title: i.title, type: 'anime',
+                        image: i.images?.jpg?.image_url, summary: i.synopsis || '', rating: i.score || 0,
+                        network: 'Crunchyroll', genres: i.genres?.map(g => g.name) || []
+                    }));
+                    results = currentMediaType === 'anime' ? pJik : pTv;
+                }
+                unifiedSearchResults = results;
                 displayUnifiedResults();
-
-            } catch (err) {
-                errBox.textContent = 'Erreur réseau.';
-                errBox.classList.remove('hidden');
-            } finally { loader.classList.add('hidden'); }
+            } catch (err) { errBox.classList.remove('hidden'); } finally { loader.classList.add('hidden'); }
         }
 
         function displayUnifiedResults() {
@@ -498,59 +467,44 @@
         // CORRECTIONS APPORTÉES AUX ENDPOINTS DE RETOURS DE SUGGESTIONS FUTURES ET DE COMPORTEMENT TRENDING
         async function renderDiscoverTab(forceRefresh = false) {
             const container = document.getElementById('discoverGrid');
-            if (!container) return;
-            if (!forceRefresh && container.children.length > 0) return;
-            container.innerHTML = `<div class="text-xs text-indigo-400 animate-pulse text-center py-12">Chargement des données...</div>`;
-
-            const todayStr = new Date().toISOString().split('T')[0];
-
+            if (!container || (!forceRefresh && container.children.length > 0)) return;
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+        
             try {
+                const res = await fetch(`${TVMAZE_API}/shows?page=${Math.floor(Math.random() * 10) + 1}`);
+                const data = await res.json();
+                
+                let filtered = [];
                 if (discoverFilter === 'unreleased') {
-                    // Cible un flux récent et filtre STRICTEMENT pour n'avoir que du futur
-                    const res = await fetch(`${TVMAZE_API}/shows?page=4`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        let unreleased = data.filter(item => item.premiered && item.premiered > todayStr && !library.some(lib => lib.apiId === item.id));
-                        
-                        if(unreleased.length === 0) {
-                            // Deuxième page de secours
-                            const fb = await fetch(`${TVMAZE_API}/shows?page=12`);
-                            unreleased = (await fb.json()).filter(item => !item.premiered || item.premiered > todayStr);
-                        }
-                        unreleased.sort(() => 0.5 - Math.random());
-                        displayDiscoverCards(unreleased.slice(0, 6), container, "Futur 📅");
-                    }
+                    filtered = data.filter(s => s.premiered && new Date(s.premiered) > today);
                 } else if (discoverFilter === 'trending') {
-                    // Les tendances du moment réel : Le planning de diffusion global de la semaine en cours
-                    const res = await fetch(`${TVMAZE_API}/schedule`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        let scheduleShows = data.map(item => item.show).filter((show, index, self) => 
-                            show && self.findIndex(t => t.id === show.id) === index && !library.some(lib => lib.apiId === show.id)
-                        );
-                        scheduleShows.sort(() => 0.5 - Math.random());
-                        displayDiscoverCards(scheduleShows.slice(0, 6), container, "En ce moment 🔥");
-                    }
+                    filtered = data.sort((a,b) => (b.rating?.average || 0) - (a.rating?.average || 0));
                 } else {
-                    if (library.length === 0) {
-                        const res = await fetch(`${TVMAZE_API}/shows?page=1`);
-                        const data = await res.json();
-                        displayDiscoverCards(data.slice(15, 21), container, "Découvrir 🎲");
-                        return;
-                    }
-                    let genreCounts = {};
-                    library.forEach(item => { item.genres?.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; }); });
-                    let favoriteGenres = Object.keys(genreCounts).sort((a,b) => genreCounts[b] - genreCounts[a]);
-                    let targetGenre = favoriteGenres[Math.floor(Math.random() * Math.min(favoriteGenres.length, 3))] || 'Drama';
-
-                    const res = await fetch(`${TVMAZE_API}/shows?page=1`);
-                    if (res.ok) {
-                        let recommendations = (await res.json()).filter(item => item.genres && item.genres.includes(targetGenre) && !library.some(lib => lib.apiId === item.id));
-                        recommendations.sort(() => 0.5 - Math.random());
-                        displayDiscoverCards(recommendations.slice(0, 6), container, `Genre: ${targetGenre}`);
-                    }
+                    filtered = data.sort(() => 0.5 - Math.random());
                 }
-            } catch(e) { container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">Une erreur s'est produite lors de l'accès au catalogue.</p>`; }
+        
+                container.innerHTML = '';
+                filtered.slice(0, 6).forEach(show => {
+                    const norm = {
+                        id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series',
+                        image: show.image?.medium || 'https://via.placeholder.com/210x295',
+                        summary: show.summary?.replace(/<[^>]*>/g, '') || '',
+                        rating: show.rating?.average || 0, network: show.network?.name || 'Streaming'
+                    };
+                    const div = document.createElement('div');
+                    div.className = "bg-gray-800 rounded-xl border border-gray-700 flex p-3 gap-3 items-center";
+                    div.innerHTML = `
+                        <img src="${norm.image}" class="w-12 h-16 object-cover rounded-lg">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-sm truncate">${norm.title}</h3>
+                            <button onclick="addToLibraryById('${norm.id}', false); alert('Ajouté !')" class="text-[10px] bg-indigo-600 px-2 py-1 rounded text-white font-bold mt-1">➕ Ajouter</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch(e) { container.innerHTML = '<p class="text-xs text-center">Erreur chargement.</p>'; }
         }
 
         function displayDiscoverCards(items, container, badgeLabel) {
