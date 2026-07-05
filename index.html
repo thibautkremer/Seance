@@ -350,47 +350,50 @@
         });
 
         // RECHERCHE HYBRIDE AVEC PRISE EN CHARGE GLOBALE DU CATALOGUE FILMS ET FILTRAGES AVANCÉS
-        async function triggerHybridSearch(val) {
+        async function triggerHybridSearch(query) {
             const loader = document.getElementById('searchLoading');
             const errBox = document.getElementById('searchError');
-            const query = val.trim().toLowerCase();
+            const q = query.trim().toLowerCase();
         
-            if (query.length < 2) { unifiedSearchResults = []; document.getElementById('searchResults').innerHTML = ''; errBox.classList.add('hidden'); return; }
-            loader.classList.remove('hidden'); errBox.classList.add('hidden');
+            if (q.length < 2) { unifiedSearchResults = []; document.getElementById('searchResults').innerHTML = ''; return; }
+            loader.classList.remove('hidden');
         
             try {
+                // On interroge toujours les deux sources en même temps
+                const [omdbRes, tvmazeRes] = await Promise.all([
+                    fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${encodeURIComponent(q)}`).then(r => r.json()),
+                    fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(q)}`).then(r => r.json())
+                ]);
+        
                 let results = [];
-                if (currentMediaType === 'movie') {
-                    const res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_KEY || '1e01c814'}&s=${encodeURIComponent(query)}&type=movie`);
-                    const data = await res.json();
-                    results = (data.Search || []).map(m => ({
+        
+                // 1. Traitement des Films (OMDb)
+                if (omdbRes.Search) {
+                    results = results.concat(omdbRes.Search.map(m => ({
                         id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie',
                         image: m.Poster !== 'N/A' ? m.Poster : 'https://via.placeholder.com/210x295',
-                        summary: 'Film trouvé via OMDb', rating: 7.0, network: 'Cinéma/VOD', genres: ['Film']
-                    }));
-                } else {
-                    const tvmazePromise = fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []);
-                    const jikanPromise = fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(query)}&limit=15`).then(r => r.json()).catch(() => ({ data: [] }));
-                    const [tvmazeData, jikanData] = await Promise.all([tvmazePromise, jikanPromise]);
-                    
-                    const pTv = tvmazeData.map(i => ({
+                        summary: 'Film', rating: 7.0, network: 'Cinéma'
+                    })));
+                }
+        
+                // 2. Traitement des Séries (TVMaze)
+                if (Array.isArray(tvmazeRes)) {
+                    results = results.concat(tvmazeRes.map(i => ({
                         id: `series-${i.show.id}`, apiId: i.show.id, title: i.show.name, type: 'series',
                         image: i.show.image?.medium || 'https://via.placeholder.com/210x295',
-                        summary: i.show.summary?.replace(/<[^>]*>/g, '') || '', rating: i.show.rating?.average || 0,
-                        network: i.show.network?.name || 'Streaming', genres: i.show.genres || []
-                    }));
-                    const pJik = jikanData.data.map(i => ({
-                        id: `anime-${i.mal_id}`, apiId: i.mal_id, title: i.title, type: 'anime',
-                        image: i.images?.jpg?.image_url, summary: i.synopsis || '', rating: i.score || 0,
-                        network: 'Crunchyroll', genres: i.genres?.map(g => g.name) || []
-                    }));
-                    results = currentMediaType === 'anime' ? pJik : pTv;
+                        summary: i.show.summary?.replace(/<[^>]*>/g, '') || '',
+                        rating: i.show.rating?.average || 0, network: i.show.network?.name || 'Streaming'
+                    })));
                 }
+        
                 unifiedSearchResults = results;
-                displayUnifiedResults();
-            } catch (err) { errBox.classList.remove('hidden'); } finally { loader.classList.add('hidden'); }
+                displayUnifiedResults(); // Cette fonction filtrera l'affichage selon le bouton actif
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loader.classList.add('hidden');
+            }
         }
-
         function displayUnifiedResults() {
             const resultsContainer = document.getElementById('searchResults');
             const errBox = document.getElementById('searchError');
