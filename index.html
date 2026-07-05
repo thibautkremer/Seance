@@ -45,10 +45,10 @@
         
         <!-- SECTION RECHERCHE -->
         <div id="tab-search" class="space-y-4">
-            <div class="grid grid-cols-3 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
-                <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries</button>
+            <!-- Remplace ton bloc de boutons actuel par celui-ci -->
+            <div class="grid grid-cols-2 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
+                <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg capitalize transition bg-indigo-600 text-white shadow">Séries & Animés</button>
                 <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg capitalize transition text-gray-400">Films</button>
-                <button onclick="setMediaType('anime')" id="btn-anime" class="py-2 text-sm font-bold rounded-lg capitalize transition text-gray-400">Animés</button>
             </div>
 
             <div class="relative">
@@ -122,14 +122,12 @@
                         <path class="text-gray-700" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         <path id="donutSeries" class="text-emerald-500 transition-all duration-500" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         <path id="donutMovies" class="text-amber-500 transition-all duration-500" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path id="donutAnimes" class="text-purple-500 transition-all duration-500" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center text-[10px] uppercase tracking-wider font-bold text-gray-400">Mix</div>
                 </div>
                 <div class="text-xs space-y-1 w-full">
                     <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Séries</span><b id="pct-series">0%</b></div>
                     <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Films</span><b id="pct-movies">0%</b></div>
-                    <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Animés</span><b id="pct-animes">0%</b></div>
                 </div>
             </div>
 
@@ -145,10 +143,6 @@
                 <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
                     <div id="stat-movies" class="text-2xl font-black text-amber-400">0</div>
                     <div class="text-xs text-gray-400 mt-0.5">Films</div>
-                </div>
-                <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
-                    <div id="stat-animes" class="text-2xl font-black text-purple-400">0</div>
-                    <div class="text-xs text-gray-400 mt-0.5">Animés</div>
                 </div>
             </div>
         </div>
@@ -337,7 +331,7 @@
 
         function setMediaType(type) {
             currentMediaType = type;
-            ['series', 'movie', 'anime'].forEach(t => {
+            ['series', 'movie'].forEach(t => {
                 const btn = document.getElementById(`btn-${t}`);
                 if (btn) btn.className = `py-2 text-sm font-bold rounded-lg capitalize transition ${type === t ? 'bg-indigo-600 text-white shadow' : 'text-gray-400'}`;
             });
@@ -359,7 +353,6 @@
             loader.classList.remove('hidden');
         
             try {
-                // On interroge toujours les deux sources en même temps
                 const [omdbRes, tvmazeRes] = await Promise.all([
                     fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${encodeURIComponent(q)}`).then(r => r.json()),
                     fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(q)}`).then(r => r.json())
@@ -367,7 +360,7 @@
         
                 let results = [];
         
-                // 1. Traitement des Films (OMDb)
+                // Films (OMDb)
                 if (omdbRes.Search) {
                     results = results.concat(omdbRes.Search.map(m => ({
                         id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie',
@@ -376,7 +369,7 @@
                     })));
                 }
         
-                // 2. Traitement des Séries (TVMaze)
+                // Séries (TVMaze) - Inclut tous les animés qui y sont répertoriés
                 if (Array.isArray(tvmazeRes)) {
                     results = results.concat(tvmazeRes.map(i => ({
                         id: `series-${i.show.id}`, apiId: i.show.id, title: i.show.name, type: 'series',
@@ -387,13 +380,10 @@
                 }
         
                 unifiedSearchResults = results;
-                displayUnifiedResults(); // Cette fonction filtrera l'affichage selon le bouton actif
-            } catch (err) {
-                console.error(err);
-            } finally {
-                loader.classList.add('hidden');
-            }
+                displayUnifiedResults();
+            } catch (err) { console.error(err); } finally { loader.classList.add('hidden'); }
         }
+        
         function displayUnifiedResults() {
             const resultsContainer = document.getElementById('searchResults');
             const errBox = document.getElementById('searchError');
@@ -1091,16 +1081,12 @@
         }
 
         function renderProfile() {
-            let totalTime = 0; let seriesCount = 0; let moviesCount = 0; let animesCount = 0;
+            let totalTime = 0; let seriesCount = 0; let moviesCount = 0;
             library.forEach(item => {
                 if (item.type === 'movie') { moviesCount++; totalTime += 120; } 
-                else if (item.type === 'anime') {
-                    animesCount++;
-                    if(item.episodes && item.episodes.length > 0) { item.episodes.forEach(ep => { if(ep.watched) totalTime += 24; }); } 
-                    else { totalTime += 24; }
-                } else if (item.type === 'series') {
+                else if (item.type === 'series') {
                     seriesCount++;
-                    item.episodes?.forEach(ep => { if (ep.watched) { totalTime += ep.runtime || 40; } });
+                    item.episodes?.forEach(ep => { if (ep.watched) totalTime += (ep.runtime || 40); });
                 }
             });
 
@@ -1109,28 +1095,22 @@
             
             document.getElementById('stat-series').textContent = seriesCount;
             document.getElementById('stat-movies').textContent = moviesCount;
-            document.getElementById('stat-animes').textContent = animesCount;
 
             const totalItems = seriesCount + moviesCount + animesCount;
             const pctSeries = totalItems > 0 ? Math.round((seriesCount / totalItems) * 100) : 0;
             const pctMovies = totalItems > 0 ? Math.round((moviesCount / totalItems) * 100) : 0;
-            const pctAnimes = totalItems > 0 ? Math.round((animesCount / totalItems) * 100) : 0;
 
             document.getElementById('pct-series').textContent = `${pctSeries}%`;
             document.getElementById('pct-movies').textContent = `${pctMovies}%`;
-            document.getElementById('pct-animes').textContent = `${pctAnimes}%`;
 
             const dSeries = document.getElementById('donutSeries');
             const dMovies = document.getElementById('donutMovies');
-            const dAnimes = document.getElementById('donutAnimes');
 
             if(totalItems > 0 && dSeries && dMovies && dAnimes) {
                 dSeries.setAttribute('stroke-dasharray', `${pctSeries}, 100`);
                 dSeries.setAttribute('stroke-dashoffset', '0');
                 dMovies.setAttribute('stroke-dasharray', `${pctMovies}, 100`);
                 dMovies.setAttribute('stroke-dashoffset', `-${pctSeries}`);
-                dAnimes.setAttribute('stroke-dasharray', `${pctAnimes}, 100`);
-                dAnimes.setAttribute('stroke-dashoffset', `-${pctSeries + pctMovies}`);
             }
         }
 
