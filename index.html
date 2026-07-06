@@ -290,12 +290,8 @@
     let activeModalMediaIndex = null, activeModalSeason = null, modalMode = 'preview', previewEpisodes = [];
     const searchCache = new Map();
     
-    // Identité locale
-    let localUserId = localStorage.getItem('tvr_user_id');
-    if (!localUserId) {
-        localUserId = 'user_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('tvr_user_id', localUserId);
-    }
+    // Identité unique et universelle pour toutes vos sessions
+    const localUserId = 'tvr_master_user_2026';
     
     // Bibliothèque & File d'attente
     let library = (() => { try { return JSON.parse(localStorage.getItem('personal_tracker_db')) || []; } catch { return []; } })();
@@ -1255,25 +1251,125 @@
         };
     }
     
-    function importLibrary(event) {
+    async function importLibrary(event) {
         const file = event.target.files[0];
         if (!file) return;
+    
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = async (e) => {
             try {
-                const data = JSON.parse(e.target.result);
-                const merged = [...library], ids = new Set(merged.map(i => i.id));
-                data.forEach(item => { 
-                    if (!ids.has(item.id)) { 
-                        item.last_modified = Date.now();
-                        merged.push(item); ids.add(item.id); queueForSync(item.id);
-                    } 
-                });
-                library = merged; saveLocalDB();
-                alert(`${merged.length} titres en bibliothèque.`);
+                const importedData = JSON.parse(e.target.result);
+                
+                if (!confirm(`Vous allez importer ${importedData.length} médias. L'application va rechercher les vraies affiches et les épisodes, ce qui peut prendre plusieurs minutes. Voulez-vous continuer ?`)) {
+                    event.target.value = ''; // Réinitialise le bouton
+                    return;
+                }
+    
+                // Changer le texte du bouton pour montrer l'avancement
+                const importBtnLabel = event.target.parentElement;
+                const originalText = importBtnLabel.innerHTML;
+                
+                let processedCount = 0;
+                
+                for (let i = 0; i < importedData.length; i++) {
+                    // Mise à jour visuelle du bouton
+                    importBtnLabel.innerHTML = `⏳ Importation... ${i + 1} / ${importedData.length}`;
+                    
+                    const rawItem = importedData[i];
+                    
+                    try {
+                        let newItem = { ...rawItem };
+                        let found = false;
+                        
+                        if (rawItem.type === 'series') {
+                            const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(rawItem.title)}`);
+                            const data = await res.json();
+                            if (data && data.length > 0) {
+                                const show = data[0].show;
+                                newItem.apiId = show.id;
+                                newItem.id = `series-${show.id}`;
+                                // Vraie image
+                                newItem.image = show.image?.medium || show.image?.original || 'https://placehold.co/210x295/1f2937/4b5563?text=Sans+Affiche';
+                                
+                                // Vrais épisodes
+                                const epRes = await fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`);
+                                const epData = await epRes.json();
+                                
+                                const isFullyWatched = rawItem.status === 'Watched';
+                                
+                                newItem.episodes = epData.map(ep => ({
+                                    id: ep.id, name: ep.name||'Sans titre', season: ep.season, number: ep.number, 
+                                    runtime: ep.runtime||40, airdate: ep.airdate||null,
+                                    ratingSource: ep.rating?.average ? parseFloat(ep.rating.average) : 7.0,
+                                    summary: ep.summary ? ep.summary.replace(/<[^>]*>/g,'') : '', 
+                                    watched: isFullyWatched
+                                }));
+                                found = true;
+                            }
+                        } else {
+                            const res = await fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${encodeURIComponent(rawItem.title)}`);
+                            const data = await res.json();
+                            if (data.Search && data.Search.length > 0) {
+                                const movie = data.Search[0];
+                                newItem.apiId = movie.imdbID;
+                                newItem.id = `movie-${movie.imdbID}`;
+                                newItem.image = movie.Poster !== 'N/A' ? movie.Poster : 'https://placehold.co/210x295/1f2937/4b5563?text=Sans+Affiche';
+                                found = true;
+                            }
+                        }
+                        
+                        if (found) {
+                            newItem.last_modified = Date.now();
+                            
+                            // Vérifier si on l'a déjà pour ne pas créer de doublons
+                            const existingIdx = library.findIndex(x => x.id === newItem.id || x.title.toLowerCase() === newItem.title.toLowerCase());
+                            if (existingIdx !== -1) {
+                                library[existingIdx] = newItem; // Mise à jour
+                            } else {
+                                library.push(newItem); // Ajout
+                            }
+                            processedCount++;
+                        }
+                    } catch (err) {
+                        console.error(`Erreur technique sur ${rawItem.title}`, err);
+                    }
+                    
+                    // Pause de 500ms pour ne pas surcharger les API externes
+                    await new Promise(r => setTimeout(r, 500));
+                }
+                
+                // Restaurer l'apparence normale du bouton
+                importBtnLabel.innerHTML = originalText;
+                
+                // Sauvegarde locale instantanée
+                saveLocalDB();
                 renderLibrary();
-            } catch { alert('Fichier invalide.'); }
+                
+                alert(`Import terminé ! ${processedCount} médias ont été enrichis avec succès. L'envoi vers le Cloud (Supabase) commence en arrière-plan.`);
+                
+                // Envoi massif mais silencieux vers Supabase
+                for (const item of library) {
+                    try {
+                        await supabaseClient.from('user_library').upsert({ 
+                            user_id: localUserId, 
+                            media_id: item.id, 
+                            media_data: item, 
+                            last_modified: item.last_modified 
+                        });
+                    } catch(err) {
+                        // Les erreurs éventuelles sont ignorées silencieusement pour ne pas bloquer l'utilisateur
+                    }
+                }
+                
+            } catch (err) {
+                alert('Erreur lors de la lecture du fichier JSON.');
+                console.error(err);
+            }
+            
+            // Permet de pouvoir ré-importer le même fichier plus tard si besoin
+            event.target.value = '';
         };
+        
         reader.readAsText(file);
     }
     
