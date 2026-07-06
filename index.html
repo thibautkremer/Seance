@@ -28,6 +28,19 @@
             ::-webkit-scrollbar-track { background: #1f2937; }
             ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
         }
+        /* Forcer le format sur toutes les cartes */
+        .media-card-img {
+            width: 155.88px;
+            height: 217.56px;
+            object-fit: cover; /* Recadre l'image pour remplir le rectangle sans déformation */
+            display: block;
+        }
+        
+        /* Ajuste le conteneur pour respecter ces dimensions */
+        .card-container {
+            width: 155.88px;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-20">
@@ -116,16 +129,21 @@
         <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center border-b border-gray-800 pb-3">
             <h2 class="text-lg font-bold text-white flex-shrink-0">Suivis (<span id="lib-count">0</span>)</h2>
             <div class="flex gap-2 flex-1 flex-wrap">
-                <select id="libraryStatusFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 text-gray-300 font-medium">
-                    <option value="not_finished" selected>En cours</option>
-                    <option value="watched">Terminé</option>
-                    <option value="abandoned">Abandonné</option>
-                    <option value="all">Tous</option>
-                </select>
-                <select id="libraryTypeFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 text-gray-300 font-medium">
-                    <option value="all" selected>Tous types</option>
-                    <option value="series">Séries</option>
+                <select id="libType" onchange="applyFilters()" class="bg-gray-800 text-xs p-2 rounded">
+                    <option value="all">Tous types</option>
                     <option value="movie">Films</option>
+                    <option value="series">Séries / Anime</option>
+                </select>
+                <select id="libProgress" onchange="applyFilters()" class="bg-gray-800 text-xs p-2 rounded">
+                    <option value="all">Tout visionnage</option>
+                    <option value="progress">En cours</option>
+                    <option value="watched">Terminé</option>
+                </select>
+                <select id="libStatus" onchange="applyFilters()" class="bg-gray-800 text-xs p-2 rounded">
+                    <option value="all">Toute diffusion</option>
+                    <option value="Running">En cours</option>
+                    <option value="Ended">Terminée</option>
+                    <option value="Canceled">Annulée</option>
                 </select>
                 <select id="librarySortFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 text-gray-300 font-medium">
                     <option value="recent">Ajout récent</option>
@@ -136,7 +154,6 @@
                 <input type="text" id="librarySearch" oninput="renderLibrary()" placeholder="Filtrer..." class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 text-gray-300 w-28 sm:w-36">
             </div>
         </div>
-        <div id="collectionsRow" class="flex gap-2 overflow-x-auto pb-1 hide-scroll"></div>
         <div id="libraryGrid" class="media-grid"></div>
     </div>
 
@@ -544,7 +561,7 @@
         const ratingText = hasRating ? media.rating.toFixed(1) : 'N/A';
         const safeId = CSS.escape(media.id);
         const div = document.createElement('div');
-        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer hover:border-teal-500/50 transition flex flex-col shadow-sm';
+        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer hover:border-teal-500/50 transition flex flex-col shadow-sm media-card-img';
         div.addEventListener('click', () => openPreviewModal(media));
         div.innerHTML = `
             <div class="relative w-full aspect-[2/3]">
@@ -625,6 +642,29 @@
             btn.onclick = () => { row._activeTag = tag; renderCollections(); renderLibrary(); };
             row.appendChild(btn);
         });
+    }
+
+    function applyFilters() {
+        const typeF = document.getElementById('libType').value;
+        const progF = document.getElementById('libProgress').value;
+        const statF = document.getElementById('libStatus').value;
+    
+        const filtered = library.filter(item => {
+            // Logique Type
+            const matchType = (typeF === 'all') || 
+                              (typeF === 'movie' ? item.type === 'movie' : item.type === 'series');
+            
+            // Logique Visionnage (basé sur ton statut interne)
+            const matchProg = (progF === 'all') || 
+                              (progF === 'progress' ? item.status === 'In Progress' : item.status === 'Watched');
+            
+            // Logique Diffusion (basé sur item.status_production)
+            const matchStat = (statF === 'all') || (item.status_production === statF);
+    
+            return matchType && matchProg && matchStat;
+        });
+    
+        renderLibraryList(filtered);
     }
     
     function getActiveCollectionFilter() { const row = document.getElementById('collectionsRow'); return row?._activeTag || 'Tout'; }
