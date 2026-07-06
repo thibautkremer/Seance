@@ -63,9 +63,12 @@
         <!-- SECTION DECOUVRIR HARMONISÉE -->
         <div id="tab-discover" class="space-y-4 hidden">
             <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm space-y-3">
-                <div>
-                    <h2 id="discoverTitle" class="text-base font-bold text-white">✨ Pour vous</h2>
-                    <p id="discoverSub" class="text-xs text-gray-400">Propositions personnalisées selon vos préférences.</p>
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0">
+                        <h2 id="discoverTitle" class="text-base font-bold text-white">✨ Pour vous</h2>
+                        <p id="discoverSub" class="text-xs text-gray-400">Propositions personnalisées selon vos préférences.</p>
+                    </div>
+                    <button onclick="renderDiscoverTab(true)" class="shrink-0 text-[10px] bg-gray-900 border border-gray-700 text-gray-300 hover:text-teal-400 hover:border-teal-600 px-2 py-1.5 rounded-lg font-bold transition">🔄 Actualiser</button>
                 </div>
                 <div class="grid grid-cols-3 gap-1.5 pt-1">
                     <button id="btnDiscoverMix" onclick="changeDiscoverFilter('mix')" class="text-[11px] bg-teal-600 text-white py-2 px-1 rounded-lg font-bold transition shadow-sm">🎲 Pour Toi</button>
@@ -83,17 +86,21 @@
         </div>
 
         <!-- SECTION BIBLIOTHÈQUE -->
-        <div id="tab-library" class="space-y-4 hidden">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+        <div id="tab-library" class="space-y-3 hidden">
+            <div class="flex flex-col gap-2 border-b border-gray-800 pb-3">
                 <h2 class="text-lg font-bold text-white">Suivis (<span id="lib-count">0</span>)</h2>
-                <select id="libraryFilterSelect" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 text-gray-300 font-medium">
-                    <option value="all">Tout afficher</option>
-                    <option value="in_progress" selected>En cours</option>
-                    <option value="watched">Terminés</option>
-                    <option value="series">Séries</option>
-                    <option value="movie">Films</option>
-                    <option value="anime">Animés</option>
-                </select>
+                <div class="flex gap-2">
+                    <select id="libraryStatusFilter" onchange="renderLibrary()" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 text-gray-300 font-medium">
+                        <option value="not_finished" selected>Non terminé</option>
+                        <option value="watched">Terminé</option>
+                        <option value="all">Tous les états</option>
+                    </select>
+                    <select id="libraryTypeFilter" onchange="renderLibrary()" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 text-gray-300 font-medium">
+                        <option value="all" selected>Tous types</option>
+                        <option value="series">Séries</option>
+                        <option value="movie">Films</option>
+                    </select>
+                </div>
             </div>
             <div id="libraryGrid" class="grid grid-cols-3 gap-2"></div>
         </div>
@@ -107,14 +114,6 @@
                     <input type="file" onchange="importLibrary(event)" class="hidden" accept=".json" />
                 </label>
             </div>
-            <div class="bg-gradient-to-br from-teal-900/50 to-cyan-900/30 p-5 rounded-2xl border border-teal-500/20 flex items-center gap-4 shadow-xl">
-                <div class="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center font-black text-lg shadow-md">ME</div>
-                <div>
-                    <h2 class="text-lg font-bold text-white">Mon Profil Perso</h2>
-                    <p class="text-xs text-teal-300">Statistiques de visionnage</p>
-                </div>
-            </div>
-
             <!-- Graphique Donut -->
             <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex items-center gap-4 justify-around">
                 <div class="relative w-24 h-24 flex-shrink-0">
@@ -128,6 +127,29 @@
                 <div class="text-xs space-y-1 w-full">
                     <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Séries</span><b id="pct-series">0%</b></div>
                     <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Films</span><b id="pct-movies">0%</b></div>
+                </div>
+            </div>
+
+            <!-- Bloc Aperçu : informations pertinentes -->
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-3">
+                <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🏆 Aperçu</h3>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <span class="text-gray-500">Genre préféré</span>
+                        <div id="stat-top-genre" class="font-bold text-white truncate">—</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Complétion moyenne</span>
+                        <div id="stat-completion" class="font-bold text-white">0%</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Dernier ajout</span>
+                        <div id="stat-last-added" class="font-bold text-white truncate">—</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Séries terminées</span>
+                        <div id="stat-finished-series" class="font-bold text-white">0</div>
+                    </div>
                 </div>
             </div>
 
@@ -279,6 +301,8 @@
 
         let activeModalMediaIndex = null;
         let activeModalSeason = null;
+        let modalMode = 'library'; // 'library' (item déjà suivi) ou 'preview' (fiche recherche/découverte)
+        let previewEpisodes = []; // épisodes de la série actuellement prévisualisée (mode preview)
 
         window.addEventListener('DOMContentLoaded', async () => {
             preloadShowsCache();
@@ -293,8 +317,12 @@
         async function ensureShowsPool() {
             if (showsCache.length > 100) return;
             try {
+                // Pages basses (catalogue général) + pages hautes (ajouts plus récents à TVMaze,
+                // utile pour retrouver des séries annoncées / pas encore diffusées)
+                const staticPages = [1, 2, 3, 4, 5, 6];
+                const recentPages = [260, 270, 280, 290, 300, 310];
                 const pages = await Promise.all(
-                    [1, 2, 3, 4, 5, 6].map(p => fetch(`${TVMAZE_API}/shows?page=${p}`).then(r => r.ok ? r.json() : []).catch(() => []))
+                    [...staticPages, ...recentPages].map(p => fetch(`${TVMAZE_API}/shows?page=${p}`).then(r => r.ok ? r.json() : []).catch(() => []))
                 );
                 showsCache = pages.flat();
             } catch (e) { console.error(e); }
@@ -410,11 +438,46 @@
             } catch (err) { console.error(err); } finally { loader.classList.add('hidden'); }
         }
 
+        // Génère le HTML des actions rapides d'une carte média : "à regarder" / "déjà vu",
+        // ou un bouton "retirer" si le média est déjà suivi (utile en cas d'ajout accidentel).
+        function buildCardActionsHTML(media) {
+            const alreadyInLib = library.some(i => i.id === media.id);
+            if (alreadyInLib) {
+                return `<button data-action="remove" class="flex-1 text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-400 hover:text-red-400 border border-gray-700 hover:border-red-900 font-bold py-1 rounded transition">✕ Retirer</button>`;
+            }
+            return `
+                <button data-action="follow" class="flex-1 text-[9px] bg-teal-600 hover:bg-teal-500 text-white font-bold py-1 rounded transition">➕</button>
+                <button data-action="watched" class="flex-1 text-[9px] bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-1 rounded transition">✓ Vu</button>
+            `;
+        }
+
+        // Attache les handlers aux boutons générés par buildCardActionsHTML. `onChange` est rappelé
+        // après toute action pour que l'appelant puisse rafraîchir l'affichage des boutons.
+        function attachCardActionHandlers(container, media, onChange) {
+            const followBtn = container.querySelector('[data-action="follow"]');
+            const watchedBtn = container.querySelector('[data-action="watched"]');
+            const removeBtn = container.querySelector('[data-action="remove"]');
+            if (followBtn) followBtn.onclick = async (e) => { e.stopPropagation(); await quickAddMedia(media, false); onChange && onChange(); };
+            if (watchedBtn) watchedBtn.onclick = async (e) => { e.stopPropagation(); await quickAddMedia(media, true); onChange && onChange(); };
+            if (removeBtn) removeBtn.onclick = (e) => { e.stopPropagation(); removeFromLibrary(media.id); onChange && onChange(); };
+        }
+
+        function removeFromLibrary(mediaId) {
+            const idx = library.findIndex(i => i.id === mediaId);
+            if (idx === -1) return;
+            library.splice(idx, 1);
+            saveLocalDB();
+        }
+
+        async function quickAddMedia(media, allWatched) {
+            if (!unifiedSearchResults.some(x => x.id === media.id)) unifiedSearchResults.push(media);
+            await addToLibraryById(media.id, allWatched);
+        }
+
         // Carte média unifiée (recherche + découverte) : grande affiche, sans résumé, avec actions rapides
         function createMediaCard(media) {
             const hasRating = media.rating && media.rating > 0;
             const displayRating = hasRating ? media.rating.toFixed(1) : 'N/A';
-            const alreadyInLib = library.some(i => i.id === media.id);
             const safeId = media.id.replace(/[^a-zA-Z0-9_-]/g, '');
 
             const div = document.createElement('div');
@@ -427,26 +490,16 @@
                 </div>
                 <div class="p-1.5 flex-1 flex flex-col gap-1.5">
                     <h3 class="font-bold text-white text-[11px] leading-tight line-clamp-2">${media.title}</h3>
-                    <div class="mt-auto flex gap-1" id="cardActions-${safeId}">
-                        ${alreadyInLib ? `<span class="flex-1 text-center text-[9px] text-gray-500 font-bold py-1">✓ Suivi</span>` : `
-                            <button data-action="follow" class="flex-1 text-[9px] bg-teal-600 hover:bg-teal-500 text-white font-bold py-1 rounded transition">➕</button>
-                            <button data-action="watched" class="flex-1 text-[9px] bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-1 rounded transition">✓ Vu</button>
-                        `}
-                    </div>
+                    <div class="mt-auto flex gap-1" id="cardActions-${safeId}">${buildCardActionsHTML(media)}</div>
                 </div>
             `;
-            const followBtn = div.querySelector('[data-action="follow"]');
-            const watchedBtn = div.querySelector('[data-action="watched"]');
-            if (followBtn) followBtn.onclick = (e) => { e.stopPropagation(); quickAddMedia(media, false, safeId); };
-            if (watchedBtn) watchedBtn.onclick = (e) => { e.stopPropagation(); quickAddMedia(media, true, safeId); };
+            const actionsContainer = div.querySelector(`#cardActions-${safeId}`);
+            const refresh = () => {
+                actionsContainer.innerHTML = buildCardActionsHTML(media);
+                attachCardActionHandlers(actionsContainer, media, refresh);
+            };
+            attachCardActionHandlers(actionsContainer, media, refresh);
             return div;
-        }
-
-        async function quickAddMedia(media, allWatched, safeId) {
-            if (!unifiedSearchResults.some(x => x.id === media.id)) unifiedSearchResults.push(media);
-            await addToLibraryById(media.id, allWatched);
-            const actionsContainer = document.getElementById(`cardActions-${safeId}`);
-            if (actionsContainer) actionsContainer.innerHTML = `<span class="flex-1 text-center text-[9px] text-gray-500 font-bold py-1">✓ Suivi</span>`;
         }
 
         function displayUnifiedResults() {
@@ -519,21 +572,35 @@
             container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8 col-span-3">Chargement...</p>`;
             await ensureShowsPool();
 
+            const libIds = new Set(library.map(i => i.id));
+
             let results = [];
             if (discoverFilter === 'mix') {
                 results = computePersonalizedPicks();
             } else if (discoverFilter === 'trending') {
-                // Approximation de la popularité : note moyenne pondérée, séries actuellement en diffusion
-                results = showsCache
-                    .filter(s => s.rating?.average && s.status === 'Running')
+                // Approximation de la popularité : note moyenne, séries actuellement en diffusion,
+                // en ignorant celles déjà suivies/vues. Un pool plus large que 12 permet à "Actualiser"
+                // de proposer un tirage différent à chaque clic.
+                let pool = showsCache
+                    .filter(s => s.rating?.average && s.status === 'Running' && !libIds.has(`series-${s.id}`))
                     .sort((a, b) => (b.rating.average) - (a.rating.average))
-                    .slice(0, 12);
+                    .slice(0, 40);
+                results = pool.sort(() => 0.5 - Math.random()).slice(0, 12);
             } else if (discoverFilter === 'unreleased') {
-                // Séries annoncées / en développement, avec ou sans date de première
-                results = showsCache.filter(s => s.status === 'To Be Determined' || s.status === 'In Development');
+                // Séries annoncées / en développement / sans date de diffusion connue, non terminées.
+                // Triées par date de dernière mise à jour TVMaze (proxy de "récemment annoncée")
+                // pour éviter de remonter de vieilles fiches obsolètes.
+                results = showsCache.filter(s =>
+                    !libIds.has(`series-${s.id}`) &&
+                    !s.premiered &&
+                    s.status !== 'Ended' && s.status !== 'Canceled'
+                );
                 if (results.length === 0) {
                     const today = new Date();
-                    results = showsCache.filter(s => s.premiered && new Date(s.premiered) > today);
+                    results = showsCache.filter(s => s.premiered && new Date(s.premiered) > today && !libIds.has(`series-${s.id}`));
+                    results.sort((a, b) => new Date(a.premiered) - new Date(b.premiered));
+                } else {
+                    results.sort((a, b) => (b.updated || 0) - (a.updated || 0));
                 }
                 results = results.slice(0, 12);
             }
@@ -561,18 +628,33 @@
             }
         }
 
+        // Remet un titre entièrement vu à "non vu" (en cas d'ajout/marquage accidentel)
+        function resetToUnwatched(event, origIndex) {
+            event.stopPropagation();
+            const item = library[origIndex];
+            if (!item) return;
+            if (item.type === 'series' && item.episodes) {
+                item.episodes.forEach(ep => { ep.watched = false; });
+            }
+            item.status = 'In Progress';
+            saveLocalDB();
+            renderLibrary();
+        }
+
         function renderLibrary() {
             const grid = document.getElementById('libraryGrid');
             if (!grid) return;
-            const filterValue = document.getElementById('libraryFilterSelect').value;
+            const statusFilter = document.getElementById('libraryStatusFilter').value;
+            const typeFilter = document.getElementById('libraryTypeFilter').value;
 
             let filteredList = library;
-            if (filterValue === 'in_progress') {
-                filteredList = library.filter(item => item.status === 'In Progress');
-            } else if (filterValue === 'watched') {
-                filteredList = library.filter(item => item.status === 'Watched');
-            } else if (filterValue === 'series' || filterValue === 'movie' || filterValue === 'anime') {
-                filteredList = library.filter(item => item.type === filterValue);
+            if (typeFilter !== 'all') {
+                filteredList = filteredList.filter(item => item.type === typeFilter);
+            }
+            if (statusFilter === 'not_finished') {
+                filteredList = filteredList.filter(item => item.status === 'In Progress');
+            } else if (statusFilter === 'watched') {
+                filteredList = filteredList.filter(item => item.status === 'Watched');
             }
 
             document.getElementById('lib-count').textContent = filteredList.length;
@@ -586,7 +668,13 @@
             filteredList.forEach(item => {
                 const origIdx = library.findIndex(x => x.id === item.id);
                 let nextBadgeHTML = '';
-                if (item.type === 'series' && item.episodes && item.episodes.length > 0) {
+                if (item.status === 'Watched') {
+                    nextBadgeHTML = `
+                        <button onclick="resetToUnwatched(event, ${origIdx})" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black tracking-tighter transition shadow-md z-10">
+                            ↺ Non vu
+                        </button>
+                    `;
+                } else if (item.type === 'series' && item.episodes && item.episodes.length > 0) {
                     const nextEp = item.episodes.find(e => !e.watched);
                     if (nextEp) {
                         nextBadgeHTML = `
@@ -719,8 +807,49 @@
             });
         }
 
+        // Retourne les épisodes actuellement affichés dans la modale, quel que soit le mode
+        function getActiveEpisodes() {
+            if (modalMode === 'library') {
+                const item = library[activeModalMediaIndex];
+                return item ? item.episodes : [];
+            }
+            return previewEpisodes;
+        }
+
+        // Construit les onglets de saisons et ouvre la première saison pertinente.
+        // Fonctionne aussi bien en mode "preview" (fiche pas encore suivie) qu'en mode "library".
+        function buildSeasonTabs(episodes) {
+            const seasons = [...new Set(episodes.map(e => e.season))].sort((a, b) => a - b);
+            const tabsContainer = document.getElementById('modalSeasonTabs');
+            tabsContainer.innerHTML = '';
+            document.getElementById('modalSeasonSelectionRow').classList.remove('hidden');
+            document.getElementById('modalEpisodesBlock').classList.remove('hidden');
+
+            seasons.forEach((s, idx) => {
+                const btn = document.createElement('button');
+                btn.id = `tabBtn-S${s}`;
+                btn.className = `px-3 py-1 text-xs font-bold rounded-lg transition shrink-0 ${idx === 0 ? 'bg-teal-600 text-white' : 'bg-gray-700 text-gray-300'}`;
+                btn.textContent = `Saison ${s}`;
+                btn.onclick = () => selectSeason(s);
+                tabsContainer.appendChild(btn);
+            });
+
+            const checkAllBtn = document.getElementById('btnCheckAllSeason');
+            checkAllBtn.style.display = modalMode === 'library' ? 'inline-block' : 'none';
+
+            if (seasons.length === 0) return;
+            let startSeason = seasons[0];
+            if (modalMode === 'library') {
+                const nextUnwatched = episodes.find(e => !e.watched);
+                if (nextUnwatched) startSeason = nextUnwatched.season;
+            }
+            selectSeason(startSeason);
+        }
+
         async function openPreviewModal(media) {
             if (!media) return;
+            modalMode = 'preview';
+            previewEpisodes = [];
             document.getElementById('modalSuggestionsBlock').classList.add('hidden');
             document.getElementById('modalPoster').src = media.image;
             document.getElementById('modalTitle').textContent = media.title;
@@ -735,9 +864,6 @@
             document.getElementById('modalNetworkBadge').textContent = media.network || 'Streaming';
 
             renderStatusBadge(media.status || 'Running');
-
-            document.getElementById('modalEpisodesBlock').classList.add('hidden');
-            document.getElementById('modalSeasonSelectionRow').classList.add('hidden');
             document.getElementById('modalActionButtonsGrid').classList.remove('hidden');
 
             const seriesContentBlock = document.getElementById('modalSeriesContent');
@@ -746,22 +872,21 @@
                 try {
                     const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
                     const data = await res.json();
-                    const previewEpisodes = data.map(ep => ({ season: ep.season, number: ep.number, ratingSource: ep.rating?.average || 7.5 }));
-
+                    previewEpisodes = data.map(ep => ({
+                        id: ep.id, name: ep.name, season: ep.season, number: ep.number,
+                        runtime: ep.runtime || 40, airdate: ep.airdate,
+                        ratingSource: ep.rating?.average || 7.5,
+                        summary: ep.summary ? ep.summary.replace(/<[^>]*>/g, '') : '',
+                        watched: false
+                    }));
                     renderGlobalGraph(previewEpisodes);
-                    const seasons = [...new Set(previewEpisodes.map(e => e.season))].sort((a, b) => a - b);
-                    const tabsContainer = document.getElementById('modalSeasonTabs');
-                    tabsContainer.innerHTML = '';
-                    seasons.forEach((s, idx) => {
-                        const btn = document.createElement('button');
-                        btn.className = `px-3 py-1 text-xs font-bold rounded-lg transition shrink-0 ${idx === 0 ? 'bg-teal-600 text-white' : 'bg-gray-700 text-gray-300'}`;
-                        btn.textContent = `Saison ${s}`;
-                        btn.onclick = () => renderSeasonGraph(previewEpisodes.filter(e => e.season === s));
-                        tabsContainer.appendChild(btn);
-                    });
-                    if (seasons.length > 0) renderSeasonGraph(previewEpisodes.filter(e => e.season === seasons[0]));
+                    buildSeasonTabs(previewEpisodes);
                 } catch (e) { console.error(e); }
-            } else { seriesContentBlock.classList.add('hidden'); }
+            } else {
+                seriesContentBlock.classList.add('hidden');
+                document.getElementById('modalEpisodesBlock').classList.add('hidden');
+                document.getElementById('modalSeasonSelectionRow').classList.add('hidden');
+            }
 
             document.getElementById('modalViewSuggestionsBtn').onclick = () => { renderSuggestions(media.genres?.[0] || 'Drama', media.id); };
 
@@ -771,8 +896,15 @@
 
             if (alreadyInLib) {
                 followBtn.textContent = "✓ Déjà suivi"; followBtn.disabled = true;
-                followBtn.className = "col-span-2 py-3 bg-gray-900 border border-gray-700 text-gray-400 font-bold rounded-xl text-xs text-center cursor-default";
+                followBtn.className = "py-3 bg-gray-900 border border-gray-700 text-gray-400 font-bold rounded-xl text-xs text-center cursor-default";
                 allWatchedBtn.style.display = 'none';
+                allWatchedBtn.disabled = true;
+                followBtn.onclick = null;
+                // Bouton pour retirer un ajout accidentel
+                followBtn.textContent = "✕ Retirer de la bibliothèque";
+                followBtn.className = "col-span-2 py-3 bg-gray-900 border border-red-900/50 text-red-400 hover:bg-red-950 font-bold rounded-xl text-xs text-center transition";
+                followBtn.disabled = false;
+                followBtn.onclick = () => { removeFromLibrary(media.id); closeModal(); };
             } else {
                 allWatchedBtn.style.display = 'block'; followBtn.disabled = false;
                 followBtn.textContent = "➕ À regarder";
@@ -785,6 +917,7 @@
         }
 
         function openLibraryModal(index) {
+            modalMode = 'library';
             activeModalMediaIndex = index;
             const item = library[index];
             if (!item) return;
@@ -809,28 +942,11 @@
             document.getElementById('modalActionButtonsGrid').classList.add('hidden');
 
             const seriesContentBlock = document.getElementById('modalSeriesContent');
-            const tabsContainer = document.getElementById('modalSeasonTabs');
 
             if (item.episodes && item.episodes.length > 0) {
                 seriesContentBlock.classList.remove('hidden');
-                document.getElementById('modalSeasonSelectionRow').classList.remove('hidden');
                 renderGlobalGraph(item.episodes);
-
-                const seasons = [...new Set(item.episodes.map(e => e.season))].sort((a, b) => a - b);
-                tabsContainer.innerHTML = '';
-                seasons.forEach((s) => {
-                    const btn = document.createElement('button');
-                    btn.className = "px-3 py-1 text-xs font-bold rounded-lg transition shrink-0 bg-gray-700 text-gray-300";
-                    btn.textContent = `Saison ${s}`;
-                    btn.id = `tabBtn-S${s}`;
-                    btn.onclick = () => selectSeason(s);
-                    tabsContainer.appendChild(btn);
-                });
-
-                let currentActiveSeason = seasons[0];
-                const nextUnwatchedEp = item.episodes.find(e => !e.watched);
-                if (nextUnwatchedEp) { currentActiveSeason = nextUnwatchedEp.season; }
-                selectSeason(currentActiveSeason);
+                buildSeasonTabs(item.episodes);
             } else {
                 seriesContentBlock.classList.add('hidden');
                 document.getElementById('modalSeasonSelectionRow').classList.add('hidden');
@@ -842,18 +958,26 @@
             document.getElementById('mediaModal').classList.remove('hidden');
         }
 
+        // Affiche/masque le résumé d'un épisode sous sa ligne
+        function toggleEpisodeSummary(summaryId) {
+            const el = document.getElementById(summaryId);
+            if (el) el.classList.toggle('hidden');
+        }
+
         function selectSeason(seasonNum) {
             activeModalSeason = seasonNum;
-            const item = library[activeModalMediaIndex];
+            const episodesAll = getActiveEpisodes();
 
             Array.from(document.getElementById('modalSeasonTabs').children).forEach(btn => {
                 btn.className = btn.id === `tabBtn-S${seasonNum}` ? "px-3 py-1 text-xs font-bold rounded-lg transition shrink-0 bg-teal-600 text-white" : "px-3 py-1 text-xs font-bold rounded-lg transition shrink-0 bg-gray-700 text-gray-300";
             });
 
-            document.getElementById('btnCheckAllSeason').onclick = () => checkEntireSeason(seasonNum);
+            if (modalMode === 'library') {
+                document.getElementById('btnCheckAllSeason').onclick = () => checkEntireSeason(seasonNum);
+            }
             document.getElementById('seasonGraphTitle').textContent = `📈 Évolution Épisodes - Saison ${seasonNum}`;
 
-            const seasonEpisodes = item.episodes.filter(e => e.season === seasonNum);
+            const seasonEpisodes = episodesAll.filter(e => e.season === seasonNum);
             document.getElementById('modalEpCount').textContent = `${seasonEpisodes.length} éps`;
 
             const epListContainer = document.getElementById('modalEpisodesList');
@@ -863,24 +987,33 @@
 
             seasonEpisodes.forEach(ep => {
                 const isFuture = ep.airdate && ep.airdate > today;
+                const summaryId = `epsum-${ep.id}`;
                 const div = document.createElement('div');
-                div.className = `p-2.5 rounded-xl border flex justify-between items-center text-xs transition ${isFuture ? 'bg-amber-950/20 border-amber-900/40' : 'bg-gray-900/60 border-gray-700/50'}`;
+                div.className = `p-2.5 rounded-xl border text-xs transition ${isFuture ? 'bg-amber-950/20 border-amber-900/40' : 'bg-gray-900/60 border-gray-700/50'}`;
+
+                const actionHTML = modalMode === 'library'
+                    ? `<button onclick="event.stopPropagation(); toggleEpisodeCascade(${ep.id})" ${isFuture ? 'disabled' : ''} class="px-2.5 py-1 font-bold rounded-lg text-[11px] transition shrink-0 ${ep.watched ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : (isFuture ? 'bg-gray-800/40 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white')}">${ep.watched ? '✓ Vu' : 'Vu'}</button>`
+                    : '';
 
                 div.innerHTML = `
-                    <span class="truncate pr-2 text-gray-300">
-                        E${ep.number} - <b class="text-white">${ep.name}</b>
-                        <span class="text-yellow-500 font-bold ml-1 font-mono text-[10px]">★ ${parseFloat(ep.ratingSource).toFixed(1)}</span>
-                    </span>
-                    <button onclick="toggleEpisodeCascade(${ep.id})" ${isFuture ? 'disabled' : ''} class="px-2.5 py-1 font-bold rounded-lg text-[11px] transition ${ep.watched ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : (isFuture ? 'bg-gray-800/40 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white')}">
-                        ${ep.watched ? '✓ Vu' : 'Vu'}
-                    </button>
+                    <div class="flex justify-between items-center gap-2 cursor-pointer" onclick="toggleEpisodeSummary('${summaryId}')">
+                        <span class="truncate pr-2 text-gray-300">
+                            E${ep.number} - <b class="text-white">${ep.name || 'Sans titre'}</b>
+                            <span class="text-yellow-500 font-bold ml-1 font-mono text-[10px]">★ ${parseFloat(ep.ratingSource).toFixed(1)}</span>
+                        </span>
+                        ${actionHTML}
+                    </div>
+                    <div id="${summaryId}" class="hidden mt-2 pt-2 border-t border-gray-700/50 text-[11px] text-gray-400 leading-relaxed">
+                        ${ep.summary || 'Aucun résumé disponible.'}
+                    </div>
                 `;
                 epListContainer.appendChild(div);
             });
             renderSeasonGraph(seasonEpisodes);
         }
 
-        // COMPORTEMENT SÉCURISÉ : LE CLIC SUR "VU" DANS LES SUGGESTIONS NE FERME PLUS LA LISTE
+        // Les suggestions utilisent désormais les mêmes actions (à regarder / déjà vu / retirer)
+        // que les autres cartes de l'application, avec un état "en bibliothèque" toujours à jour.
         async function renderSuggestions(genre, currentId) {
             const block = document.getElementById('modalSuggestionsBlock');
             const container = document.getElementById('modalSuggestionsList');
@@ -894,43 +1027,28 @@
                 container.innerHTML = '';
 
                 matches.forEach(show => {
-                    const yearDisplay = show.premiered ? `(${show.premiered.split('-')[0]})` : '';
                     const normShow = normalizeShow(show);
-                    const inLib = library.some(lib => lib.id === normShow.id);
+                    const yearDisplay = normShow.premiered ? `(${normShow.premiered.split('-')[0]})` : '';
+                    const safeId = normShow.id.replace(/[^a-zA-Z0-9_-]/g, '');
                     const div = document.createElement('div');
-                    div.id = `sug-${normShow.id}`;
-                    div.className = "bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex items-center justify-between gap-2 shadow-sm transition";
+                    div.className = "bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex items-center gap-2 shadow-sm transition";
                     div.innerHTML = `
-                        <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onclick="closeModal(); openPreviewModal(${JSON.stringify(normShow).replace(/"/g, '&quot;')})">
+                        <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
                             <img src="${normShow.image}" class="w-8 h-11 object-cover rounded bg-gray-950 flex-shrink-0" />
                             <div class="min-w-0 flex-1"><h4 class="text-xs font-bold text-white truncate">${normShow.title} <span class="text-teal-400 font-mono text-[10px]">${yearDisplay}</span></h4></div>
                         </div>
-                        <div id="sugAction-${normShow.id}">
-                            ${inLib ? `<span class="text-[9px] text-gray-500 font-bold px-1">Suivi</span>` : `
-                                <button onclick="actionSuggestionDirect('${normShow.id}', true)" class="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-bold px-2 py-0.5 rounded-lg hover:bg-emerald-900 transition">Déjà vu</button>
-                            `}
-                        </div>
+                        <div class="flex gap-1 w-24 flex-shrink-0" id="cardActions-${safeId}">${buildCardActionsHTML(normShow)}</div>
                     `;
+                    div.querySelector('.cursor-pointer').onclick = () => { closeModal(); openPreviewModal(normShow); };
+                    const actionsContainer = div.querySelector(`#cardActions-${safeId}`);
+                    const refresh = () => {
+                        actionsContainer.innerHTML = buildCardActionsHTML(normShow);
+                        attachCardActionHandlers(actionsContainer, normShow, refresh);
+                    };
+                    attachCardActionHandlers(actionsContainer, normShow, refresh);
                     container.appendChild(div);
                 });
             } catch (e) { container.innerHTML = ''; }
-        }
-
-        // LE BOUTON PASSE EN MODE "SUIVI" EN DIRECT SANS FERMER LE RESTE DE LA LISTE
-        async function actionSuggestionDirect(id, allWatched) {
-            let cleanId = id.replace('series-', '');
-            let found = showsCache.find(s => String(s.id) === String(cleanId));
-            if (found) {
-                const norm = normalizeShow(found);
-                norm.status_production = found.status || 'Running';
-                if (!unifiedSearchResults.some(x => x.id === norm.id)) unifiedSearchResults.push(norm);
-                await addToLibraryById(norm.id, allWatched);
-
-                const actionContainer = document.getElementById(`sugAction-${id}`);
-                if (actionContainer) {
-                    actionContainer.innerHTML = `<span class="text-[9px] text-gray-500 font-bold px-1 animate-pulse">Suivi</span>`;
-                }
-            }
         }
 
         async function addToLibraryById(mediaId, forceAllWatched = false) {
@@ -947,6 +1065,7 @@
                     episodes = data.map(ep => ({
                         id: ep.id, name: ep.name, season: ep.season, number: ep.number, runtime: ep.runtime || 40, airdate: ep.airdate,
                         ratingSource: ep.rating?.average ? parseFloat(ep.rating.average) : (baselineRating - 0.3 + (Math.random() * 0.6)),
+                        summary: ep.summary ? ep.summary.replace(/<[^>]*>/g, '') : '',
                         watched: forceAllWatched
                     }));
                 } catch (e) { console.error(e); }
@@ -957,6 +1076,7 @@
             media.status_production = media.status || media.status_production || 'Running';
             media.status = forceAllWatched ? 'Watched' : 'In Progress';
             media.network = media.network || 'Streaming';
+            media.addedAt = Date.now();
             library.push(media);
             saveLocalDB();
             return media;
@@ -1043,6 +1163,34 @@
                 dMovies.setAttribute('stroke-dasharray', `${totalItems > 0 ? pctMovies : 0}, 100`);
                 dMovies.setAttribute('stroke-dashoffset', `-${pctSeries}`);
             }
+
+            // Genre préféré (à partir des séries suivies)
+            const genreCounts = {};
+            library.forEach(item => (item.genres || []).forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; }));
+            const topGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0];
+            const topGenreEl = document.getElementById('stat-top-genre');
+            if (topGenreEl) topGenreEl.textContent = topGenre ? topGenre[0] : '—';
+
+            // Complétion moyenne des séries en cours (épisodes vus / total)
+            const seriesItems = library.filter(i => i.type === 'series' && i.episodes && i.episodes.length > 0);
+            let avgCompletion = 0;
+            if (seriesItems.length > 0) {
+                const sum = seriesItems.reduce((acc, i) => acc + (i.episodes.filter(e => e.watched).length / i.episodes.length), 0);
+                avgCompletion = Math.round((sum / seriesItems.length) * 100);
+            }
+            const completionEl = document.getElementById('stat-completion');
+            if (completionEl) completionEl.textContent = `${avgCompletion}%`;
+
+            // Dernier titre ajouté
+            const lastAddedEl = document.getElementById('stat-last-added');
+            if (lastAddedEl) {
+                const sorted = [...library].filter(i => i.addedAt).sort((a, b) => b.addedAt - a.addedAt);
+                lastAddedEl.textContent = sorted.length > 0 ? sorted[0].title : '—';
+            }
+
+            // Séries terminées
+            const finishedEl = document.getElementById('stat-finished-series');
+            if (finishedEl) finishedEl.textContent = library.filter(i => i.type === 'series' && i.status === 'Watched').length;
         }
 
         // Fonction d'exportation
