@@ -6,31 +6,33 @@
     <title>TV TIME REBORN</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        body { background-color: #111827; }
+        body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
+        .tab-content { transition: opacity 0.2s; }
         .hidden { display: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
-    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
-        <h1 class="text-lg font-black text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
+
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-2.5 flex justify-between items-center shadow-md">
+        <h1 class="text-lg font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
         <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold">☁️ Actif</span>
     </header>
 
     <main id="main-content" class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
         </main>
 
-    <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
-        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4">
+    <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] p-4 hidden">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl p-4 overflow-y-auto max-h-[90vh]">
             <div id="modalContent"></div>
-            <button onclick="document.getElementById('mediaModal').classList.add('hidden')" class="w-full py-4 text-xs font-bold text-gray-400 border-t border-gray-700">FERMER</button>
+            <button onclick="document.getElementById('mediaModal').classList.add('hidden')" class="w-full mt-4 py-3 bg-gray-700 rounded-xl text-xs font-bold text-white">FERMER</button>
         </div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40">
-        <button onclick="loadView('search')">🔍</button>
-        <button onclick="loadView('library')">📚</button>
-        <button onclick="loadView('profile')">📊</button>
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-50">
+        <button onclick="loadView('search')" class="text-xs font-bold">🔍 Rechercher</button>
+        <button onclick="loadView('library')" class="text-xs font-bold">📚 Suivis</button>
+        <button onclick="loadView('profile')" class="text-xs font-bold">📊 Profil</button>
     </nav>
     <script>
         const TVMAZE_API = 'https://api.tvmaze.com';
@@ -42,42 +44,86 @@
             if(view === 'search') {
                 content.innerHTML = `
                     <div class="grid grid-cols-2 gap-2 mb-4">
-                        <button onclick="setMediaType('series')" class="bg-indigo-600 p-2 rounded">Séries</button>
-                        <button onclick="setMediaType('movie')" class="bg-gray-800 p-2 rounded">Films</button>
+                        <button onclick="setMediaType('series')" class="bg-indigo-600 p-2 rounded-lg font-bold text-sm">Séries</button>
+                        <button onclick="setMediaType('movie')" class="bg-gray-800 p-2 rounded-lg font-bold text-sm">Films</button>
                     </div>
-                    <input type="text" oninput="handleSearch(this.value)" placeholder="Rechercher..." class="w-full bg-gray-800 p-3 rounded-xl mb-4">
-                    <div id="results"></div>`;
+                    <input type="text" oninput="handleSearch(this.value)" placeholder="Rechercher..." class="w-full bg-gray-800 p-3 rounded-xl mb-4 text-white">
+                    <div id="results" class="space-y-2"></div>`;
+            } else if(view === 'library') {
+                content.innerHTML = `<h2 class="text-xl font-bold mb-4">Bibliothèque</h2><div id="libraryGrid" class="grid grid-cols-3 gap-2"></div>`;
+                renderLibrary();
+            } else if(view === 'profile') {
+                content.innerHTML = `<h2 class="text-xl font-bold mb-4">Statistiques</h2><div id="statBox" class="bg-gray-800 p-4 rounded-xl"></div>`;
+                renderProfile();
             }
         }
 
         async function handleSearch(q) {
             if(q.length < 3) return;
             const res = currentMediaType === 'movie' 
-                ? await fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${q}`).then(r=>r.json())
-                : await fetch(`${TVMAZE_API}/search/shows?q=${q}`).then(r=>r.json());
+                ? await fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${encodeURIComponent(q)}`).then(r=>r.json())
+                : await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(q)}`).then(r=>r.json());
             
-            document.getElementById('results').innerHTML = (res.Search || res).map(item => `
-                <div class="bg-gray-800 p-3 mb-2 rounded-xl cursor-pointer" onclick="openDetails('${item.Title || item.show.name}')">
+            const list = res.Search || res;
+            document.getElementById('results').innerHTML = list.map(item => `
+                <div class="bg-gray-800 p-3 rounded-xl cursor-pointer hover:bg-gray-700" onclick="openDetails('${(item.Title || item.show.name).replace(/'/g, "")}')">
                     ${item.Title || item.show.name}
                 </div>
             `).join('');
         }
 
-        function setMediaType(type) { currentMediaType = type; }
+        function setMediaType(type) { 
+            currentMediaType = type;
+            document.querySelectorAll('button').forEach(b => b.classList.remove('bg-indigo-600'));
+            event.target.classList.add('bg-indigo-600');
+        }
+
+        function addToLibrary(title, type) {
+            library.push({ title, type, status: 'In Progress' });
+            localStorage.setItem('tvtime_db', JSON.stringify(library));
+            alert(title + " ajouté !");
+        }
     </script>
     <script>
         function openDetails(title) {
-            const modal = document.getElementById('mediaModal');
-            document.getElementById('modalContent').innerHTML = `<h2 class="p-4 text-white font-bold">${title}</h2>`;
-            modal.classList.remove('hidden');
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').innerHTML = `
+                <div class="space-y-4">
+                    <p class="text-gray-300">Statut: En cours de visionnage</p>
+                    <div class="h-24 bg-gray-900 rounded border border-gray-700 flex items-end p-2 gap-1">
+                        ${Array(10).fill(0).map(() => `<div class="flex-1 bg-indigo-500/50" style="height: ${Math.random()*100}%"></div>`).join('')}
+                    </div>
+                    <button onclick="addToLibrary('${title}', '${currentMediaType}')" class="w-full py-3 bg-indigo-600 rounded-xl font-bold">AJOUTER AUX SUIVIS</button>
+                </div>`;
+            document.getElementById('mediaModal').classList.remove('hidden');
         }
 
-        function addToLibrary(media) {
-            library.push(media);
-            localStorage.setItem('tvtime_db', JSON.stringify(library));
+        function renderLibrary() {
+            const grid = document.getElementById('libraryGrid');
+            if(!grid) return;
+            grid.innerHTML = library.map(item => `
+                <div class="bg-gray-800 p-2 rounded-lg text-[10px] text-center truncate border border-gray-700">${item.title}</div>
+            `).join('');
         }
 
-        // Initialisation
+        function renderProfile() {
+            const s = library.filter(i=>i.type==='series').length;
+            const m = library.filter(i=>i.type==='movie').length;
+            document.getElementById('statBox').innerHTML = `
+                <div class="flex justify-between font-bold"><span>Séries:</span><span>${s}</span></div>
+                <div class="flex justify-between font-bold"><span>Films:</span><span>${m}</span></div>
+                <button onclick="exportLibrary()" class="mt-4 w-full text-xs text-indigo-400">Exporter ma base (JSON)</button>`;
+        }
+
+        function exportLibrary() {
+            const data = localStorage.getItem('tvtime_db');
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'backup_tvtime.json'; a.click();
+        }
+
+        // Initialisation automatique
         window.onload = () => loadView('search');
     </script>
 </body>
