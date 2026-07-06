@@ -1244,6 +1244,16 @@
         a.download = 'tv_time_backup.json';
         document.body.appendChild(a); a.click(); a.remove();
     }
+
+    function processMediaImport(item) {
+        return {
+            ...item, // Garde toutes les autres données (title, status, etc.)
+            // Si l'image est celle par défaut ("image_par_defaut.jpg"), on met null
+            // On force l'application à rechercher une vraie affiche plus tard
+            image: (item.image && item.image !== "image_par_defaut.jpg") ? item.image : null,
+            last_modified: Date.now()
+        };
+    }
     
     function importLibrary(event) {
         const file = event.target.files[0];
