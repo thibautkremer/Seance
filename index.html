@@ -332,34 +332,35 @@
             localStorage.setItem('personal_tracker_db', JSON.stringify(library));
         }
 
+        // Initialisation sécurisée
+        window.addEventListener('DOMContentLoaded', () => {
+            // Chargement initial du premier onglet
+            switchTab('search');
+        });
+    
         function switchTab(tabName) {
-            ['search', 'discover', 'calendar', 'library', 'profile'].forEach(t => {
+            // 1. Masquer tous les conteneurs
+            const tabs = ['search', 'discover', 'calendar', 'library', 'profile'];
+            tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const nav = document.getElementById(`nav-${t}`);
                 if (el) el.classList.add('hidden');
-                if (nav) {
-                    nav.classList.remove('text-teal-400', 'font-bold');
-                    nav.classList.add('text-gray-400');
-                }
+                if (nav) nav.classList.remove('text-indigo-400', 'font-bold');
             });
-
+    
+            // 2. Afficher la cible
             const target = document.getElementById(`tab-${tabName}`);
-            target.classList.remove('hidden');
-            target.style.opacity = '0';
-            target.style.transform = 'translateY(5px)';
-
-            document.getElementById(`nav-${tabName}`).classList.add('text-teal-400', 'font-bold');
-
-            setTimeout(() => {
-                target.style.transition = 'all 0.2s ease-out';
-                target.style.opacity = '1';
-                target.style.transform = 'translateY(0)';
-            }, 10);
-
+            if (target) {
+                target.classList.remove('hidden');
+                // Activation visuelle de l'icône nav
+                const activeNav = document.getElementById(`nav-${tabName}`);
+                if (activeNav) activeNav.classList.add('text-indigo-400', 'font-bold');
+            }
+    
+            // 3. Charger les données spécifiques si besoin
             if (tabName === 'library') renderLibrary();
             if (tabName === 'profile') renderProfile();
-            if (tabName === 'discover') renderDiscoverTab(false);
-            if (tabName === 'calendar') renderCalendarTab();
+            // Les autres fonctions seront appelées au fur et à mesure du développement
         }
 
         function setMediaType(type) {
