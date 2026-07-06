@@ -23,15 +23,27 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // RÈGLE D'OR : On n'intercepte que les requêtes de lecture (GET). 
+  // Les POST/DELETE vers Supabase doivent passer en direct !
+  if (event.request.method !== 'GET') {
+      return; 
+  }
+
+  // Pour les API externes (TVMaze, Supabase lecture, etc.) : Network First
   if (event.request.url.includes('api.tvmaze.com') || event.request.url.includes('omdbapi.com') || event.request.url.includes('supabase.co')) {
-    // Stratégie Network First pour les API
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request).catch(async () => {
+          const cachedResponse = await caches.match(event.request);
+          // Si on n'a rien en cache, on renvoie une réponse "propre" pour éviter le crash
+          return cachedResponse || new Response('Offline', { status: 503, statusText: 'Hors-ligne' });
+      })
     );
   } else {
-    // Stratégie Cache First pour les assets locaux et images
+    // Pour les fichiers locaux et images : Cache First
     event.respondWith(
-      caches.match(event.request).then(response => response || fetch(event.request))
+      caches.match(event.request).then(response => {
+        return response || fetch(event.request);
+      })
     );
   }
 });
