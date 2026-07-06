@@ -988,8 +988,8 @@
         document.getElementById('modalSummary').textContent = item.summary || '';
         document.getElementById('modalTypeBadge').textContent = item.type === 'movie' ? 'FILM' : 'SÉRIE';
         document.getElementById('modalNetworkBadge').textContent = item.network || '—';
-        document.getElementById('modalGlobalRating').textContent = `★ ${item.rating > 0 ? item.rating.toFixed(1)+'/10' : 'N/A'}`;
-        document.getElementById('modalPremiereDate').textContent = item.premiered ? item.premiered.split('-')[0] : (item.year||'—');
+        document.getElementById('modalGlobalRating').textContent = `★ ${parseFloat(item.rating) > 0 ? parseFloat(item.rating).toFixed(1)+'/10' : 'N/A'}`;
+        document.getElementById('modalPremiereDate').textContent = String(item.premiered || '').split('-')[0];
         document.getElementById('modalActionButtonsGrid').classList.add('hidden');
         renderProductionBadge(item.status_production); renderPersonalBadge(item.status); renderGenres(item.genres);
     
