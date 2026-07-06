@@ -3,150 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV TIME REBORN - SERIALIZD PRO</title>
+    <title>TV TIME REBORN</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        body { background-color: #000; color: #d1d5db; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .tab-content { transition: opacity 0.2s; }
-        .card-item { background: #111; border: 1px solid #1f2937; border-radius: 8px; overflow: hidden; transition: 0.2s; }
-        .card-item:hover { border-color: #4f46e5; }
+        body { background-color: #111827; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .guide-line { position: absolute; left: 0; right: 0; border-top: 1px dashed #4b5563; z-index: 0; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="bg-black pb-24">
-
-    <header class="bg-black/95 border-b border-white/10 sticky top-0 z-50 px-4 py-3 flex justify-between items-center backdrop-blur">
-        <h1 class="text-lg font-bold text-white tracking-tight">TV TIME <span class="text-indigo-500">REBORN</span></h1>
-        <div class="flex items-center gap-3">
-            <span id="cloudStatus" class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">● SYNC</span>
-        </div>
+<body class="bg-gray-900 text-gray-100 font-sans pb-24">
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
+        <h1 class="text-lg font-black text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
+        <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold">☁️ Actif</span>
     </header>
 
-    <main id="app-container" class="max-w-xl mx-auto p-4 w-full min-h-screen"></main>
+    <main id="main-content" class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
+        </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 h-16 flex items-center justify-around z-40 backdrop-blur">
-        <button onclick="switchTab('search')" id="nav-search" class="text-indigo-500 font-bold text-xs">RECHERCHE</button>
-        <button onclick="switchTab('discover')" id="nav-discover" class="text-gray-500 font-bold text-xs">DÉCOUVRIR</button>
-        <button onclick="switchTab('calendar')" id="nav-calendar" class="text-gray-500 font-bold text-xs">À VENIR</button>
-        <button onclick="switchTab('library')" id="nav-library" class="text-gray-500 font-bold text-xs">SUIVIS</button>
-        <button onclick="switchTab('profile')" id="nav-profile" class="text-gray-500 font-bold text-xs">PROFIL</button>
-    </nav>
-    <script>
-        // CONFIG & STATE
-        const TVMAZE_API = 'https://api.tvmaze.com';
-        let library = JSON.parse(localStorage.getItem('tvtime_db')) || [];
-        let currentMediaType = 'series';
-        let unifiedSearchResults = [];
-
-        // NAV CONTROLLER
-        function switchTab(tabName) {
-            const container = document.getElementById('app-container');
-            const views = {
-                search: `<div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-2 bg-[#111] p-1 rounded-lg border border-[#222]">
-                                <button onclick="setMediaType('series')" class="py-2 text-xs font-bold rounded bg-[#222] text-white">Séries & Animés</button>
-                                <button onclick="setMediaType('movie')" class="py-2 text-xs font-bold rounded text-gray-500">Films</button>
-                            </div>
-                            <input type="text" oninput="triggerHybridSearch(this.value)" placeholder="Rechercher..." class="w-full bg-[#111] border border-[#222] rounded-lg px-4 py-3 text-white outline-none focus:border-indigo-500" />
-                            <div id="searchResults" class="grid grid-cols-2 gap-4"></div>
-                         </div>`,
-                library: '<h2 class="text-xl font-bold mb-4">Bibliothèque</h2><div id="libraryGrid" class="grid grid-cols-3 gap-2"></div>',
-                calendar: '<h2 class="text-xl font-bold mb-4">À Venir</h2><div id="calendarTimeline"></div>',
-                discover: '<h2 class="text-xl font-bold mb-4">Découvrir</h2><div id="discoverGrid" class="grid grid-cols-2 gap-4"></div>',
-                profile: '<h2 class="text-xl font-bold mb-4">Statistiques</h2><div id="statBox"></div>'
-            };
-            container.innerHTML = views[tabName] || '';
-            
-            // UI Update
-            document.querySelectorAll('nav button').forEach(b => b.classList.replace('text-indigo-500', 'text-gray-500'));
-            document.getElementById('nav-' + tabName).classList.replace('text-gray-500', 'text-indigo-500');
-
-            if(tabName === 'library') renderLibrary();
-        }
-
-        // MOTEUR HYBRIDE
-        async function triggerHybridSearch(q) {
-            if (q.length < 3) return;
-            const [omdb, tvmaze] = await Promise.all([
-                fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${encodeURIComponent(q)}`).then(r => r.json()),
-                fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(q)}`).then(r => r.json())
-            ]);
-            
-            let results = [];
-            if(currentMediaType === 'movie' && omdb.Search) {
-                results = omdb.Search.map(m => ({ title: m.Title, image: m.Poster, type: 'movie' }));
-            } else if(currentMediaType === 'series' && Array.isArray(tvmaze)) {
-                results = tvmaze.map(i => ({ title: i.show.name, image: i.show.image?.medium, type: 'series' }));
-            }
-            
-            document.getElementById('searchResults').innerHTML = results.map(r => `
-                <div class="card-item p-2 cursor-pointer" onclick="openModal('${r.title}')">
-                    <img src="${r.image || ''}" class="w-full h-40 object-cover rounded">
-                    <p class="text-xs font-bold mt-2 truncate">${r.title}</p>
-                </div>
-            `).join('');
-        }
-
-        function setMediaType(type) {
-            currentMediaType = type;
-            // Mise à jour visuelle des boutons
-            document.getElementById('btn-series').className = type === 'series' ? 'py-2 text-xs font-bold rounded bg-[#222] text-white' : 'py-2 text-xs font-bold rounded text-gray-500';
-            document.getElementById('btn-movie').className = type === 'movie' ? 'py-2 text-xs font-bold rounded bg-[#222] text-white' : 'py-2 text-xs font-bold rounded text-gray-500';
-        }
-    </script>
-    <div id="mediaModal" class="fixed inset-0 bg-black/80 z-[100] p-4 hidden flex items-center justify-center">
-        <div class="bg-[#111] w-full max-w-lg rounded-xl p-6 border border-[#222] shadow-2xl">
-            <h2 id="modalTitle" class="text-xl font-bold text-white mb-6"></h2>
-            
-            <div class="relative h-24 bg-black rounded border border-[#222] my-6">
-                <div class="guide-line" style="top: 0%"></div>    <div class="guide-line" style="top: 25%"></div>   <div class="guide-line" style="top: 50%"></div>   <div id="modalGlobalGraph" class="flex h-full items-end gap-1 p-2 relative z-10"></div>
-            </div>
-
-            <div class="flex gap-2">
-                <button onclick="addToLibrary()" class="flex-1 py-3 bg-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-500">AJOUTER À LA LISTE</button>
-                <button onclick="closeModal()" class="px-6 py-3 bg-[#222] rounded-lg text-xs font-bold text-gray-400">FERMER</button>
-            </div>
+    <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 flex items-start justify-center hidden">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl overflow-hidden my-4">
+            <div id="modalContent"></div>
+            <button onclick="document.getElementById('mediaModal').classList.add('hidden')" class="w-full py-4 text-xs font-bold text-gray-400 border-t border-gray-700">FERMER</button>
         </div>
     </div>
 
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40">
+        <button onclick="loadView('search')">🔍</button>
+        <button onclick="loadView('library')">📚</button>
+        <button onclick="loadView('profile')">📊</button>
+    </nav>
     <script>
-        function openModal(title) {
-            document.getElementById('modalTitle').textContent = title;
-            document.getElementById('mediaModal').classList.remove('hidden');
-            renderGlobalGraph();
+        const TVMAZE_API = 'https://api.tvmaze.com';
+        let library = JSON.parse(localStorage.getItem('tvtime_db')) || [];
+        let currentMediaType = 'series';
+
+        function loadView(view) {
+            const content = document.getElementById('main-content');
+            if(view === 'search') {
+                content.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button onclick="setMediaType('series')" class="bg-indigo-600 p-2 rounded">Séries</button>
+                        <button onclick="setMediaType('movie')" class="bg-gray-800 p-2 rounded">Films</button>
+                    </div>
+                    <input type="text" oninput="handleSearch(this.value)" placeholder="Rechercher..." class="w-full bg-gray-800 p-3 rounded-xl mb-4">
+                    <div id="results"></div>`;
+            }
         }
 
-        function closeModal() {
-            document.getElementById('mediaModal').classList.add('hidden');
-        }
-
-        function renderGlobalGraph() {
-            const container = document.getElementById('modalGlobalGraph');
-            container.innerHTML = Array(12).fill(0).map(() => 
-                `<div class="flex-1 bg-indigo-500/30" style="height: ${Math.random()*100}%"></div>`
-            ).join('');
-        }
-
-        function addToLibrary() {
-            const title = document.getElementById('modalTitle').textContent;
-            library.push({ title: title, type: currentMediaType });
-            localStorage.setItem('tvtime_db', JSON.stringify(library));
-            alert(title + " ajouté à la bibliothèque !");
-            closeModal();
-        }
-
-        function renderLibrary() {
-            const grid = document.getElementById('libraryGrid');
-            grid.innerHTML = library.map(item => `
-                <div class="card-item p-2">
-                    <p class="text-[10px] font-bold truncate">${item.title}</p>
+        async function handleSearch(q) {
+            if(q.length < 3) return;
+            const res = currentMediaType === 'movie' 
+                ? await fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${q}`).then(r=>r.json())
+                : await fetch(`${TVMAZE_API}/search/shows?q=${q}`).then(r=>r.json());
+            
+            document.getElementById('results').innerHTML = (res.Search || res).map(item => `
+                <div class="bg-gray-800 p-3 mb-2 rounded-xl cursor-pointer" onclick="openDetails('${item.Title || item.show.name}')">
+                    ${item.Title || item.show.name}
                 </div>
             `).join('');
         }
 
-        // Initialisation globale
-        window.onload = () => switchTab('search');
+        function setMediaType(type) { currentMediaType = type; }
+    </script>
+    <script>
+        function openDetails(title) {
+            const modal = document.getElementById('mediaModal');
+            document.getElementById('modalContent').innerHTML = `<h2 class="p-4 text-white font-bold">${title}</h2>`;
+            modal.classList.remove('hidden');
+        }
+
+        function addToLibrary(media) {
+            library.push(media);
+            localStorage.setItem('tvtime_db', JSON.stringify(library));
+        }
+
+        // Initialisation
+        window.onload = () => loadView('search');
     </script>
 </body>
 </html>
