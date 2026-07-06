@@ -8,123 +8,194 @@
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .tab-content { transition: opacity 0.2s; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-content { transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out; }
         .hidden { display: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-24">
 
     <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 px-4 py-2.5 flex justify-between items-center shadow-md">
-        <h1 class="text-lg font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
-        <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold">☁️ Actif</span>
+        <div class="flex items-center gap-2">
+            <svg class="w-8 h-8 drop-shadow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M30 45 L35 90 L65 90 L70 45 Z" fill="#EF4444"/>
+                <path d="M30 45 L37 90 M43 45 L45 90 M57 45 L55 90 M70 45 L63 90" stroke="#FFFFFF" stroke-width="4"/>
+                <circle cx="35" cy="32" r="11" fill="#FBBF24"/>
+                <circle cx="50" cy="28" r="13" fill="#FFFFFF"/>
+                <circle cx="65" cy="32" r="11" fill="#FBBF24"/>
+                <rect x="23" y="42" width="54" height="12" rx="6" fill="#1F2937"/>
+                <rect x="26" y="45" width="22" height="6" rx="3" fill="#3B82F6"/>
+                <rect x="52" y="45" width="22" height="6" rx="3" fill="#EF4444"/>
+            </svg>
+            <h1 class="text-lg font-black tracking-wider text-indigo-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-indigo-600 rounded">REBORN</span></h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="cloudStatus" class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full font-bold flex items-center gap-1">☁️ Actif</span>
+        </div>
     </header>
 
-    <main id="main-content" class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
-        </main>
+    <main class="max-w-md mx-auto p-4 w-full sm:max-w-2xl">
+        
+        <div id="tab-search" class="space-y-4">
+            <div class="grid grid-cols-2 gap-2 bg-gray-800 p-1 rounded-xl border border-gray-700">
+                <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg bg-indigo-600 text-white shadow">Séries & Animés</button>
+                <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg text-gray-400">Films</button>
+            </div>
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Rechercher..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white" />
+                <div id="searchLoading" class="absolute right-4 top-3.5 text-indigo-400 text-sm animate-pulse hidden">Chargement...</div>
+            </div>
+            <div id="searchError" class="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50 hidden"></div>
+            <div id="searchResults" class="space-y-3"></div>
+        </div>
 
-    <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] p-4 hidden">
-        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl p-4 overflow-y-auto max-h-[90vh]">
-            <div id="modalContent"></div>
-            <button onclick="document.getElementById('mediaModal').classList.add('hidden')" class="w-full mt-4 py-3 bg-gray-700 rounded-xl text-xs font-bold text-white">FERMER</button>
+        <div id="tab-discover" class="space-y-4 hidden">
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm space-y-3">
+                <h2 id="discoverTitle" class="text-base font-bold text-white">✨ Pour vous</h2>
+                <div class="grid grid-cols-3 gap-1.5 pt-1">
+                    <button id="btnDiscoverMix" onclick="changeDiscoverFilter('mix')" class="text-[11px] bg-indigo-600 text-white py-2 px-1 rounded-lg font-bold">🎲 Pour Toi</button>
+                    <button id="btnDiscoverTrending" onclick="changeDiscoverFilter('trending')" class="text-[11px] bg-gray-900 text-gray-400 py-2 px-1 rounded-lg font-bold border border-gray-700">🔥 Trending</button>
+                    <button id="btnDiscoverUnreleased" onclick="changeDiscoverFilter('unreleased')" class="text-[11px] bg-gray-900 text-gray-400 py-2 px-1 rounded-lg font-bold border border-gray-700">📅 À Venir</button>
+                </div>
+            </div>
+            <div id="discoverGrid" class="space-y-3"></div>
+        </div>
+
+        <div id="tab-calendar" class="space-y-4 hidden">
+            <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">📅 Mon Calendrier</h2>
+            <div id="calendarTimeline" class="space-y-3"></div>
+        </div>
+        <!-- SECTION BIBLIOTHÈQUE -->
+        <div id="tab-library" class="space-y-4 hidden">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                <h2 class="text-lg font-bold text-white">Suivis (<span id="lib-count">0</span>)</h2>
+                <select id="libraryFilterSelect" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 text-gray-300">
+                    <option value="all">Tout</option>
+                    <option value="in_progress" selected>En cours</option>
+                    <option value="watched">Terminés</option>
+                </select>
+            </div>
+            <div id="libraryGrid" class="grid grid-cols-3 gap-2"></div>
+        </div>
+
+        <!-- SECTION PROFIL -->
+        <div id="tab-profile" class="space-y-5 hidden">
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="exportLibrary()" class="bg-gray-800 border border-gray-700 text-xs font-bold py-3 rounded-xl">💾 Exporter</button>
+                <label class="bg-indigo-600 text-white text-xs font-bold py-3 rounded-xl text-center cursor-pointer">📂 Importer <input type="file" onchange="importLibrary(event)" class="hidden" accept=".json" /></label>
+            </div>
+            <div id="statBox" class="bg-gray-800 p-5 rounded-2xl border border-indigo-500/20">
+                <h2 class="text-lg font-bold">Mon Profil</h2>
+                <div id="stat-hours" class="text-indigo-400 font-black">0 heure</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FENÊTRE MODALE -->
+    <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-4 hidden">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl my-4 shadow-2xl">
+            <div class="p-4 border-b border-gray-700 flex justify-between">
+                <h2 id="modalTitle" class="font-black text-white">Détails</h2>
+                <button onclick="document.getElementById('mediaModal').classList.add('hidden')">✕</button>
+            </div>
+            <div id="modalContent" class="p-4 space-y-4">
+                <img id="modalPoster" src="" class="w-full h-48 object-cover rounded-xl" />
+                <p id="modalSummary" class="text-xs text-gray-300"></p>
+                <div id="modalSeriesContent" class="hidden">
+                    <div id="modalSeasonTabs" class="flex gap-2 overflow-x-auto"></div>
+                    <div id="modalEpisodesList" class="max-h-60 overflow-y-auto"></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-50">
-        <button onclick="loadView('search')" class="text-xs font-bold">🔍 Rechercher</button>
-        <button onclick="loadView('library')" class="text-xs font-bold">📚 Suivis</button>
-        <button onclick="loadView('profile')" class="text-xs font-bold">📊 Profil</button>
+    <!-- Navigation basse -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40 px-1">
+        <button onclick="switchTab('search')" id="nav-search" class="text-xs">🔍</button>
+        <button onclick="switchTab('discover')" id="nav-discover" class="text-xs">✨</button>
+        <button onclick="switchTab('calendar')" id="nav-calendar" class="text-xs">📅</button>
+        <button onclick="switchTab('library')" id="nav-library" class="text-xs">📚</button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="text-xs">📊</button>
     </nav>
     <script>
-        const TVMAZE_API = 'https://api.tvmaze.com';
-        let library = JSON.parse(localStorage.getItem('tvtime_db')) || [];
+        let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
         let currentMediaType = 'series';
 
-        function loadView(view) {
-            const content = document.getElementById('main-content');
-            if(view === 'search') {
-                content.innerHTML = `
-                    <div class="grid grid-cols-2 gap-2 mb-4">
-                        <button onclick="setMediaType('series')" class="bg-indigo-600 p-2 rounded-lg font-bold text-sm">Séries</button>
-                        <button onclick="setMediaType('movie')" class="bg-gray-800 p-2 rounded-lg font-bold text-sm">Films</button>
-                    </div>
-                    <input type="text" oninput="handleSearch(this.value)" placeholder="Rechercher..." class="w-full bg-gray-800 p-3 rounded-xl mb-4 text-white">
-                    <div id="results" class="space-y-2"></div>`;
-            } else if(view === 'library') {
-                content.innerHTML = `<h2 class="text-xl font-bold mb-4">Bibliothèque</h2><div id="libraryGrid" class="grid grid-cols-3 gap-2"></div>`;
-                renderLibrary();
-            } else if(view === 'profile') {
-                content.innerHTML = `<h2 class="text-xl font-bold mb-4">Statistiques</h2><div id="statBox" class="bg-gray-800 p-4 rounded-xl"></div>`;
-                renderProfile();
-            }
+        // Navigation entre les onglets
+        function switchTab(tabName) {
+            ['search', 'discover', 'calendar', 'library', 'profile'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const nav = document.getElementById(`nav-${t}`);
+                if (nav) nav.classList.toggle('text-indigo-400', t === tabName);
+            });
+            const target = document.getElementById(`tab-${tabName}`);
+            target.classList.remove('hidden');
+            if (tabName === 'library') renderLibrary();
+            if (tabName === 'profile') renderProfile();
+            if (tabName === 'discover') renderDiscoverTab();
+            if (tabName === 'calendar') renderCalendarTab();
         }
 
+        // Moteur de recherche hybride
         async function handleSearch(q) {
-            if(q.length < 3) return;
-            const res = currentMediaType === 'movie' 
-                ? await fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${encodeURIComponent(q)}`).then(r=>r.json())
-                : await fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(q)}`).then(r=>r.json());
+            if (q.length < 3) return;
+            const res = currentMediaType === 'movie'
+                ? await fetch(`https://www.omdbapi.com/?apikey=1e01c814&s=${q}`).then(r => r.json())
+                : await fetch(`https://api.tvmaze.com/search/shows?q=${q}`).then(r => r.json());
             
             const list = res.Search || res;
-            document.getElementById('results').innerHTML = list.map(item => `
-                <div class="bg-gray-800 p-3 rounded-xl cursor-pointer hover:bg-gray-700" onclick="openDetails('${(item.Title || item.show.name).replace(/'/g, "")}')">
+            document.getElementById('searchResults').innerHTML = list.map(item => `
+                <div class="bg-gray-800 p-3 rounded-xl border border-gray-700 cursor-pointer" onclick="openDetails('${(item.Title || item.show.name)}')">
                     ${item.Title || item.show.name}
                 </div>
             `).join('');
         }
 
-        function setMediaType(type) { 
-            currentMediaType = type;
-            document.querySelectorAll('button').forEach(b => b.classList.remove('bg-indigo-600'));
-            event.target.classList.add('bg-indigo-600');
-        }
-
-        function addToLibrary(title, type) {
-            library.push({ title, type, status: 'In Progress' });
-            localStorage.setItem('tvtime_db', JSON.stringify(library));
-            alert(title + " ajouté !");
-        }
-    </script>
-    <script>
-        function openDetails(title) {
-            document.getElementById('modalTitle').textContent = title;
-            document.getElementById('modalContent').innerHTML = `
-                <div class="space-y-4">
-                    <p class="text-gray-300">Statut: En cours de visionnage</p>
-                    <div class="h-24 bg-gray-900 rounded border border-gray-700 flex items-end p-2 gap-1">
-                        ${Array(10).fill(0).map(() => `<div class="flex-1 bg-indigo-500/50" style="height: ${Math.random()*100}%"></div>`).join('')}
-                    </div>
-                    <button onclick="addToLibrary('${title}', '${currentMediaType}')" class="w-full py-3 bg-indigo-600 rounded-xl font-bold">AJOUTER AUX SUIVIS</button>
-                </div>`;
-            document.getElementById('mediaModal').classList.remove('hidden');
-        }
-
+        // Gestion de la bibliothèque
         function renderLibrary() {
             const grid = document.getElementById('libraryGrid');
-            if(!grid) return;
             grid.innerHTML = library.map(item => `
-                <div class="bg-gray-800 p-2 rounded-lg text-[10px] text-center truncate border border-gray-700">${item.title}</div>
+                <div class="bg-gray-800 p-2 rounded text-[10px] text-center truncate border border-gray-700">${item.title}</div>
             `).join('');
+            document.getElementById('lib-count').textContent = library.length;
         }
 
+        // Profil et Stats
         function renderProfile() {
-            const s = library.filter(i=>i.type==='series').length;
-            const m = library.filter(i=>i.type==='movie').length;
+            const s = library.filter(i => i.type === 'series').length;
+            const m = library.filter(i => i.type === 'movie').length;
             document.getElementById('statBox').innerHTML = `
-                <div class="flex justify-between font-bold"><span>Séries:</span><span>${s}</span></div>
-                <div class="flex justify-between font-bold"><span>Films:</span><span>${m}</span></div>
-                <button onclick="exportLibrary()" class="mt-4 w-full text-xs text-indigo-400">Exporter ma base (JSON)</button>`;
+                <p class="font-bold">Séries suivies: ${s}</p>
+                <p class="font-bold">Films suivis: ${m}</p>`;
         }
 
+        // Utilitaires de données
         function exportLibrary() {
-            const data = localStorage.getItem('tvtime_db');
+            const data = localStorage.getItem('personal_tracker_db');
             const blob = new Blob([data], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'backup_tvtime.json'; a.click();
+            a.href = URL.createObjectURL(blob);
+            a.download = 'tv_time_backup.json';
+            a.click();
         }
 
-        // Initialisation automatique
-        window.onload = () => loadView('search');
+        function importLibrary(event) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                localStorage.setItem('personal_tracker_db', e.target.result);
+                location.reload();
+            };
+            reader.readAsText(event.target.files[0]);
+        }
+
+        function setMediaType(type) {
+            currentMediaType = type;
+            document.getElementById('btn-series').className = `py-2 text-sm font-bold rounded-lg ${type==='series'?'bg-indigo-600':'text-gray-400'}`;
+            document.getElementById('btn-movie').className = `py-2 text-sm font-bold rounded-lg ${type==='movie'?'bg-indigo-600':'text-gray-400'}`;
+        }
+
+        // Initialisation
+        window.onload = () => switchTab('search');
     </script>
 </body>
 </html>
