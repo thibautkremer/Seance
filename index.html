@@ -14,9 +14,6 @@
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         .hidden { display: none !important; }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .tab-enter { animation: tabEnter 0.18s ease-out forwards; }
-        @keyframes tabEnter { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-        
         .media-poster { width: 100%; aspect-ratio: 155.88 / 217.56; object-fit: cover; }
         .media-grid { display: grid; gap: 0.5rem; grid-template-columns: repeat(3, 1fr); }
         @media (min-width: 480px)  { .media-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -60,16 +57,23 @@
                 </select>
             </div>
         </div>
-        <div id="searchError" class="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50 hidden"></div>
         <div id="searchResults" class="media-grid"></div>
         <div id="searchSentinel" class="h-4"></div>
     </div>
 
     <!-- TAB: DISCOVER -->
     <div id="tab-discover" class="space-y-4 hidden">
-        <div class="bg-gray-800 p-3 sm:p-4 rounded-xl border border-gray-700 flex justify-between items-center">
-            <div><h2 class="text-base font-bold text-white">✨ Recommandations</h2><p class="text-[10px] text-gray-400">Ciblé sur vos goûts</p></div>
-            <button onclick="renderDiscoverTab(true)" class="text-[10px] bg-teal-900/50 border border-teal-700 text-teal-300 px-3 py-1.5 rounded-lg font-bold">↻ Rafraîchir</button>
+        <div class="bg-gray-800 p-3 sm:p-4 rounded-xl border border-gray-700 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <h2 class="text-base font-bold text-white">✨ Recommandations</h2>
+                <button onclick="renderDiscoverTab(true)" class="text-[10px] bg-teal-900/50 border border-teal-700 text-teal-300 px-3 py-1.5 rounded-lg font-bold">↻ Rafraîchir</button>
+            </div>
+            <!-- Sous-onglets de découverte (Point 12) -->
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="setDiscoverMode('mix')" id="btn-disc-mix" class="py-1.5 text-xs font-bold rounded bg-teal-600 text-white shadow">Pour vous</button>
+                <button onclick="setDiscoverMode('top')" id="btn-disc-top" class="py-1.5 text-xs font-bold rounded bg-gray-700 text-gray-300">Mieux notés</button>
+                <button onclick="setDiscoverMode('trending')" id="btn-disc-trending" class="py-1.5 text-xs font-bold rounded bg-gray-700 text-gray-300">Trending</button>
+            </div>
         </div>
         <div id="discoverGrid" class="media-grid"></div>
         <div id="discoverSentinel" class="h-4"></div>
@@ -91,25 +95,29 @@
 
     <!-- TAB: LIBRARY -->
     <div id="tab-library" class="space-y-3 hidden">
-        <div class="flex flex-wrap gap-2 items-center border-b border-gray-800 pb-3">
-            <select id="libraryTypeFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1 text-gray-300">
+        <!-- Filtres sur une seule ligne avec scroll horizontal si besoin (Point 11) -->
+        <div class="flex gap-2 items-center overflow-x-auto hide-scroll pb-2 border-b border-gray-800">
+            <select id="libraryTypeFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
                 <option value="all">Tous types</option>
                 <option value="series">Séries</option>
                 <option value="movie">Films</option>
             </select>
-            <select id="libraryStatusFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1 text-gray-300">
+            <!-- Default à "En cours" (Point 7) -->
+            <select id="libraryStatusFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
                 <option value="all">Tous visionnages</option>
-                <option value="not_finished">En cours</option>
+                <option value="not_finished" selected>En cours</option>
                 <option value="watched">Terminé</option>
                 <option value="abandoned">Abandonné</option>
             </select>
-            <select id="libraryDiffusionFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1 text-gray-300">
+            <select id="libraryDiffusionFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
                 <option value="all">Toutes diffusions</option>
                 <option value="running">En cours</option>
                 <option value="ended">Terminée</option>
                 <option value="canceled">Annulée</option>
             </select>
-            <input type="text" id="librarySearch" oninput="renderLibrary()" placeholder="Filtrer..." class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 w-full sm:w-36">
+        </div>
+        <div class="mb-3">
+            <input type="text" id="librarySearch" oninput="renderLibrary()" placeholder="Rechercher dans mes suivis..." class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-3 py-2 w-full text-white">
         </div>
         <div id="libraryGrid" class="media-grid"></div>
     </div>
@@ -122,81 +130,107 @@
             </label>
             <button onclick="clearAll()" class="bg-gray-800 border border-red-900/40 text-red-400 text-xs font-bold py-3 rounded-xl">🗑 Vider</button>
         </div>
+        
+        <!-- Camembert Films vs Séries (Point 8) -->
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex items-center justify-around gap-4">
+            <div class="relative w-24 h-24 shrink-0">
+                <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#374151" stroke-width="3"></circle>
+                    <circle id="pieSeries" cx="18" cy="18" r="15.9155" fill="none" stroke="#0D9488" stroke-width="3" stroke-dasharray="0, 100"></circle>
+                    <circle id="pieMovies" cx="18" cy="18" r="15.9155" fill="none" stroke="#D97706" stroke-width="3" stroke-dasharray="0, 100" stroke-dashoffset="0"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span id="pieTotal" class="text-sm font-black text-white">0</span>
+                    <span class="text-[8px] text-gray-400 uppercase">Total</span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2 w-full text-xs">
+                <div class="flex justify-between items-center"><div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-teal-600"></div><span class="text-gray-300">Séries</span></div><span id="pieSeriesText" class="font-bold text-white">0%</span></div>
+                <div class="flex justify-between items-center"><div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-amber-600"></div><span class="text-gray-300">Films</span></div><span id="pieMoviesText" class="font-bold text-white">0%</span></div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2 sm:col-span-4">
                 <div id="stat-hours" class="text-xl font-black text-teal-400">0 h</div>
                 <div class="text-xs text-gray-400 mt-0.5">Temps total regardé</div>
             </div>
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-series" class="text-2xl font-black text-emerald-400">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Séries</div>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-movies" class="text-2xl font-black text-amber-400">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Films</div>
+                <div id="stat-series" class="text-2xl font-black text-teal-400">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Séries suivies</div>
             </div>
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
                 <div id="stat-episodes-watched" class="text-2xl font-black text-cyan-400">0</div>
                 <div class="text-xs text-gray-400 mt-0.5">Épisodes vus</div>
             </div>
-            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-finished-series" class="text-2xl font-black text-purple-400">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Séries finies</div>
-            </div>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2">
-            <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🎭 Top Genres</h3>
-            <div id="stat-genre-bars" class="space-y-1.5"></div>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2 mt-4">
-            <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🏆 Top 10 Séries</h3>
-            <div id="stat-top-10" class="space-y-2 text-xs"></div>
         </div>
     </div>
 </main>
 
-<!-- MODAL COMPLÈTE -->
+<!-- MODAL DES MEDIAS -->
 <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-3 flex items-start justify-center hidden">
     <div class="bg-gray-800 border border-gray-700 w-full max-w-lg lg:max-w-2xl rounded-2xl overflow-hidden my-4 shadow-2xl">
+        
         <div class="p-3 sm:p-4 flex gap-3 border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
-            <img id="modalPoster" src="" class="w-16 h-24 object-cover rounded bg-gray-900 border border-gray-700 flex-shrink-0" />
+            <img id="modalPoster" src="" class="w-20 h-28 object-cover rounded border border-gray-700 shrink-0" />
             <div class="min-w-0 flex-1 flex flex-col justify-center">
                 <div class="flex justify-between items-start">
-                    <h2 id="modalTitle" class="font-black text-white text-lg truncate">Détails</h2>
-                    <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full font-bold text-sm">✕</button>
+                    <h2 id="modalTitle" class="font-black text-white text-lg leading-tight line-clamp-2">Détails</h2>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full font-bold text-sm shrink-0">✕</button>
                 </div>
-                <div class="flex flex-wrap gap-1 mt-1">
+                <!-- Badges, Date et Note globale (Points 2 & 3) -->
+                <div class="flex flex-wrap items-center gap-1.5 mt-2">
                     <span id="modalTypeBadge" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-teal-600 text-white">SÉRIE</span>
-                    <span id="modalProductionBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"></span>
-                    <span id="modalGlobalRating" class="text-xs font-bold text-yellow-400 ml-auto">★ N/A</span>
+                    <span id="modalProductionBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-700 text-white uppercase"></span>
+                    <span id="modalPremiereDate" class="text-[10px] text-gray-400 border border-gray-600 px-1.5 py-0.5 rounded">Date</span>
+                    <span id="modalGlobalRating" class="text-[10px] font-black text-yellow-400 bg-yellow-900/30 border border-yellow-700/50 px-1.5 py-0.5 rounded ml-auto">★ N/A</span>
                 </div>
                 <button id="btnForceCancel" onclick="toggleForceCancel()" class="mt-2 text-[10px] w-max bg-gray-900 border border-red-900/50 text-red-400 px-2 py-1 rounded hidden">Force : Marquer Annulée</button>
             </div>
         </div>
         
-        <div class="p-3 sm:p-4 space-y-4">
+        <div class="p-3 sm:p-4 space-y-5">
+            <!-- Avancement global avec barre (Point 9) -->
+            <div id="modalProgressContainer" class="hidden space-y-1 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
+                <div class="flex justify-between text-xs font-bold text-gray-300">
+                    <span>Avancement global</span>
+                    <span id="modalProgressText" class="text-teal-400">0%</span>
+                </div>
+                <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                    <div id="modalProgressBar" class="bg-teal-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
             <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
             
-            <button id="modalViewSuggestionsBtn" class="w-full py-2 bg-teal-900/40 border border-teal-700/50 text-teal-300 hover:bg-teal-900/60 font-bold rounded-xl text-xs transition">💡 Voir des suggestions similaires</button>
-            <div id="modalSuggestionsBlock" class="space-y-2 hidden bg-gray-900/50 p-3 rounded-xl border border-teal-500/10">
-                <div id="modalSuggestionsList" class="space-y-2 max-h-64 overflow-y-auto pr-1 hide-scroll"></div>
+            <div id="modalActionButtonsGrid" class="grid grid-cols-2 gap-2">
+                <button id="modalActionFollowBtn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow">À regarder</button>
+                <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow">Déjà vu</button>
             </div>
 
             <div id="modalSeriesContent" class="space-y-4 hidden">
+                
+                <!-- Graphe Global (Point 1) -->
+                <div class="space-y-1">
+                    <h3 class="text-[10px] font-bold text-gray-500 uppercase">Graphe des notes (Toutes saisons)</h3>
+                    <div class="h-16 flex items-end gap-0.5 bg-gray-900 p-2 rounded-lg border border-gray-700 overflow-x-auto hide-scroll" id="modalGlobalGraph"></div>
+                </div>
+
                 <div id="modalSeasonSelectionRow" class="space-y-2">
                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
                     <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
                 </div>
-            </div>
-            
-            <div id="modalEpisodesBlock" class="space-y-2 hidden">
-                <h3 class="text-sm font-bold text-white">Épisodes</h3>
-                <div id="modalEpisodesList" class="max-h-64 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
-            </div>
-            
-            <div id="modalActionButtonsGrid" class="grid grid-cols-2 gap-2 pt-2">
-                <button id="modalActionFollowBtn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow">À regarder</button>
-                <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow">Déjà vu</button>
+                
+                <!-- Graphe Saison Courante (Point 1) -->
+                <div class="space-y-1">
+                    <h3 class="text-[10px] font-bold text-gray-500 uppercase">Notes de la saison sélectionnée</h3>
+                    <div class="h-12 flex items-end gap-1 bg-gray-900 p-2 rounded-lg border border-gray-700 overflow-x-auto hide-scroll" id="modalSeasonGraph"></div>
+                </div>
+                
+                <div id="modalEpisodesBlock" class="space-y-2 hidden">
+                    <h3 class="text-sm font-bold text-white">Épisodes</h3>
+                    <div id="modalEpisodesList" class="max-h-80 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -221,7 +255,6 @@
     let supabaseClient = null;
     const localUserId = 'tvr_master_user_2026';
     
-    // NOUVEAU CACHE GLOBAL pour résoudre les clics morts (Points 2 & 4)
     const globalMediaCache = new Map();
     
     let currentMediaType = 'series', searchResults = [];
@@ -230,15 +263,15 @@
     let syncQueue = JSON.parse(localStorage.getItem('personal_tracker_sync_queue')) || [];
     let activeModalMediaIndex = null, activeModalSeason = null, modalMode = 'preview', previewEpisodes = [];
     let calFilter = 'all';
+    let currentDiscoverMode = 'mix';
 
-    // Pagination (20 par 20, max 100)
     const PAGE_SIZE = 20;
     const MAX_RESULTS = 100;
     let searchPage = 1;
     let discoverResults = [];
     let discoverPage = 1;
+    let todayString = new Date().toISOString().split('T')[0];
 
-    // Observers Scroll Infini
     const searchObserver = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) {
             searchPage++; renderSearchGrid(false);
@@ -251,13 +284,11 @@
         }
     });
 
-    // Nettoyage des doublons (Point 6)
     function deduplicateLibrary() {
         const unique = [];
         const seen = new Set();
         library.sort((a,b) => (b.last_modified || 0) - (a.last_modified || 0));
         for(const item of library) {
-            // Sécurité anti "fiche undefined" (Point 5)
             if(item && item.id && item.title && !seen.has(item.id)) {
                 seen.add(item.id);
                 unique.push(item);
@@ -277,6 +308,7 @@
         preloadShowsCache();
         searchObserver.observe(document.getElementById('searchSentinel'));
         discoverObserver.observe(document.getElementById('discoverSentinel'));
+        // Initialiser l'onglet suivi par défaut (Point 7 pris en compte dans le HTML avec selected)
     });
 
     function saveLocalDB(mediaId = null) {
@@ -291,6 +323,7 @@
         else { el.classList.add('hidden'); }
     }
 
+    // --- SYNCHRO SUPABASE (Point 10) ---
     function initSupabase() {
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -319,7 +352,7 @@
             const id = syncQueue[i];
             const item = library.find(x => x.id === id);
             try {
-                // ATTENTION: La DB Supabase *DOIT* avoir la Clé Primaire (user_id, media_id) pour que upsert fonctionne sans dupliquer (Point 7)
+                // ATTENTION: La base doit avoir ADD PRIMARY KEY (user_id, media_id)
                 if (item) await supabaseClient.from('user_library').upsert({ user_id: localUserId, media_id: id, media_data: item, last_modified: item.last_modified }, { onConflict: 'user_id, media_id' });
                 else await supabaseClient.from('user_library').delete().match({ user_id: localUserId, media_id: id });
                 syncQueue.splice(i, 1);
@@ -342,7 +375,7 @@
                     else if ((cloudRow.last_modified||0) > (library[localIdx].last_modified||0)) { library[localIdx] = cloudRow.media_data; localUpdated = true; }
                 });
                 if (localUpdated) { 
-                    deduplicateLibrary(); // Sécurité doublons (Point 6)
+                    deduplicateLibrary(); 
                     saveLocalDB(); 
                     if(!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary(); 
                 }
@@ -383,7 +416,7 @@
             ]);
             let results = [];
             if (omdbRes.Search) results = results.concat(omdbRes.Search.map(m => {
-                const obj = { id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie', image: m.Poster !== 'N/A' ? m.Poster : '', rating: 0, genres: [] };
+                const obj = { id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie', image: m.Poster !== 'N/A' ? m.Poster : '', rating: 0, genres: [], premiered: m.Year };
                 globalMediaCache.set(obj.id, obj); return obj;
             }));
             if (Array.isArray(tvmazeRes)) results = results.concat(tvmazeRes.map(i => normalizeShow(i.show)));
@@ -414,10 +447,9 @@
         if (currentMediaType === 'series' && diffFilter !== 'all') {
             filtered = filtered.filter(item => {
                 const s = (item.status_production || '').toLowerCase();
-                const isManualCanceled = item.user_forced_cancel === true;
-                if(diffFilter === 'canceled') return isManualCanceled || s.includes('cancel');
-                if(diffFilter === 'running') return s.includes('running') && !isManualCanceled;
-                if(diffFilter === 'ended') return s.includes('ended') && !isManualCanceled;
+                if(diffFilter === 'running') return s.includes('running');
+                if(diffFilter === 'ended') return s.includes('ended');
+                if(diffFilter === 'canceled') return s.includes('cancel');
                 return true;
             });
         }
@@ -429,7 +461,7 @@
         slice.forEach(m => container.appendChild(createMediaCard(m, false)));
     }
 
-    // --- DECOUVERTE PERSONNALISÉE ---
+    // --- DECOUVERTE PERSONNALISÉE (Point 12) ---
     async function ensureShowsPool() {
         if (showsCache.length > 0) return;
         const res = await fetch(`${TVMAZE_API}/shows?page=0`);
@@ -437,25 +469,37 @@
     }
     async function preloadShowsCache() { await ensureShowsPool(); }
 
+    function setDiscoverMode(mode) {
+        currentDiscoverMode = mode;
+        ['mix', 'top', 'trending'].forEach(m => {
+            const btn = document.getElementById(`btn-disc-${m}`);
+            if(m === mode) btn.className = "py-1.5 text-xs font-bold rounded bg-teal-600 text-white shadow";
+            else btn.className = "py-1.5 text-xs font-bold rounded bg-gray-700 text-gray-300";
+        });
+        discoverPage = 1;
+        renderDiscoverTab(true);
+    }
+
     async function renderDiscoverTab(force = false) {
-        if (!force && discoverResults.length > 0) {
-            if(document.getElementById('discoverGrid').children.length === 0) {
-                discoverPage = 1;
-                renderDiscoverGrid(true);
-            }
-            return;
+        if (!force && discoverResults.length > 0 && document.getElementById('discoverGrid').children.length > 0) return;
+        await ensureShowsPool();
+        
+        const libIds = new Set(library.map(i => i.id));
+        let pool = showsCache.filter(s => !libIds.has(`series-${s.id}`));
+        
+        if(currentDiscoverMode === 'mix') {
+            const favoriteKeywords = ['Anime', 'Animation', 'Action', 'Fantasy'];
+            let personalized = pool.filter(s => s.genres?.some(g => favoriteKeywords.includes(g)));
+            if(personalized.length < 50) personalized = [...personalized, ...pool];
+            discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100);
+        } 
+        else if (currentDiscoverMode === 'top') {
+            discoverResults = pool.filter(s => s.rating?.average > 0).sort((a,b) => b.rating.average - a.rating.average).slice(0, 100);
+        }
+        else if (currentDiscoverMode === 'trending') {
+            discoverResults = pool.filter(s => s.status === 'Running' && s.rating?.average > 0).sort((a,b) => b.updated - a.updated).slice(0, 100);
         }
         
-        await ensureShowsPool();
-        const favoriteKeywords = ['Anime', 'Animation', 'Action', 'Fantasy'];
-        const libIds = new Set(library.map(i => i.id));
-        
-        let pool = showsCache.filter(s => !libIds.has(`series-${s.id}`));
-        let personalized = pool.filter(s => s.genres?.some(g => favoriteKeywords.includes(g)));
-        
-        if(personalized.length < 50) personalized = [...personalized, ...pool];
-        
-        discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100);
         discoverPage = 1;
         renderDiscoverGrid(true);
     }
@@ -477,13 +521,12 @@
         const sFilter = document.getElementById('libraryStatusFilter').value;
         const dFilter = document.getElementById('libraryDiffusionFilter').value;
         const tFilter = document.getElementById('libraryTypeFilter').value;
-        const searchInput = document.getElementById('librarySearch').value.toLowerCase();
+        const searchInput = document.getElementById('librarySearch').value.toLowerCase().trim();
         
         grid.innerHTML = '';
         
         library.filter(item => {
-            if(!item || !item.id) return false; // Sécurité (Point 5)
-            
+            if(!item || !item.id) return false; 
             if (tFilter !== 'all' && item.type !== tFilter) return false;
             if (sFilter === 'not_finished' && item.status !== 'In Progress') return false;
             if (sFilter === 'watched' && item.status !== 'Watched') return false;
@@ -497,47 +540,108 @@
                 if (dFilter === 'ended' && (isManualCanceled || !sp.includes('ended'))) return false;
             }
             
-            // Correction du crash de recherche si le titre était indéfini (Point 1)
-            const title = item.title ? item.title.toLowerCase() : '';
-            if (searchInput && !title.includes(searchInput)) return false;
+            const titleMatch = item.title ? item.title.toLowerCase().includes(searchInput) : false;
+            if (searchInput !== "" && !titleMatch) return false;
             
             return true;
         }).forEach((item) => {
-            // Calculer les overlays de la bibliothèque (Point 3)
-            let overlayHTML = '';
-            let progressBar = '';
-            if(item.type === 'series') {
-                const prog = getProgress(item);
-                const nextEp = item.episodes?.find(e => !e.watched);
-                
-                if (item.status === 'Watched') {
-                    overlayHTML = `<button onclick="event.stopPropagation(); resetToUnwatched('${item.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
-                } else if (item.status === 'Abandoned') {
-                    overlayHTML = `<button onclick="event.stopPropagation(); resetToUnwatched('${item.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-red-900 border border-red-700 text-red-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Reprendre</button>`;
-                } else if (nextEp) {
-                    overlayHTML = `<button onclick="event.stopPropagation(); checkNextEp('${item.id}')" class="absolute bottom-1 right-1 bg-teal-600/90 hover:bg-teal-500 text-white text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">✓ S${nextEp.season}E${nextEp.number}</button>`;
-                }
-                if(item.episodes?.length > 0) progressBar = `<div class="absolute bottom-0 inset-x-0 h-1 bg-gray-700/60 z-10"><div class="h-full bg-teal-500" style="width:${prog}%"></div></div>`;
-            } else if (item.type === 'movie' && item.status === 'Watched') {
-                overlayHTML = `<button onclick="event.stopPropagation(); resetToUnwatched('${item.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
-            }
-            
-            grid.appendChild(createMediaCard(item, true, overlayHTML, progressBar));
+            grid.appendChild(createMediaCard(item, true));
         });
     }
 
     function getProgress(item) {
         if (!item.episodes || item.episodes.length === 0) return item.status === 'Watched' ? 100 : 0;
-        return Math.round(item.episodes.filter(e => e.watched).length / item.episodes.length * 100);
+        const watched = item.episodes.filter(e => e.watched).length;
+        return Math.round((watched / item.episodes.length) * 100);
+    }
+
+    // --- CARTES MEDIAS (Point 2, 13) ---
+    function buildCardActionsHTML(mediaId) {
+        const inLib = library.some(i => i.id === mediaId);
+        if (inLib) return `<button onclick="event.stopPropagation(); handleRemove('${mediaId}')" class="w-full text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 py-1 rounded">✕ Retirer</button>`;
+        return `<button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', false)" class="flex-1 text-[9px] bg-teal-600 text-white font-bold py-1 rounded">+ Voir</button>
+                <button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', true)" class="flex-1 text-[9px] bg-emerald-700 text-white font-bold py-1 rounded">✓ Vu</button>`;
     }
     
+    async function handleQuickAdd(container, mediaId, watched) {
+        container.innerHTML = `<span class="text-[9px] text-teal-400 py-1 font-bold animate-pulse w-full text-center">Ajout...</span>`;
+        await quickAdd(mediaId, watched);
+        container.innerHTML = buildCardActionsHTML(mediaId);
+    }
+    
+    function handleRemove(mediaId) {
+        removeFromLibrary(mediaId);
+        if (document.getElementById('tab-library').classList.contains('hidden')) {
+            const actionsDiv = document.getElementById(`actions-${mediaId}`);
+            if(actionsDiv) actionsDiv.innerHTML = buildCardActionsHTML(mediaId);
+        }
+    }
+
+    function createMediaCard(media, isLib = false) {
+        globalMediaCache.set(media.id, media);
+        const isAnime = media.genres?.includes('Anime') || media.genres?.includes('Animation');
+        
+        // Couleur de fond selon le type (Point 13)
+        const bgColorClass = media.type === 'movie' ? 'bg-amber-900/60' : (isAnime ? 'bg-purple-900/60' : 'bg-teal-900/60');
+        const typeFlag = media.type === 'movie' ? 'FILM' : (isAnime ? 'ANIME' : 'SÉRIE');
+        const typeClass = media.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
+
+        const div = document.createElement('div');
+        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col hover:border-gray-500 transition-colors';
+        div.onclick = () => isLib ? openLibraryModal(media.id) : openPreviewModal(media);
+        
+        const removeBtn = isLib ? `<button onclick="event.stopPropagation(); handleRemove('${media.id}')" class="absolute top-1 right-1 bg-gray-900/90 text-red-400 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full flex items-center justify-center font-bold shadow z-30 transition">✕</button>` : '';
+        const quickActions = !isLib ? `<div class="mt-auto flex gap-1 pt-1" id="actions-${media.id}">${buildCardActionsHTML(media.id)}</div>` : '';
+        
+        const rating = media.rating > 0 ? media.rating.toFixed(1) : 'N/A';
+        const ratingOverlay = !isLib ? `<div class="absolute top-1 right-1 bg-black/80 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded z-10">★ ${rating}</div>` : '';
+
+        // Overlays Bibliothèque
+        let libOverlay = '';
+        let libProgress = '';
+        if (isLib && media.type === 'series') {
+            const prog = getProgress(media);
+            const nextEp = media.episodes?.find(e => !e.watched);
+            if (media.status === 'Watched') {
+                libOverlay = `<button onclick="event.stopPropagation(); resetToUnwatched('${media.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
+            } else if (media.status === 'Abandoned') {
+                libOverlay = `<button onclick="event.stopPropagation(); resetToUnwatched('${media.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-red-900 border border-red-700 text-red-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Reprendre</button>`;
+            } else if (nextEp) {
+                libOverlay = `<button onclick="event.stopPropagation(); checkNextEp('${media.id}')" class="absolute bottom-1 right-1 bg-teal-600/90 hover:bg-teal-500 text-white text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">✓ S${nextEp.season}E${nextEp.number}</button>`;
+            }
+            libProgress = `<div class="absolute bottom-0 inset-x-0 h-1.5 bg-gray-700/80 z-10"><div class="h-full bg-teal-500" style="width:${prog}%"></div></div>`;
+        } else if (isLib && media.type === 'movie' && media.status === 'Watched') {
+            libOverlay = `<button onclick="event.stopPropagation(); resetToUnwatched('${media.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
+        }
+
+        // Si on est dans le suivi, on utilise le bgColorClass pour le texte (Point 13), sinon c'est le badge top-left
+        const badgeHTML = !isLib ? `<span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white z-10 shadow">${typeFlag}</span>` : '';
+        const titleBg = isLib ? bgColorClass : 'bg-gray-800';
+
+        div.innerHTML = `
+            <div class="relative w-full">
+                <img src="${media.image || 'https://placehold.co/155x217/1f2937/4b5563'}" class="media-poster bg-gray-900" loading="lazy" />
+                ${badgeHTML}
+                ${ratingOverlay}
+                ${removeBtn}
+                ${libOverlay}
+                ${libProgress}
+            </div>
+            <div class="p-2 flex-1 flex flex-col ${titleBg}">
+                <h3 class="font-bold text-white text-[11px] truncate leading-tight">${media.title || 'Inconnu'}</h3>
+                ${quickActions}
+            </div>
+        `;
+        return div;
+    }
+
     function checkNextEp(id) {
         const item = library.find(i => i.id === id);
         if(!item) return;
         const nextEp = item.episodes?.find(e => !e.watched);
         if(nextEp) {
             const idx = item.episodes.indexOf(nextEp);
-            for(let i=0; i<=idx; i++) item.episodes[i].watched = true;
+            for(let i=0; i<=idx; i++) item.episodes[i].watched = true; // Cascade update
             item.status = item.episodes.every(e => e.watched) ? 'Watched' : 'In Progress';
             item.last_modified = Date.now();
             saveLocalDB(item.id);
@@ -555,70 +659,13 @@
         renderLibrary();
     }
 
-    // --- CARTES MEDIAS & ACTIONS RAPIDES (CORRIGÉ POUR ÉVITER LES CLICS MORTS) ---
-    function buildCardActionsHTML(mediaId) {
-        const inLib = library.some(i => i.id === mediaId);
-        if (inLib) return `<button onclick="event.stopPropagation(); handleRemove('${mediaId}')" class="w-full text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 py-1 rounded">✕ Retirer</button>`;
-        // Utilisation de la nouvelle fonction asynchrone handleQuickAdd (Point 4)
-        return `<button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', false)" class="flex-1 text-[9px] bg-teal-600 text-white font-bold py-1 rounded">+ Voir</button>
-                <button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', true)" class="flex-1 text-[9px] bg-emerald-700 text-white font-bold py-1 rounded">✓ Vu</button>`;
-    }
-    
-    async function handleQuickAdd(container, mediaId, watched) {
-        // Feedback visuel le temps que l'API récupère les épisodes (Point 4)
-        container.innerHTML = `<span class="text-[9px] text-teal-400 py-1 font-bold animate-pulse w-full text-center">Ajout...</span>`;
-        await quickAdd(mediaId, watched);
-        container.innerHTML = buildCardActionsHTML(mediaId);
-    }
-    
-    function handleRemove(mediaId) {
-        removeFromLibrary(mediaId);
-        // Si on n'est PAS dans la bibliothèque, on met à jour les boutons d'action rapide à la volée (Point 5)
-        if (document.getElementById('tab-library').classList.contains('hidden')) {
-            const actionsDiv = document.getElementById(`actions-${mediaId}`);
-            if(actionsDiv) actionsDiv.innerHTML = buildCardActionsHTML(mediaId);
-        }
-    }
-
-    function createMediaCard(media, isLib = false, overlayHTML = '', progressBar = '') {
-        // Sauvegarde de l'objet complet dans le cache (Points 2 & 4)
-        globalMediaCache.set(media.id, media);
-
-        const isAnime = media.genres?.includes('Anime') || media.genres?.includes('Animation');
-        const typeFlag = media.type === 'movie' ? 'FILM' : (isAnime ? 'ANIME' : 'SÉRIE');
-        const typeClass = media.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
-        
-        const div = document.createElement('div');
-        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col hover:border-gray-500 transition-colors';
-        div.onclick = () => isLib ? openLibraryModal(media.id) : openPreviewModal(media);
-        
-        // Bouton de suppression sur l'affiche en Mode Suivi (Point 5)
-        const removeBtn = isLib ? `<button onclick="event.stopPropagation(); handleRemove('${media.id}')" class="absolute top-1 right-1 bg-gray-900/90 text-red-400 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full flex items-center justify-center font-bold shadow z-30 transition">✕</button>` : '';
-        
-        const quickActions = !isLib ? `<div class="mt-auto flex gap-1 pt-1" id="actions-${media.id}">${buildCardActionsHTML(media.id)}</div>` : '';
-
-        div.innerHTML = `
-            <div class="relative w-full">
-                <img src="${media.image || 'https://placehold.co/155x217/1f2937/4b5563'}" class="media-poster bg-gray-900" loading="lazy" />
-                <span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white z-10 shadow">${typeFlag}</span>
-                ${removeBtn}
-                ${overlayHTML}
-                ${progressBar}
-            </div>
-            <div class="p-1.5 flex-1 flex flex-col">
-                <h3 class="font-bold text-white text-[11px] truncate leading-tight">${media.title || 'Inconnu'}</h3>
-                ${quickActions}
-            </div>
-        `;
-        return div;
-    }
-
     // --- MODALES ---
     function normalizeShow(show) {
         const obj = {
             id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series',
             image: show.image?.medium || '', summary: show.summary?.replace(/<[^>]*>/g, '') || '',
-            rating: show.rating?.average || 0, genres: show.genres || [], status_production: show.status || 'Running'
+            rating: show.rating?.average || 0, genres: show.genres || [], status_production: show.status || 'Running',
+            premiered: show.premiered ? show.premiered.split('-')[0] : 'N/A'
         };
         globalMediaCache.set(obj.id, obj);
         return obj;
@@ -629,13 +676,15 @@
         document.getElementById('modalTitle').textContent = media.title;
         document.getElementById('modalPoster').src = media.image || 'https://placehold.co/155x217';
         document.getElementById('modalSummary').textContent = media.summary || 'Aucun résumé.';
-        document.getElementById('btnForceCancel').classList.add('hidden');
+        document.getElementById('modalGlobalRating').textContent = `★ ${media.rating > 0 ? media.rating : 'N/A'}`; // Point 2
+        document.getElementById('modalPremiereDate').textContent = media.premiered || 'N/A'; // Point 3
         
+        document.getElementById('btnForceCancel').classList.add('hidden');
         renderProductionBadge(media.status_production, media.user_forced_cancel);
         
         document.getElementById('modalActionButtonsGrid').classList.remove('hidden');
         document.getElementById('modalSeriesContent').classList.add('hidden');
-        document.getElementById('modalSuggestionsBlock').classList.add('hidden');
+        document.getElementById('modalProgressContainer').classList.add('hidden');
         
         const followBtn = document.getElementById('modalActionFollowBtn');
         const watchedBtn = document.getElementById('modalActionAllWatchedBtn');
@@ -658,10 +707,10 @@
                 const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
                 previewEpisodes = await res.json();
                 buildSeasonTabs(previewEpisodes, false);
+                renderGlobalGraph(previewEpisodes);
             } catch(e) {}
         }
 
-        document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(media.genres?.[0]||'Anime', media.id);
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
@@ -675,7 +724,8 @@
         document.getElementById('modalTitle').textContent = item.title;
         document.getElementById('modalPoster').src = item.image || 'https://placehold.co/155x217';
         document.getElementById('modalSummary').textContent = item.summary;
-        document.getElementById('modalSuggestionsBlock').classList.add('hidden');
+        document.getElementById('modalGlobalRating').textContent = `★ ${item.rating > 0 ? item.rating : 'N/A'}`;
+        document.getElementById('modalPremiereDate').textContent = item.premiered || 'N/A';
         
         renderProductionBadge(item.status_production, item.user_forced_cancel);
         
@@ -688,16 +738,24 @@
         }
 
         document.getElementById('modalActionButtonsGrid').classList.add('hidden');
+        document.getElementById('modalProgressContainer').classList.add('hidden');
         
         if (item.type === 'series' && item.episodes) {
             document.getElementById('modalSeriesContent').classList.remove('hidden');
+            
+            // Progression Globale (Point 9)
+            const prog = getProgress(item);
+            document.getElementById('modalProgressContainer').classList.remove('hidden');
+            document.getElementById('modalProgressText').textContent = `${prog}%`;
+            document.getElementById('modalProgressBar').style.width = `${prog}%`;
+
             buildSeasonTabs(item.episodes, true);
+            renderGlobalGraph(item.episodes);
         } else {
             document.getElementById('modalSeriesContent').classList.add('hidden');
             document.getElementById('modalEpisodesBlock').classList.add('hidden');
         }
 
-        document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(item.genres?.[0]||'Anime', item.id);
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
@@ -709,30 +767,25 @@
         if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
     }
 
-    // --- SUGGESTIONS (CORRIGÉES AVEC LES ACTIONS RAPIDES) ---
-    async function renderSuggestions(genre, currentId) {
-        const block = document.getElementById('modalSuggestionsBlock'), list = document.getElementById('modalSuggestionsList');
-        block.classList.remove('hidden');
-        list.innerHTML = `<div class="text-xs text-gray-400 py-2 text-center">Calcul…</div>`;
-        try {
-            await ensureShowsPool();
-            let pool = showsCache.filter(s => s.genres?.includes(genre) && `series-${s.id}` !== currentId).sort(() => 0.5 - Math.random()).slice(0, 8);
-            list.innerHTML = '';
-            pool.forEach(show => {
-                const n = normalizeShow(show);
-                const div = document.createElement('div');
-                div.className = 'bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex items-center gap-2';
-                // Utilisation de l'API stringify pour forcer le JSON clean
-                div.innerHTML = `
-                    <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})'>
-                        <img src="${n.image || 'https://placehold.co/40x60'}" class="w-8 h-11 object-cover rounded bg-gray-950" />
-                        <h4 class="text-xs font-bold text-white truncate">${n.title}</h4>
-                    </div>
-                    <div class="flex gap-1 w-24 flex-shrink-0" id="actions-${n.id}">${buildCardActionsHTML(n.id)}</div>
-                `;
-                list.appendChild(div);
-            });
-        } catch(e) { list.innerHTML = ''; }
+    // --- GRAPHES (Point 1) ---
+    function renderGlobalGraph(eps) {
+        const container = document.getElementById('modalGlobalGraph');
+        container.innerHTML = '';
+        eps.forEach(ep => {
+            const r = ep.ratingSource || (ep.rating?.average) || 7.0;
+            const h = Math.max(10, (r / 10) * 100);
+            container.innerHTML += `<div class="flex-1 min-w-[4px] bg-teal-600/50 hover:bg-teal-400 rounded-t cursor-pointer" style="height: ${h}%" title="S${ep.season}E${ep.number}: ${r}"></div>`;
+        });
+    }
+
+    function renderSeasonGraph(eps) {
+        const container = document.getElementById('modalSeasonGraph');
+        container.innerHTML = '';
+        eps.forEach(ep => {
+            const r = ep.ratingSource || (ep.rating?.average) || 7.0;
+            const h = Math.max(10, (r / 10) * 100);
+            container.innerHTML += `<div class="flex-1 min-w-[12px] bg-cyan-600/60 hover:bg-cyan-400 rounded-t cursor-pointer flex flex-col justify-end items-center" style="height: ${h}%" title="E${ep.number}: ${r}"><span class="text-[8px] text-white opacity-50 mb-1">${r}</span></div>`;
+        });
     }
 
     function renderProductionBadge(status, forcedCanceled) {
@@ -778,32 +831,62 @@
         if (seasons.length > 0) renderEpisodes(episodes.filter(ep => ep.season === seasons[0]), isLib);
     }
 
+    // --- EPISODES (Points 4, 5, 6) ---
     function renderEpisodes(eps, isLib) {
         const list = document.getElementById('modalEpisodesList');
-        list.innerHTML = eps.map(ep => `
-            <div class="p-2 rounded-xl bg-gray-900/60 border border-gray-700/50 text-xs flex justify-between items-center">
-                <span class="truncate text-gray-300">E${ep.number} – <b class="text-white">${ep.name || 'Épisode '+ep.number}</b></span>
-                ${isLib ? `<button onclick="toggleEp(${ep.id})" class="px-2 py-1 rounded text-[10px] ${ep.watched ? 'bg-emerald-900 text-emerald-400' : 'bg-gray-800'}">${ep.watched ? '✓ Vu' : 'Vu'}</button>` : ''}
-            </div>
-        `).join('');
+        
+        // MàJ Graphe Saison
+        renderSeasonGraph(eps);
+
+        list.innerHTML = eps.map(ep => {
+            const isFuture = ep.airdate && ep.airdate > todayString;
+            const dateSpan = isFuture ? `<span class="text-amber-400 font-bold ml-1">${ep.airdate}</span>` : `<span class="text-gray-500 ml-1">${ep.airdate || ''}</span>`; // Point 6
+            const sumText = ep.summary?.replace(/<[^>]*>/g, '') || 'Aucun résumé disponible pour cet épisode.';
+            const btnAction = isLib ? `<button onclick="event.stopPropagation(); toggleEpCascade(${ep.id}, '${ep.season}')" class="px-2 py-1 rounded text-[10px] shrink-0 ${ep.watched ? 'bg-emerald-900 text-emerald-400' : 'bg-gray-800'}" ${isFuture?'disabled':''}>${ep.watched ? '✓ Vu' : 'Vu'}</button>` : '';
+
+            // Toggle Résumé (Point 5)
+            return `
+            <div class="flex flex-col gap-1">
+                <div class="p-2 rounded-xl bg-gray-900/60 border border-gray-700/50 text-xs flex justify-between items-center cursor-pointer" onclick="document.getElementById('ep-sum-${ep.id}').classList.toggle('hidden')">
+                    <span class="truncate text-gray-300">E${ep.number} – <b class="text-white">${ep.name || 'Épisode '+ep.number}</b> ${dateSpan}</span>
+                    ${btnAction}
+                </div>
+                <div id="ep-sum-${ep.id}" class="hidden px-2 text-[10px] text-gray-400 leading-relaxed italic border-l-2 border-gray-700 ml-2">${sumText}</div>
+            </div>`;
+        }).join('');
     }
 
-    function toggleEp(epId) {
+    // Cascade pour cocher les précédents (Point 4)
+    function toggleEpCascade(epId, seasonStr) {
         const item = library[activeModalMediaIndex];
-        const ep = item.episodes.find(e => e.id === epId);
-        ep.watched = !ep.watched;
+        const epIndex = item.episodes.findIndex(e => e.id === epId);
+        if (epIndex === -1) return;
+        
+        const targetState = !item.episodes[epIndex].watched;
+        
+        if (targetState) {
+            // Coche tous les précédents
+            for(let i=0; i<=epIndex; i++) item.episodes[i].watched = true;
+        } else {
+            // Décoche juste celui-ci
+            item.episodes[epIndex].watched = false;
+        }
+        
+        item.status = item.episodes.every(e => e.watched) ? 'Watched' : 'In Progress';
         item.last_modified = Date.now();
         saveLocalDB(item.id);
-        renderEpisodes(item.episodes.filter(e => e.season === ep.season), true);
+        
+        // Refresh de la modale pour mettre à jour la barre globale et la liste
+        const prog = getProgress(item);
+        document.getElementById('modalProgressText').textContent = `${prog}%`;
+        document.getElementById('modalProgressBar').style.width = `${prog}%`;
+        renderEpisodes(item.episodes.filter(e => e.season === parseInt(seasonStr)), true);
     }
 
     async function quickAdd(mediaId, watched) {
         if (library.some(i => i.id === mediaId)) return;
-        
-        // Utilisation du cache global qui évite les plantages de recherche API
         let media = globalMediaCache.get(mediaId);
         if(!media) return;
-        
         let episodes = [];
         if (media.type === 'series') {
             try {
@@ -838,14 +921,13 @@
         const container = document.getElementById('calendarTimeline');
         container.innerHTML = '';
         const today = new Date(); today.setHours(0,0,0,0);
-        const todayStr = today.toISOString().split('T')[0];
         let futureEps = [];
 
         library.forEach(item => {
             (item.episodes||[]).forEach(ep => {
                 if (!ep.airdate || ep.watched || item.status === 'Abandoned') return;
-                if (ep.airdate < todayStr) return;
-                if (calFilter === 'today' && ep.airdate !== todayStr) return;
+                if (ep.airdate < todayString) return;
+                if (calFilter === 'today' && ep.airdate !== todayString) return;
                 if (calFilter === 'week') {
                     const epDate = new Date(ep.airdate); epDate.setHours(0,0,0,0);
                     if ((epDate - today) / 86400000 > 7) return;
@@ -911,7 +993,18 @@
         document.getElementById('stat-series').textContent = seriesCount;
         document.getElementById('stat-movies').textContent = moviesCount;
         document.getElementById('stat-episodes-watched').textContent = epWatched;
-        document.getElementById('stat-finished-series').textContent = library.filter(i=>i.type==='series'&&i.status==='Watched').length;
+        
+        // Camembert (Point 8)
+        const totalMedia = seriesCount + moviesCount;
+        const pctSeries = totalMedia > 0 ? Math.round((seriesCount / totalMedia) * 100) : 0;
+        const pctMovies = totalMedia > 0 ? 100 - pctSeries : 0;
+        
+        document.getElementById('pieTotal').textContent = totalMedia;
+        document.getElementById('pieSeries').setAttribute('stroke-dasharray', `${pctSeries}, 100`);
+        document.getElementById('pieMovies').setAttribute('stroke-dasharray', `${pctMovies}, 100`);
+        document.getElementById('pieMovies').setAttribute('stroke-dashoffset', `-${pctSeries}`);
+        document.getElementById('pieSeriesText').textContent = `${pctSeries}%`;
+        document.getElementById('pieMoviesText').textContent = `${pctMovies}%`;
 
         const gc = {};
         library.forEach(i => (i.genres||[]).forEach(g => { gc[g] = (gc[g]||0) + 1; }));
@@ -929,8 +1022,8 @@
             <div class="flex items-center gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
                 <span class="text-teal-500 font-black w-4">${idx + 1}.</span>
                 <img src="${s.image}" class="w-6 h-8 object-cover rounded" />
-                <div class="flex-1 truncate text-white font-bold">${s.title}</div>
-                <div class="text-yellow-400 font-bold text-[10px]">★ ${s.rating}</div>
+                <div class="flex-1 truncate text-white font-bold text-xs">${s.title}</div>
+                <div class="text-yellow-400 font-bold text-[10px] bg-yellow-950/30 px-1.5 rounded">★ ${s.rating}</div>
             </div>
         `).join('');
     }
