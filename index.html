@@ -332,6 +332,19 @@
     let modalSuggestionsPool = [];
     let modalSuggestionsPage = 1;
 
+    // Déclare les instances en variables globales en haut de ton script
+    const searchObserver = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) { searchPage++; renderSearchGrid(false); }
+    });
+    
+    const discoverObserver = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && discoverPage * PAGE_SIZE < Math.min(discoverResults.length, MAX_RESULTS)) { discoverPage++; renderDiscoverGrid(false); }
+    });
+    
+    const suggestionsObserver = new IntersectionObserver(entries => {
+        if(entries[0].isIntersecting && modalSuggestionsPool.length > 0) { modalSuggestionsPage++; appendSuggestions(); }
+    });
+    
     // --- INITIALISATION ---
     window.addEventListener('DOMContentLoaded', () => {
         deduplicateLibrary();
@@ -343,17 +356,12 @@
         updateHeaderCount();
         preloadShowsCache();
         
-        new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) { searchPage++; renderSearchGrid(false); }
-        }).observe(document.getElementById('searchSentinel'));
-        
-        new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && discoverPage * PAGE_SIZE < Math.min(discoverResults.length, MAX_RESULTS)) { discoverPage++; renderDiscoverGrid(false); }
-        }).observe(document.getElementById('discoverSentinel'));
-        
-        new IntersectionObserver(entries => {
-            if(entries[0].isIntersecting && modalSuggestionsPool.length > 0) { modalSuggestionsPage++; appendSuggestions(); }
-        }).observe(document.getElementById('modalSuggestionsSentinel'));
+        // Attache uniquement les observers qui sont dans le DOM principal
+        const sSentinel = document.getElementById('searchSentinel');
+        if (sSentinel) searchObserver.observe(sSentinel);
+    
+        const dSentinel = document.getElementById('discoverSentinel');
+        if (dSentinel) discoverObserver.observe(dSentinel);
     });
 
     // --- GESTION DE LA BASE LOCALE ---
@@ -956,6 +964,10 @@
     }
 
     function closeModal() {
+        // 1. On arrête proprement l'observer des suggestions
+        suggestionsObserver.disconnect();
+        
+        // 2. Le reste de ton code de fermeture habituel
         document.getElementById('mediaModal').classList.add('hidden');
         activeModalMediaIndex = null;
     }
@@ -1180,11 +1192,18 @@
             modalSuggestionsPool = showsCache.filter(s => s.genres?.includes(genre) && `series-${s.id}` !== currentId).sort(() => 0.5 - Math.random());
             modalSuggestionsPage = 1;
             
+            // On nettoie l'ancien observer s'il y en avait un
             suggestionsObserver.disconnect();
-            suggestionsObserver.observe(document.getElementById('modalSuggestionsSentinel'));
             
+            // On cible le sentinel fraîchement créé et on l'observe
+            const sent = document.getElementById('modalSuggestionsSentinel');
+            if (sent) suggestionsObserver.observe(sent);
+            
+            // On affiche la première page de suggestions
             appendSuggestions(true);
-        } catch(e) {}
+        } catch(e) {
+            console.error("Erreur lors du chargement des suggestions", e);
+        }
     }
 
     function appendSuggestions(clear = false) {
