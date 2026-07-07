@@ -622,70 +622,49 @@
     }
 
     async function renderDiscoverTab(force = false) {
-        if (!force && discoverResults.length > 0 && document.getElementById('discoverGrid').children.length > 0) return;
-        const libIds = new Set(library.map(i => i.id));
+    if (!force && discoverResults.length > 0 && document.getElementById('discoverGrid').children.length > 0) return;
+    const libIds = new Set(library.map(i => i.id));
+    
+    if (discoverMediaType === 'series') {
+        await ensureShowsPool();
+        let pool = showsCache.filter(s => !libIds.has(`series-${s.id}`));
         
-        if (discoverMediaType === 'series') {
-            await ensureShowsPool();
-            let pool = showsCache.filter(s => !libIds.has(`series-${s.id}`));
-            
-            if(currentDiscoverMode === 'mix') {
-                const favoriteKeywords = ['Anime', 'Animation', 'Action', 'Fantasy'];
-                let personalized = pool.filter(s => s.genres?.some(g => favoriteKeywords.includes(g)));
-                if(personalized.length < 50) personalized = [...personalized, ...pool];
-                discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100).map(normalizeShow);
-            } 
-            else if (currentDiscoverMode === 'top') {
-                discoverResults = pool.filter(s => s.rating?.average > 0).sort((a,b) => b.rating.average - a.rating.average).slice(0, 100).map(normalizeShow);
-            }
-            else if (currentDiscoverMode === 'trending') {
-                discoverResults = pool.filter(s => s.status === 'Running' && s.rating?.average > 0).sort((a,b) => b.updated - a.updated).slice(0, 100).map(normalizeShow);
-            }
-        } else {
-            // Films via Trakt Endpoints
-            if (TRAKT_CLIENT_ID && TRAKT_CLIENT_ID !== 'METTRE_VOTRE_CLIENT_ID_TRAKT_ICI') {
-                try {
-                    let endpoint = 'popular';
-                    if (currentDiscoverMode === 'trending') endpoint = 'trending';
-                    else if (currentDiscoverMode === 'top') endpoint = 'played/weekly';
-                    
-                    const res = await fetch(`https://corsproxy.io/?https://api.trakt.tv/search/movie?query=${encodeURIComponent(query)}&extended=full`, {
-                        headers: { 
-                            'Content-Type': 'application/json', 
-                            'trakt-api-version': '2', 
-                            'trakt-api-key': TRAKT_CLIENT_ID,
-                            'User-Agent': 'TV-TIME-REBORN/1.0'
-                        }
-                    });
-                    const data = await res.json();
-                    
-                    const rawMovies = currentDiscoverMode === 'trending' ? data.map(d => d.movie) : data;
-                    
-                    const moviePool = await Promise.all(rawMovies.map(async (m) => {
-                        let poster = '';
-                        if (m.ids.imdb) {
-                            try {
-                                const omdbRes = await fetch(`${OMDB_API}&i=${m.ids.imdb}`);
-                                const omdbData = await omdbRes.json();
-                                poster = omdbData.Poster !== 'N/A' ? omdbData.Poster : '';
-                            } catch(e) {}
-                        }
-                        return {
-                            id: `movie-${m.ids.trakt}`, apiId: m.ids.trakt, imdbId: m.ids.imdb, title: m.title, type: 'movie', 
-                            image: poster, rating: m.rating || 0, genres: m.genres || [], premiered: m.year ? m.year.toString() : 'N/A', runtime: m.runtime || 120, summary: m.overview || ''
-                        };
-                    }));
-                    discoverResults = moviePool.filter(v => !libIds.has(v.id));
-                } catch (e) { discoverResults = []; }
-            } else {
-                discoverResults = []; 
-            }
+        if(currentDiscoverMode === 'mix') {
+            const favoriteKeywords = ['Anime', 'Animation', 'Action', 'Fantasy'];
+            let personalized = pool.filter(s => s.genres?.some(g => favoriteKeywords.includes(g)));
+            if(personalized.length < 50) personalized = [...personalized, ...pool];
+            discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100).map(normalizeShow);
+        } 
+        else if (currentDiscoverMode === 'top') {
+            discoverResults = pool.filter(s => s.rating?.average > 0).sort((a,b) => b.rating.average - a.rating.average).slice(0, 100).map(normalizeShow);
+        }
+        else if (currentDiscoverMode === 'trending') {
+            discoverResults = pool.filter(s => s.status === 'Running' && s.rating?.average > 0).sort((a,b) => b.updated - a.updated).slice(0, 100).map(normalizeShow);
+        }
+    } else {
+        // --- NOUVELLE LOGIQUE : Découverte de films via OMDB (Robuste) ---
+        // On simule une "Découverte" en cherchant des mots-clés populaires
+        const categories = ['2026', 'action', 'sci-fi', 'animation', 'comedy', 'adventure'];
+        let moviePool = [];
+        
+        for (let cat of categories) {
+            try {
+                const results = await searchMoviesAPI(cat);
+                moviePool = moviePool.concat(results);
+            } catch (e) { continue; }
         }
         
-        discoverResults.forEach(m => globalMediaCache.set(m.id, m));
-        discoverPage = 1;
-        renderDiscoverGrid(true);
+        // On supprime les doublons (si un film apparaît dans plusieurs catégories)
+        discoverResults = [...new Map(moviePool.map(item => [item.id, item])).values()]
+            .filter(v => !libIds.has(v.id))
+            .sort(() => 0.5 - Math.random());
     }
+    
+    discoverResults.forEach(m => globalMediaCache.set(m.id, m));
+    discoverPage = 1;
+    renderDiscoverGrid(true);
+}
+
 
     function renderDiscoverGrid(clear = false) {
         const container = document.getElementById('discoverGrid');
