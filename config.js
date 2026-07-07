@@ -1,3 +1,4 @@
+// config.js (SANS HTML)
 'use strict';
 const TVMAZE_API = 'https://api.tvmaze.com';
 const SUPABASE_URL = 'https://vjhegncviufyguzdrpdp.supabase.co';
@@ -10,11 +11,11 @@ const seasonColors = ['bg-teal-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-teal-4
 
 let supabaseClient = null;
 const localUserId = 'tvr_master_user_2026';
-let currentMediaType = 'series', searchResults = [];
-let showsCache = [];
 let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
 let syncQueue = JSON.parse(localStorage.getItem('personal_tracker_sync_queue')) || [];
-let activeModalMediaIndex = null, activeModalSeason = null, modalMode = 'preview', previewEpisodes = [];
+let currentMediaType = 'series', searchResults = [];
+let showsCache = [];
+let activeModalMediaIndex = null, modalMode = 'preview', previewEpisodes = [];
 let calFilter = 'all';
 let currentDiscoverMode = 'mix';
 let discoverMediaType = 'series'; 
@@ -27,5 +28,4 @@ let todayString = new Date().toISOString().split('T')[0];
 let modalSuggestionsPool = [];
 let modalSuggestionsPage = 1;
 
-// On déclare les observers ici mais on les attachera dans app.js
 let searchObserver, discoverObserver, suggestionsObserver;
