@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV TIME REBORN</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://api.tvmaze.com">
+    <link rel="preconnect" href="https://api.trakt.tv">
+    <link rel="preconnect" href="https://vjhegncviufyguzdrpdp.supabase.co">
+    <style>
+        body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .hidden { display: none !important; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .media-poster { width: 100%; aspect-ratio: 155.88 / 217.56; object-fit: cover; }
+        .media-grid { display: grid; gap: 0.5rem; grid-template-columns: repeat(3, 1fr); }
+        @media (min-width: 480px)  { .media-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 640px)  { .media-grid { grid-template-columns: repeat(5, 1fr); } }
+        @media (min-width: 900px)  { .media-grid { grid-template-columns: repeat(6, 1fr); } }
+        @media (min-width: 1200px) { .media-grid { grid-template-columns: repeat(8, 1fr); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans pb-20">
+
+<header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 shadow-md">
+    <div class="max-w-screen-2xl mx-auto px-4 py-2.5 flex justify-between items-center">
+        <h1 class="text-lg font-black tracking-wider text-teal-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-teal-600 rounded">REBORN</span></h1>
+        <div class="flex items-center gap-2">
+            <button onclick="forceSync()" id="cloudStatus" class="cursor-pointer text-[10px] px-2 py-0.5 bg-gray-900 text-gray-400 rounded-full font-bold flex items-center gap-1 border border-gray-700">○ Local</button>
+            <span id="libCount" class="text-[10px] px-2 py-0.5 bg-teal-950 text-teal-400 rounded-full font-bold border border-teal-900/50 hidden">0</span>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-screen-2xl mx-auto px-3 sm:px-4 pt-4 w-full">
+
+    <!-- TAB: SEARCH -->
+    <div id="tab-search" class="space-y-4">
+        <div class="flex flex-col gap-2">
+            <div class="flex gap-2">
+                <div class="grid grid-cols-2 gap-1.5 bg-gray-800 p-1 rounded-xl border border-gray-700 flex-shrink-0 w-48">
+                    <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg bg-teal-600 text-white shadow">Séries</button>
+                    <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg text-gray-400">Films</button>
+                </div>
+                <div class="relative flex-1">
+                    <input type="text" id="searchInput" placeholder="Recherche souple..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
+                </div>
+            </div>
+            <div class="flex gap-2 items-center">
+                <select id="searchBroadcastFilter" onchange="resetAndDisplaySearch()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 text-gray-300">
+                    <option value="all">Toutes diffusions</option>
+                    <option value="running">En cours</option>
+                    <option value="ended">Terminées</option>
+                    <option value="canceled">Annulées</option>
+                </select>
+            </div>
+        </div>
+        <div id="searchResults" class="media-grid"></div>
+        <div id="searchSentinel" class="h-4"></div>
+    </div>
+
+    <!-- TAB: DISCOVER -->
+    <div id="tab-discover" class="space-y-4 hidden">
+        <div class="bg-gray-800 p-3 sm:p-4 rounded-xl border border-gray-700 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <h2 class="text-base font-bold text-white">✨ Recommandations</h2>
+                <div class="flex bg-gray-900 rounded-lg p-0.5 border border-gray-700">
+                    <button onclick="setDiscoverType('series')" id="btn-disc-type-series" class="px-3 py-1 text-[10px] font-bold rounded shadow bg-teal-600 text-white transition">Séries</button>
+                    <button onclick="setDiscoverType('movie')" id="btn-disc-type-movie" class="px-3 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition">Films</button>
+                </div>
+                <button onclick="renderDiscoverTab(true)" class="text-[10px] bg-teal-900/50 border border-teal-700 text-teal-300 px-3 py-1.5 rounded-lg font-bold">↻ Rafraîchir</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="setDiscoverMode('mix')" id="btn-disc-mix" class="py-1.5 text-xs font-bold rounded bg-teal-600 text-white shadow">Pour vous</button>
+                <button onclick="setDiscoverMode('top')" id="btn-disc-top" class="py-1.5 text-xs font-bold rounded bg-gray-700 text-gray-300">Mieux notés</button>
+                <button onclick="setDiscoverMode('trending')" id="btn-disc-trending" class="py-1.5 text-xs font-bold rounded bg-gray-700 text-gray-300">Trending</button>
+            </div>
+        </div>
+        <div id="discoverGrid" class="media-grid"></div>
+        <div id="discoverSentinel" class="h-4"></div>
+    </div>
+
+    <!-- TAB: CALENDAR -->
+    <div id="tab-calendar" class="space-y-4 hidden">
+        <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+            <h2 class="text-lg font-bold text-white">📅 Mon Calendrier</h2>
+        </div>
+        <div class="flex gap-2 overflow-x-auto pb-1 hide-scroll" id="calFilterRow">
+            <button onclick="setCalFilter('all')" id="cal-all" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-teal-600 text-white transition">Tout</button>
+            <button onclick="setCalFilter('today')" id="cal-today" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Aujourd'hui</button>
+            <button onclick="setCalFilter('week')" id="cal-week" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Cette semaine</button>
+            <button onclick="setCalFilter('month')" id="cal-month" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Ce mois</button>
+        </div>
+        <div id="calendarTimeline" class="space-y-2"></div>
+    </div>
+
+    <!-- TAB: LIBRARY -->
+    <div id="tab-library" class="space-y-3 hidden">
+        <div class="flex gap-2 items-center overflow-x-auto hide-scroll pb-2 border-b border-gray-800">
+            <select id="libraryTypeFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
+                <option value="all">Tous types</option>
+                <option value="series">Séries</option>
+                <option value="movie">Films</option>
+            </select>
+            <select id="libraryStatusFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
+                <option value="all">Tous visionnages</option>
+                <option value="not_finished" selected>En cours</option>
+                <option value="watched">Terminé</option>
+                <option value="abandoned">Abandonné</option>
+            </select>
+            <select id="libraryDiffusionFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
+                <option value="all">Toutes diffusions</option>
+                <option value="running">En cours</option>
+                <option value="ended">Terminée</option>
+                <option value="canceled">Annulée</option>
+            </select>
+        </div>
+        
+        <div class="flex gap-2 overflow-x-auto pb-1 hide-scroll">
+            <button onclick="applySmartFilter('Anime')" class="shrink-0 text-[10px] px-2 py-1 rounded bg-purple-900/50 text-purple-300 border border-purple-700/50">Anime</button>
+            <button onclick="applySmartFilter('HBO')" class="shrink-0 text-[10px] px-2 py-1 rounded bg-gray-800 text-gray-300 border border-gray-700">HBO</button>
+            <button onclick="applySmartFilter('Netflix')" class="shrink-0 text-[10px] px-2 py-1 rounded bg-red-900/50 text-red-300 border border-red-700/50">Netflix</button>
+            <button onclick="applySmartFilter('movie')" class="shrink-0 text-[10px] px-2 py-1 rounded bg-amber-900/50 text-amber-300 border border-amber-700/50">Films Uniquement</button>
+            <button onclick="document.getElementById('librarySearch').value=''; renderLibrary();" class="shrink-0 text-[10px] px-2 py-1 rounded bg-gray-700 text-white">✕ Reset</button>
+        </div>
+
+        <div class="mb-3">
+            <input type="text" id="librarySearch" oninput="renderLibrary()" placeholder="Rechercher dans mes suivis..." class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-3 py-2 w-full text-white">
+        </div>
+        <div id="libraryGrid" class="media-grid"></div>
+    </div>
+
+    <!-- TAB: PROFILE -->
+    <div id="tab-profile" class="space-y-4 hidden">
+        <div class="grid grid-cols-2 gap-2">
+            <label class="bg-teal-600 hover:bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-3 rounded-xl transition text-center cursor-pointer shadow">
+                📂 Import JSON<input type="file" onchange="importLibrary(event)" class="hidden" accept=".json" />
+            </label>
+            <button onclick="clearAll()" class="bg-gray-800 hover:bg-red-950 border border-red-900/40 text-red-400 text-[10px] sm:text-xs font-bold py-3 rounded-xl transition shadow">🗑 Vider Cache Local</button>
+            <button id="btn-mass-update" onclick="massUpdateLibrary()" class="bg-purple-800 hover:bg-purple-700 border border-purple-600 text-purple-200 text-[10px] sm:text-xs font-bold py-3 rounded-xl shadow transition col-span-2">🔄 Mettre à jour (Infos & Épisodes API)</button>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex items-center justify-around gap-4">
+            <div class="relative w-24 h-24 shrink-0">
+                <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#374151" stroke-width="3"></circle>
+                    <circle id="pieSeries" cx="18" cy="18" r="15.9155" fill="none" stroke="#0D9488" stroke-width="3" stroke-dasharray="0, 100"></circle>
+                    <circle id="pieMovies" cx="18" cy="18" r="15.9155" fill="none" stroke="#D97706" stroke-width="3" stroke-dasharray="0, 100" stroke-dashoffset="0"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span id="pieTotal" class="text-sm font-black text-white">0</span>
+                    <span class="text-[8px] text-gray-400 uppercase">Total</span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2 w-full text-xs">
+                <div class="flex justify-between items-center"><div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-teal-600"></div><span class="text-gray-300">Séries</span></div><span id="pieSeriesText" class="font-bold text-white">0%</span></div>
+                <div class="flex justify-between items-center"><div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-amber-600"></div><span class="text-gray-300">Films</span></div><span id="pieMoviesText" class="font-bold text-white">0%</span></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
+                <div id="stat-hours" class="text-xl font-black text-teal-400">0 h</div>
+                <div class="text-[10px] sm:text-xs text-gray-400 mt-0.5">Temps regardé</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
+                <div id="stat-backlog-hours" class="text-xl font-black text-purple-400">0 h</div>
+                <div class="text-[10px] sm:text-xs text-gray-400 mt-0.5">Backlog restant</div>
+            </div>
+            
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-series" class="text-xl font-black text-teal-400">0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Séries suivies</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-episodes-watched" class="text-xl font-black text-teal-500">0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Épisodes vus</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-movies-finished" class="text-xl font-black text-amber-400">0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Films vus</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-avg-rating" class="text-xl font-black text-yellow-400">0.0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Note moyenne</div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2 mt-4">
+            <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🏷️ Répartition par genres</h3>
+            <div id="stat-genre-bars" class="space-y-3 mt-3"></div>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2 mt-4">
+            <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🏆 Top 10 Séries</h3>
+            <div id="stat-top-10" class="space-y-2 text-xs"></div>
+        </div>
+    </div>
+</main>
+
+<!-- MODAL DES MEDIAS -->
+<div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-gray-800 border border-gray-700 w-full max-w-lg lg:max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        
+        <div class="p-3 sm:p-4 flex gap-3 border-b border-gray-700 bg-gray-800 shrink-0 relative z-20">
+            <img id="modalPoster" src="" class="w-20 h-28 object-cover rounded border border-gray-700 shrink-0" />
+            <div class="min-w-0 flex-1 flex flex-col justify-center">
+                <div class="flex justify-between items-start">
+                    <h2 id="modalTitle" class="font-black text-white text-lg leading-tight line-clamp-2">Détails</h2>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full font-bold text-sm shrink-0">✕</button>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-1.5 mt-2 w-full">
+                    <span id="modalTypeBadge" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-teal-600 text-white">SÉRIE</span>
+                    <span id="modalProductionBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-700 text-white uppercase"></span>
+                    <span id="modalNetwork" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-900 text-blue-300"></span>
+                    
+                    <span id="modalPremiereDate" class="text-[10px] text-gray-400 border border-gray-600 px-1.5 py-0.5 rounded">Date</span>
+                    <span id="modalRuntime" class="text-[10px] text-gray-400 border border-gray-600 px-1.5 py-0.5 rounded">-- min</span>
+                    
+                    <div class="flex items-center gap-1.5 bg-yellow-900/20 px-2 py-1 rounded border border-yellow-700/30 ml-auto">
+                        <span id="modalGlobalRatingText" class="text-[10px] font-black text-yellow-400">N/A</span>
+                        <div class="w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                            <div id="modalGlobalRatingBar" class="h-full bg-yellow-400 transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <button id="btnForceCancel" onclick="toggleForceCancel()" class="mt-2 text-[10px] w-max bg-gray-900 border border-red-900/50 text-red-400 px-2 py-1 rounded hidden">Force : Marquer Annulée</button>
+            </div>
+        </div>
+        
+        <div class="p-3 sm:p-4 overflow-y-auto flex-1 hide-scroll space-y-5 relative">
+            <div id="modalProgressContainer" class="hidden space-y-1 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
+                <div class="flex justify-between text-xs font-bold text-gray-300">
+                    <span>Avancement global</span>
+                    <span id="modalProgressText" class="text-teal-400">0%</span>
+                </div>
+                <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                    <div id="modalProgressBar" class="bg-teal-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="modalActionButtonsGrid" class="grid grid-cols-2 gap-2">
+                <button id="modalActionFollowBtn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow transition">À regarder</button>
+                <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow transition">Déjà vu</button>
+            </div>
+
+            <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
+            
+            <div id="modalSeriesContent" class="space-y-4 hidden">
+                <div class="relative h-20 bg-gray-900 rounded-lg border border-gray-700 pt-1 pb-1">
+                    <div class="absolute left-1 text-[6px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 0%;">10</div>
+                    <div class="absolute left-1 text-[6px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 25%;">7.5</div>
+                    <div class="absolute left-1 text-[6px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 50%;">5</div>
+                    
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 0%;"></div>
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 25%;"></div>
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 50%;"></div>
+                    
+                    <div class="absolute right-1 left-3 bottom-1 top-1 flex items-end gap-[1px] overflow-x-auto hide-scroll z-10" id="modalGlobalGraph"></div>
+                </div>
+
+                <div id="modalSeasonSelectionRow" class="space-y-2 mt-2">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
+                    <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
+                </div>
+                
+                <div class="relative h-12 bg-gray-900 rounded-lg border border-gray-700">
+                    <div class="absolute inset-x-1 bottom-1 top-1 flex items-end gap-[2px] overflow-x-auto hide-scroll z-10" id="modalSeasonGraph"></div>
+                </div>
+                
+                <div id="modalEpisodesBlock" class="space-y-2 hidden">
+                    <h3 class="text-sm font-bold text-white">Épisodes</h3>
+                    <div id="modalEpisodesList" class="max-h-80 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
+                </div>
+            </div>
+
+            <button id="modalViewSuggestionsBtn" class="w-full py-3 mt-4 bg-gray-900 hover:bg-gray-800 border border-teal-900/50 text-teal-400 font-bold rounded-xl text-xs shadow transition">💡 Voir des suggestions similaires</button>
+            <div id="modalSuggestionsBlock" class="hidden mt-2 space-y-2"></div>
+        </div>
+    </div>
+</div>
+
+<nav class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex items-center justify-around z-40">
+    <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center text-xs text-teal-400 font-bold flex-1"><span class="text-lg">🔍</span><span class="text-[10px]">Chercher</span></button>
+    <button onclick="switchTab('discover')" id="nav-discover" class="flex flex-col items-center text-xs text-gray-400 flex-1"><span class="text-lg">✨</span><span class="text-[10px]">Découvrir</span></button>
+    <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center text-xs text-gray-400 flex-1"><span class="text-lg">📅</span><span class="text-[10px]">Calendrier</span></button>
+    <button onclick="switchTab('library')" id="nav-library" class="flex flex-col items-center text-xs text-gray-400 flex-1"><span class="text-lg">📚</span><span class="text-[10px]">Suivis</span></button>
+    <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-xs text-gray-400 flex-1"><span class="text-lg">📊</span><span class="text-[10px]">Profil</span></button>
+</nav>
+
+
+<!-- Modules JS chargés dans l'ordre des dépendances -->
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui-search.js"></script>
+<script src="js/ui-discover.js"></script>
+<script src="js/ui-library.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/suggestions.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/import.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
