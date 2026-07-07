@@ -22,17 +22,16 @@
         @media (min-width: 480px)  { .media-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (min-width: 640px)  { .media-grid { grid-template-columns: repeat(5, 1fr); } }
         @media (min-width: 900px)  { .media-grid { grid-template-columns: repeat(6, 1fr); } }
+        @media (min-width: 1200px) { .media-grid { grid-template-columns: repeat(8, 1fr); } }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans pb-20">
 
 <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 shadow-md">
     <div class="max-w-screen-2xl mx-auto px-4 py-2.5 flex justify-between items-center">
+        <h1 class="text-lg font-black tracking-wider text-teal-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-teal-600 rounded">REBORN</span></h1>
         <div class="flex items-center gap-2">
-            <h1 class="text-lg font-black tracking-wider text-teal-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-teal-600 rounded">REBORN</span></h1>
-        </div>
-        <div class="flex items-center gap-2">
-            <button onclick="forceSync()" id="cloudStatus" class="cursor-pointer text-[10px] px-2 py-0.5 bg-gray-900 text-gray-400 rounded-full font-bold flex items-center gap-1 border border-gray-700 transition-colors">○ Local</button>
+            <button onclick="forceSync()" id="cloudStatus" class="cursor-pointer text-[10px] px-2 py-0.5 bg-gray-900 text-gray-400 rounded-full font-bold flex items-center gap-1 border border-gray-700">○ Local</button>
             <span id="libCount" class="text-[10px] px-2 py-0.5 bg-teal-950 text-teal-400 rounded-full font-bold border border-teal-900/50 hidden">0</span>
         </div>
     </div>
@@ -45,16 +44,15 @@
         <div class="flex flex-col gap-2">
             <div class="flex gap-2">
                 <div class="grid grid-cols-2 gap-1.5 bg-gray-800 p-1 rounded-xl border border-gray-700 flex-shrink-0 w-48">
-                    <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg transition bg-teal-600 text-white shadow">Séries</button>
-                    <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg transition text-gray-400">Films</button>
+                    <button onclick="setMediaType('series')" id="btn-series" class="py-2 text-sm font-bold rounded-lg bg-teal-600 text-white shadow">Séries</button>
+                    <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg text-gray-400">Films</button>
                 </div>
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="Recherche souple (ex: hou drag)..." autocomplete="off"
-                        class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
+                    <input type="text" id="searchInput" placeholder="Recherche souple (ex: hou drag)..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
                 </div>
             </div>
             <div class="flex gap-2 items-center">
-                <select id="searchBroadcastFilter" onchange="displaySearchResults()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 text-gray-300 focus:outline-none">
+                <select id="searchBroadcastFilter" onchange="resetAndDisplaySearch()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2.5 py-1.5 text-gray-300">
                     <option value="all">Toutes diffusions</option>
                     <option value="running">En cours</option>
                     <option value="ended">Terminées</option>
@@ -64,23 +62,30 @@
         </div>
         <div id="searchError" class="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50 hidden"></div>
         <div id="searchResults" class="media-grid"></div>
+        <div id="searchSentinel" class="h-4"></div> <!-- Trigger infini -->
     </div>
 
     <!-- TAB: DISCOVER -->
     <div id="tab-discover" class="space-y-4 hidden">
-        <div class="bg-gray-800 p-3 sm:p-4 rounded-xl border border-gray-700 shadow-sm flex justify-between items-center">
-            <div>
-                <h2 class="text-base font-bold text-white">✨ Recommandations</h2>
-                <p class="text-[10px] text-gray-400">Ciblé sur vos goûts</p>
-            </div>
+        <div class="bg-gray-800 p-3 sm:p-4 rounded-xl border border-gray-700 flex justify-between items-center">
+            <div><h2 class="text-base font-bold text-white">✨ Recommandations</h2><p class="text-[10px] text-gray-400">Ciblé sur vos goûts</p></div>
             <button onclick="renderDiscoverTab(true)" class="text-[10px] bg-teal-900/50 border border-teal-700 text-teal-300 px-3 py-1.5 rounded-lg font-bold">↻ Rafraîchir</button>
         </div>
         <div id="discoverGrid" class="media-grid"></div>
+        <div id="discoverSentinel" class="h-4"></div> <!-- Trigger infini -->
     </div>
 
     <!-- TAB: CALENDAR -->
     <div id="tab-calendar" class="space-y-4 hidden">
-        <h2 class="text-lg font-bold text-white border-b border-gray-800 pb-2">📅 Sorties à venir</h2>
+        <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+            <h2 class="text-lg font-bold text-white">📅 Mon Calendrier</h2>
+        </div>
+        <div class="flex gap-2 overflow-x-auto pb-1 hide-scroll" id="calFilterRow">
+            <button onclick="setCalFilter('all')" id="cal-all" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-teal-600 text-white transition">Tout</button>
+            <button onclick="setCalFilter('today')" id="cal-today" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Aujourd'hui</button>
+            <button onclick="setCalFilter('week')" id="cal-week" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Cette semaine</button>
+            <button onclick="setCalFilter('month')" id="cal-month" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Ce mois</button>
+        </div>
         <div id="calendarTimeline" class="space-y-2"></div>
     </div>
 
@@ -112,15 +117,45 @@
     <!-- TAB: PROFILE -->
     <div id="tab-profile" class="space-y-4 hidden">
         <div class="grid grid-cols-2 gap-2">
-            <label class="bg-teal-600 text-white text-xs font-bold py-3 rounded-xl transition text-center cursor-pointer">
-                📂 Importer JSON<input type="file" onchange="importLibrary(event)" class="hidden" accept=".json" />
+            <label class="bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold py-3 rounded-xl transition text-center cursor-pointer">
+                📂 Import JSON<input type="file" onchange="importLibrary(event)" class="hidden" accept=".json" />
             </label>
             <button onclick="clearAll()" class="bg-gray-800 border border-red-900/40 text-red-400 text-xs font-bold py-3 rounded-xl">🗑 Vider</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2 sm:col-span-4">
+                <div id="stat-hours" class="text-xl font-black text-teal-400">0 h</div>
+                <div class="text-xs text-gray-400 mt-0.5">Temps total regardé</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-series" class="text-2xl font-black text-emerald-400">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Séries</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-movies" class="text-2xl font-black text-amber-400">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Films</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-episodes-watched" class="text-2xl font-black text-cyan-400">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Épisodes vus</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-finished-series" class="text-2xl font-black text-purple-400">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Séries finies</div>
+            </div>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2">
+            <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🎭 Top Genres</h3>
+            <div id="stat-genre-bars" class="space-y-1.5"></div>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2 mt-4">
+            <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🏆 Top 10 Séries</h3>
+            <div id="stat-top-10" class="space-y-2 text-xs"></div>
         </div>
     </div>
 </main>
 
-<!-- MODAL COMPLÈTE ET CORRIGÉE -->
+<!-- MODAL COMPLÈTE -->
 <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-3 flex items-start justify-center hidden">
     <div class="bg-gray-800 border border-gray-700 w-full max-w-lg lg:max-w-2xl rounded-2xl overflow-hidden my-4 shadow-2xl">
         <div class="p-3 sm:p-4 flex gap-3 border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
@@ -128,15 +163,14 @@
             <div class="min-w-0 flex-1 flex flex-col justify-center">
                 <div class="flex justify-between items-start">
                     <h2 id="modalTitle" class="font-black text-white text-lg truncate">Détails</h2>
-                    <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm">✕</button>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full font-bold text-sm">✕</button>
                 </div>
                 <div class="flex flex-wrap gap-1 mt-1">
                     <span id="modalTypeBadge" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-teal-600 text-white">SÉRIE</span>
                     <span id="modalProductionBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"></span>
                     <span id="modalGlobalRating" class="text-xs font-bold text-yellow-400 ml-auto">★ N/A</span>
                 </div>
-                <!-- BOUTON OVERRIDE ANNULATION -->
-                <button id="btnForceCancel" onclick="toggleForceCancel()" class="mt-2 text-[10px] w-max bg-gray-900 border border-red-900/50 text-red-400 px-2 py-1 rounded hidden hover:bg-red-900/30">Force : Marquer Annulée</button>
+                <button id="btnForceCancel" onclick="toggleForceCancel()" class="mt-2 text-[10px] w-max bg-gray-900 border border-red-900/50 text-red-400 px-2 py-1 rounded hidden">Force : Marquer Annulée</button>
             </div>
         </div>
         
@@ -144,6 +178,12 @@
             <div id="modalGenresRow" class="flex flex-wrap gap-1 hidden"></div>
             <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
             
+            <!-- SUGGESTIONS -->
+            <button id="modalViewSuggestionsBtn" class="w-full py-2 bg-teal-900/40 border border-teal-700/50 text-teal-300 hover:bg-teal-900/60 font-bold rounded-xl text-xs transition">💡 Voir des suggestions similaires</button>
+            <div id="modalSuggestionsBlock" class="space-y-2 hidden bg-gray-900/50 p-3 rounded-xl border border-teal-500/10">
+                <div id="modalSuggestionsList" class="space-y-2 max-h-64 overflow-y-auto pr-1 hide-scroll"></div>
+            </div>
+
             <div id="modalSeriesContent" class="space-y-4 hidden">
                 <div id="modalSeasonSelectionRow" class="space-y-2">
                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
@@ -188,8 +228,30 @@
     let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
     let syncQueue = JSON.parse(localStorage.getItem('personal_tracker_sync_queue')) || [];
     let activeModalMediaIndex = null, activeModalSeason = null, modalMode = 'preview', previewEpisodes = [];
+    let calFilter = 'all';
 
-    // --- INIT & SYNC ---
+    // Pagination (20 par 20, max 100)
+    const PAGE_SIZE = 20;
+    const MAX_RESULTS = 100;
+    let searchPage = 1;
+    let discoverResults = [];
+    let discoverPage = 1;
+
+    // Observers pour le Scroll Infini
+    const searchObserver = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) {
+            searchPage++;
+            renderSearchGrid(false); // false = append
+        }
+    });
+    
+    const discoverObserver = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && discoverPage * PAGE_SIZE < Math.min(discoverResults.length, MAX_RESULTS)) {
+            discoverPage++;
+            renderDiscoverGrid(false); // false = append
+        }
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
         initSupabase();
         document.getElementById('searchInput').addEventListener('input', e => {
@@ -198,6 +260,8 @@
         });
         updateHeaderCount();
         preloadShowsCache();
+        searchObserver.observe(document.getElementById('searchSentinel'));
+        discoverObserver.observe(document.getElementById('discoverSentinel'));
     });
 
     function saveLocalDB(mediaId = null) {
@@ -274,18 +338,21 @@
         });
         document.getElementById(`tab-${name}`).classList.remove('hidden');
         document.getElementById(`nav-${name}`).classList.replace('text-gray-400', 'text-teal-400');
+        
         if (name === 'library') renderLibrary();
         if (name === 'discover') renderDiscoverTab();
+        if (name === 'profile') renderProfile();
+        if (name === 'calendar') renderCalendarTab();
     }
 
     function setMediaType(type) {
         currentMediaType = type;
-        document.getElementById('btn-series').className = type === 'series' ? 'py-2 text-sm font-bold rounded-lg transition bg-teal-600 text-white' : 'py-2 text-sm font-bold rounded-lg transition text-gray-400';
-        document.getElementById('btn-movie').className = type === 'movie' ? 'py-2 text-sm font-bold rounded-lg transition bg-teal-600 text-white' : 'py-2 text-sm font-bold rounded-lg transition text-gray-400';
-        displaySearchResults();
+        document.getElementById('btn-series').className = type === 'series' ? 'py-2 text-sm font-bold rounded-lg bg-teal-600 text-white' : 'py-2 text-sm font-bold rounded-lg text-gray-400';
+        document.getElementById('btn-movie').className = type === 'movie' ? 'py-2 text-sm font-bold rounded-lg bg-teal-600 text-white' : 'py-2 text-sm font-bold rounded-lg text-gray-400';
+        resetAndDisplaySearch();
     }
 
-    // --- RECHERCHE "FUZZY" ---
+    // --- RECHERCHE ---
     async function triggerFuzzySearch(query) {
         const qWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
         try {
@@ -297,7 +364,6 @@
             if (omdbRes.Search) results = results.concat(omdbRes.Search.map(m => ({ id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie', image: m.Poster !== 'N/A' ? m.Poster : '', rating: 0, genres: [] })));
             if (Array.isArray(tvmazeRes)) results = results.concat(tvmazeRes.map(i => normalizeShow(i.show)));
             
-            // Fuzzy search locale puissante
             const localMatches = showsCache.filter(s => {
                 const t = s.name.toLowerCase();
                 return qWords.every(w => t.includes(w)); 
@@ -305,16 +371,22 @@
             
             results = [...results, ...localMatches].filter((v,i,a)=>a.findIndex(t=>(t.id===v.id))===i);
             searchResults = results;
-            displaySearchResults();
+            resetAndDisplaySearch();
         } catch(e) {}
     }
 
-    function displaySearchResults() {
+    function resetAndDisplaySearch() {
+        searchPage = 1;
+        renderSearchGrid(true); // true = clear existing
+    }
+
+    function renderSearchGrid(clear = false) {
         const container = document.getElementById('searchResults');
-        container.innerHTML = '';
-        const diffFilter = document.getElementById('searchBroadcastFilter').value;
+        if (clear) container.innerHTML = '';
         
+        const diffFilter = document.getElementById('searchBroadcastFilter').value;
         let filtered = searchResults.filter(r => r.type === currentMediaType);
+        
         if (currentMediaType === 'series' && diffFilter !== 'all') {
             filtered = filtered.filter(item => {
                 const s = (item.status_production || '').toLowerCase();
@@ -325,7 +397,12 @@
                 return true;
             });
         }
-        filtered.slice(0, 30).forEach(m => container.appendChild(createMediaCard(m)));
+        
+        const start = (searchPage - 1) * PAGE_SIZE;
+        const end = Math.min(start + PAGE_SIZE, MAX_RESULTS);
+        const slice = filtered.slice(start, end);
+        
+        slice.forEach(m => container.appendChild(createMediaCard(m, false)));
     }
 
     // --- DECOUVERTE PERSONNALISÉE ---
@@ -337,27 +414,38 @@
     async function preloadShowsCache() { await ensureShowsPool(); }
 
     async function renderDiscoverTab(force = false) {
-        const container = document.getElementById('discoverGrid');
-        if (!force && container.children.length > 0) return;
-        await ensureShowsPool();
+        if (!force && discoverResults.length > 0) {
+            // Si on a déjà des résultats, pas besoin de refetch, juste s'assurer que c'est affiché
+            if(document.getElementById('discoverGrid').children.length === 0) {
+                discoverPage = 1;
+                renderDiscoverGrid(true);
+            }
+            return;
+        }
         
-        // Poids fort sur l'Anime, l'Action et la Fantasy pour correspondre aux goûts
+        await ensureShowsPool();
         const favoriteKeywords = ['Anime', 'Animation', 'Action', 'Fantasy'];
         const libIds = new Set(library.map(i => i.id));
         
         let pool = showsCache.filter(s => !libIds.has(`series-${s.id}`));
-        
-        // Priorise les séries qui matchent les mots clés forts
         let personalized = pool.filter(s => s.genres?.some(g => favoriteKeywords.includes(g)));
         
-        // Si pas assez, on complète avec le reste
-        if(personalized.length < 12) personalized = [...personalized, ...pool];
+        if(personalized.length < 50) personalized = [...personalized, ...pool];
         
-        // Mélange
-        personalized = personalized.sort(() => 0.5 - Math.random()).slice(0, 18);
+        discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100); // 100 max pour scroll
+        discoverPage = 1;
+        renderDiscoverGrid(true);
+    }
+
+    function renderDiscoverGrid(clear = false) {
+        const container = document.getElementById('discoverGrid');
+        if(clear) container.innerHTML = '';
         
-        container.innerHTML = '';
-        personalized.forEach(s => container.appendChild(createMediaCard(normalizeShow(s))));
+        const start = (discoverPage - 1) * PAGE_SIZE;
+        const end = Math.min(start + PAGE_SIZE, MAX_RESULTS);
+        const slice = discoverResults.slice(start, end);
+        
+        slice.forEach(s => container.appendChild(createMediaCard(normalizeShow(s), false)));
     }
 
     // --- BIBLIOTHEQUE ---
@@ -376,20 +464,32 @@
             if (sFilter === 'watched' && item.status !== 'Watched') return false;
             if (sFilter === 'abandoned' && item.status !== 'Abandoned') return false;
             
-            // Filtre de diffusion robuste avec prise en compte du forçage manuel "Annulé"
             if (item.type === 'series' && dFilter !== 'all') {
                 const sp = (item.status_production || '').toLowerCase();
                 const isManualCanceled = item.user_forced_cancel === true;
-                
                 if (dFilter === 'canceled' && !isManualCanceled && !sp.includes('cancel')) return false;
                 if (dFilter === 'running' && (isManualCanceled || !sp.includes('running'))) return false;
                 if (dFilter === 'ended' && (isManualCanceled || !sp.includes('ended'))) return false;
             }
             if (search && !item.title.toLowerCase().includes(search)) return false;
             return true;
-        }).forEach((item, idx) => {
+        }).forEach((item) => {
             grid.appendChild(createMediaCard(item, true));
         });
+    }
+
+    // --- CARTES MEDIAS (AVEC ACTIONS INTEGREES) ---
+    function buildCardActionsHTML(media) {
+        const inLib = library.some(i => i.id === media.id);
+        if (inLib) return `<button onclick="event.stopPropagation(); removeFromLibrary('${media.id}'); updateCardActions(this.parentElement, '${media.id}')" class="w-full text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 py-1 rounded">✕ Retirer</button>`;
+        return `<button onclick="event.stopPropagation(); quickAdd('${media.id}', false); updateCardActions(this.parentElement, '${media.id}')" class="flex-1 text-[9px] bg-teal-600 text-white font-bold py-1 rounded">+ Voir</button>
+                <button onclick="event.stopPropagation(); quickAdd('${media.id}', true); updateCardActions(this.parentElement, '${media.id}')" class="flex-1 text-[9px] bg-emerald-700 text-white font-bold py-1 rounded">✓ Vu</button>`;
+    }
+    
+    function updateCardActions(container, mediaId) {
+        // Recalculer le media (soit depuis librairie, soit recréer mock pour les fonctions)
+        const media = library.find(i => i.id === mediaId) || {id: mediaId}; 
+        container.innerHTML = buildCardActionsHTML(media);
     }
 
     function createMediaCard(media, isLib = false) {
@@ -398,20 +498,30 @@
         const typeClass = media.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
         
         const div = document.createElement('div');
-        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative';
+        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col';
         div.onclick = () => isLib ? openLibraryModal(media.id) : openPreviewModal(media);
         
+        // Bouton de suppression rapide en haut à droite uniquement dans la bibliothèque
+        const removeBtn = isLib ? `<button onclick="event.stopPropagation(); removeFromLibrary('${media.id}')" class="absolute top-1 right-1 bg-gray-900/90 text-red-400 hover:bg-red-900 w-6 h-6 rounded-full flex items-center justify-center font-bold shadow z-10">✕</button>` : '';
+        
+        // Actions rapides en bas uniquement en dehors de la bibliothèque
+        const quickActions = !isLib ? `<div class="mt-auto flex gap-1 pt-1">${buildCardActionsHTML(media)}</div>` : '';
+
         div.innerHTML = `
             <div class="relative w-full">
                 <img src="${media.image || 'https://placehold.co/155x217/1f2937/4b5563'}" class="media-poster bg-gray-900" />
-                <span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white">${typeFlag}</span>
+                <span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white z-10">${typeFlag}</span>
+                ${removeBtn}
             </div>
-            <div class="p-1.5"><h3 class="font-bold text-white text-[11px] truncate">${media.title}</h3></div>
+            <div class="p-1.5 flex-1 flex flex-col">
+                <h3 class="font-bold text-white text-[11px] truncate leading-tight">${media.title}</h3>
+                ${quickActions}
+            </div>
         `;
         return div;
     }
 
-    // --- MODALES (LA CORRECTION DU CLIC) ---
+    // --- MODALES ---
     function normalizeShow(show) {
         return {
             id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series',
@@ -431,6 +541,7 @@
         
         document.getElementById('modalActionButtonsGrid').classList.remove('hidden');
         document.getElementById('modalSeriesContent').classList.add('hidden');
+        document.getElementById('modalSuggestionsBlock').classList.add('hidden');
         
         const followBtn = document.getElementById('modalActionFollowBtn');
         const watchedBtn = document.getElementById('modalActionAllWatchedBtn');
@@ -443,6 +554,7 @@
             watchedBtn.classList.remove('hidden');
             followBtn.textContent = '+ À regarder';
             followBtn.onclick = async () => { await addToLibrary(media, false); closeModal(); switchTab('library'); };
+            watchedBtn.textContent = '✓ Déjà vu';
             watchedBtn.onclick = async () => { await addToLibrary(media, true); closeModal(); switchTab('library'); };
         }
         
@@ -452,6 +564,10 @@
             previewEpisodes = await res.json();
             buildSeasonTabs(previewEpisodes, false);
         }
+
+        // Setup Suggestions
+        document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(media.genres?.[0]||'Anime', media.id);
+
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
@@ -462,12 +578,12 @@
         const item = library[idx];
         
         document.getElementById('modalTitle').textContent = item.title;
-        document.getElementById('modalPoster').src = item.image;
+        document.getElementById('modalPoster').src = item.image || 'https://placehold.co/155x217';
         document.getElementById('modalSummary').textContent = item.summary;
+        document.getElementById('modalSuggestionsBlock').classList.add('hidden');
         
         renderProductionBadge(item.status_production, item.user_forced_cancel);
         
-        // Bouton pour forcer le statut annulé
         const btnCancel = document.getElementById('btnForceCancel');
         if (item.type === 'series') {
             btnCancel.classList.remove('hidden');
@@ -481,14 +597,49 @@
         if (item.type === 'series' && item.episodes) {
             document.getElementById('modalSeriesContent').classList.remove('hidden');
             buildSeasonTabs(item.episodes, true);
+        } else {
+            document.getElementById('modalSeriesContent').classList.add('hidden');
+            document.getElementById('modalEpisodesBlock').classList.add('hidden');
         }
+
+        // Setup Suggestions
+        document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(item.genres?.[0]||'Anime', item.id);
+
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
     function closeModal() {
         document.getElementById('mediaModal').classList.add('hidden');
         activeModalMediaIndex = null;
-        renderLibrary();
+        // Re-render la grille courante pour appliquer les changements (boutons)
+        if (!document.getElementById('tab-search').classList.contains('hidden')) resetAndDisplaySearch();
+        if (!document.getElementById('tab-discover').classList.contains('hidden')) renderDiscoverGrid(true);
+        if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
+    }
+
+    // --- SUGGESTIONS ---
+    async function renderSuggestions(genre, currentId) {
+        const block = document.getElementById('modalSuggestionsBlock'), list = document.getElementById('modalSuggestionsList');
+        block.classList.remove('hidden');
+        list.innerHTML = `<div class="text-xs text-gray-400 py-2 text-center">Calcul…</div>`;
+        try {
+            await ensureShowsPool();
+            let pool = showsCache.filter(s => s.genres?.includes(genre) && `series-${s.id}` !== currentId).sort(() => 0.5 - Math.random()).slice(0, 8);
+            list.innerHTML = '';
+            pool.forEach(show => {
+                const n = normalizeShow(show);
+                const div = document.createElement('div');
+                div.className = 'bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex items-center gap-2';
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick="closeModal(); openPreviewModal(${JSON.stringify(n).replace(/"/g, '&quot;')})">
+                        <img src="${n.image || 'https://placehold.co/40x60'}" class="w-8 h-11 object-cover rounded bg-gray-950" />
+                        <h4 class="text-xs font-bold text-white truncate">${n.title}</h4>
+                    </div>
+                    <div class="flex gap-1 w-24">${buildCardActionsHTML(n)}</div>
+                `;
+                list.appendChild(div);
+            });
+        } catch(e) { list.innerHTML = ''; }
     }
 
     // --- GESTION DU STATUT ANNULÉ MANUEL ---
@@ -512,7 +663,7 @@
         item.user_forced_cancel = !item.user_forced_cancel;
         item.last_modified = Date.now();
         saveLocalDB(item.id);
-        openLibraryModal(item.id); // Refresh modale
+        openLibraryModal(item.id); 
     }
 
     // --- UTILITAIRES EPISODES ---
@@ -555,12 +706,27 @@
         renderEpisodes(item.episodes.filter(e => e.season === ep.season), true);
     }
 
+    async function quickAdd(mediaId, watched) {
+        // Find media object in search or discover arrays
+        let media = searchResults.find(r => r.id === mediaId) || discoverResults.find(r => `series-${r.id}` === mediaId || r.id === mediaId);
+        if(!media) {
+            // fallback si c'est un bouton suggestion
+            const idSplit = mediaId.split('-');
+            const s = showsCache.find(sh => String(sh.id) === idSplit[1]);
+            if(s) media = normalizeShow(s);
+        }
+        if(media) await addToLibrary(media, watched);
+    }
+
     async function addToLibrary(media, watched) {
+        if (library.some(i => i.id === media.id)) return;
         let episodes = [];
         if (media.type === 'series') {
-            const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
-            const data = await res.json();
-            episodes = data.map(ep => ({...ep, watched}));
+            try {
+                const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
+                const data = await res.json();
+                episodes = data.map(ep => ({...ep, watched}));
+            } catch(e) {}
         }
         const entry = { ...media, episodes, status: watched ? 'Watched' : 'In Progress', addedAt: Date.now(), last_modified: Date.now() };
         library.push(entry);
@@ -571,6 +737,145 @@
         library = library.filter(i => i.id !== id);
         saveLocalDB();
         queueForSync(id);
+        if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
+    }
+
+    // --- CALENDRIER ---
+    function setCalFilter(f) {
+        calFilter = f;
+        ['all','today','week','month'].forEach(id => {
+            const btn = document.getElementById(`cal-${id}`);
+            if (btn) btn.className = id === f ? 'shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-teal-600 text-white' : 'shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700';
+        });
+        renderCalendarTab();
+    }
+
+    function renderCalendarTab() {
+        const container = document.getElementById('calendarTimeline');
+        container.innerHTML = '';
+        const today = new Date(); today.setHours(0,0,0,0);
+        const todayStr = today.toISOString().split('T')[0];
+        let futureEps = [];
+
+        library.forEach(item => {
+            (item.episodes||[]).forEach(ep => {
+                if (!ep.airdate || ep.watched || item.status === 'Abandoned') return;
+                if (ep.airdate < todayStr) return;
+                if (calFilter === 'today' && ep.airdate !== todayStr) return;
+                if (calFilter === 'week') {
+                    const epDate = new Date(ep.airdate); epDate.setHours(0,0,0,0);
+                    if ((epDate - today) / 86400000 > 7) return;
+                }
+                if (calFilter === 'month') {
+                    const epDate = new Date(ep.airdate);
+                    if (epDate.getMonth() !== today.getMonth() || epDate.getFullYear() !== today.getFullYear()) return;
+                }
+                futureEps.push({ showTitle: item.title, showImage: item.image, epName: ep.name, season: ep.season, number: ep.number, airdate: ep.airdate });
+            });
+        });
+
+        if (!futureEps.length) { container.innerHTML = `<p class="text-xs text-gray-500 text-center py-12">Aucune sortie planifiée.</p>`; return; }
+        
+        futureEps.sort((a,b) => a.airdate.localeCompare(b.airdate));
+        
+        const groups = {};
+        futureEps.forEach(ep => { if (!groups[ep.airdate]) groups[ep.airdate] = []; groups[ep.airdate].push(ep); });
+        
+        Object.entries(groups).forEach(([date, eps]) => {
+            const diff = Math.ceil((new Date(date) - today) / 86400000);
+            const label = diff === 0 ? "Aujourd'hui 🎉" : diff === 1 ? "Demain" : `<span class="text-[#FFD700] font-black drop-shadow-md">J-${diff}</span>`;
+            
+            container.innerHTML += `<div class="text-[11px] font-black text-teal-400 uppercase tracking-wider mt-3 mb-1">${label}</div>`;
+            eps.forEach(ep => {
+                container.innerHTML += `
+                <div class="bg-gray-800 border border-gray-700 p-3 rounded-xl flex gap-3 items-center shadow">
+                    <img src="${ep.showImage}" class="w-10 h-14 object-cover rounded-lg bg-gray-900" />
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[9px] uppercase font-black text-teal-400 truncate">${ep.showTitle}</div>
+                        <h4 class="font-bold text-white text-xs truncate">S${ep.season}E${ep.number} – ${ep.epName}</h4>
+                        <span class="text-[10px] text-gray-500">${ep.airdate}</span>
+                    </div>
+                </div>`;
+            });
+        });
+    }
+
+    // --- PROFIL ---
+    function formatDuration(totalMin) {
+        let r = Math.max(0, Math.round(totalMin));
+        const days = Math.floor(r/(24*60)); r -= days*24*60;
+        const hours = Math.floor(r/60);
+        const parts = [];
+        if (days) parts.push(`${days} j`);
+        if (hours||!parts.length) parts.push(`${hours} h`);
+        return parts.join(' ');
+    }
+
+    function renderProfile() {
+        let totalMin = 0, seriesCount = 0, moviesCount = 0, epWatched = 0;
+        library.forEach(item => {
+            if (item.type === 'movie') { moviesCount++; totalMin += 120; } 
+            else {
+                seriesCount++;
+                (item.episodes||[]).forEach(ep => {
+                    if (ep.watched) { totalMin += (ep.runtime || 40); epWatched++; }
+                });
+            }
+        });
+
+        document.getElementById('stat-hours').textContent = formatDuration(totalMin);
+        document.getElementById('stat-series').textContent = seriesCount;
+        document.getElementById('stat-movies').textContent = moviesCount;
+        document.getElementById('stat-episodes-watched').textContent = epWatched;
+        document.getElementById('stat-finished-series').textContent = library.filter(i=>i.type==='series'&&i.status==='Watched').length;
+
+        const gc = {};
+        library.forEach(i => (i.genres||[]).forEach(g => { gc[g] = (gc[g]||0) + 1; }));
+        const sorted = Object.entries(gc).sort((a,b)=>b[1]-a[1]);
+        
+        const barsEl = document.getElementById('stat-genre-bars');
+        if (sorted.length) {
+            const max = sorted[0][1];
+            barsEl.innerHTML = sorted.slice(0,5).map(([g,c]) => `<div><div class="flex justify-between text-[10px] mb-0.5"><span class="text-gray-300">${g}</span><span class="text-gray-500">${c}</span></div><div class="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden"><div class="h-full bg-teal-500" style="width:${Math.round(c/max*100)}%"></div></div></div>`).join('');
+        }
+
+        const top10El = document.getElementById('stat-top-10');
+        const topSeries = library.filter(i => i.type === 'series' && i.rating > 0).sort((a, b) => b.rating - a.rating).slice(0, 10);
+        top10El.innerHTML = topSeries.map((s, idx) => `
+            <div class="flex items-center gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
+                <span class="text-teal-500 font-black w-4">${idx + 1}.</span>
+                <img src="${s.image}" class="w-6 h-8 object-cover rounded" />
+                <div class="flex-1 truncate text-white font-bold">${s.title}</div>
+                <div class="text-yellow-400 font-bold text-[10px]">★ ${s.rating}</div>
+            </div>
+        `).join('');
+    }
+
+    async function importLibrary(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                for(let raw of data) {
+                    if(!library.some(x=>x.id === raw.id || x.title === raw.title)) {
+                        library.push({...raw, last_modified: Date.now()});
+                        queueForSync(raw.id || `custom-${Date.now()}`);
+                    }
+                }
+                saveLocalDB();
+                renderProfile();
+                alert("Import terminé.");
+            } catch(err) { alert('Erreur JSON'); }
+        };
+        reader.readAsText(file);
+    }
+
+    function clearAll() {
+        if (!confirm('Vider toute la bibliothèque ?')) return;
+        library.forEach(i => queueForSync(i.id));
+        library = []; saveLocalDB(); renderLibrary(); renderProfile();
     }
 </script>
 </body>
