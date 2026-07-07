@@ -504,42 +504,46 @@
     
     // --- RECHERCHE ---
     async function searchMoviesAPI(query) {
-        if (TRAKT_CLIENT_ID && TRAKT_CLIENT_ID !== 'METTRE_VOTRE_CLIENT_ID_TRAKT_ICI') {
-            try {
-                const res = await fetch(`https://api.trakt.tv/search/movie?query=${encodeURIComponent(query)}&extended=full`, {
-                    headers: { 'Content-Type': 'application/json', 'trakt-api-version': '2', 'trakt-api-key': TRAKT_CLIENT_ID }
-                });
-                const data = await res.json();
+        try {
+            // 1. Recherche de la liste des films
+            const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(query)}&type=movie`);
+            const data = await res.json();
+            
+            if (data.Response !== "True" || !data.Search) return [];
+    
+            // 2. On récupère les détails (Note + Résumé) pour chaque film trouvé
+            // On utilise Promise.all pour charger tous les détails en parallèle
+            return await Promise.all(data.Search.map(async (m) => {
+                let fullDetails = { Plot: '', imdbRating: '0' }; // Valeurs par défaut
                 
-                // Mix Trakt pour les données + OMDB pour l'image
-                const enrichedResults = await Promise.all(data.map(async (item) => {
-                    const m = item.movie;
-                    let poster = '';
-                    if (m.ids.imdb) {
-                        try {
-                            const omdbRes = await fetch(`${OMDB_API}&i=${m.ids.imdb}`);
-                            const omdbData = await omdbRes.json();
-                            poster = omdbData.Poster !== 'N/A' ? omdbData.Poster : '';
-                        } catch(e) {}
+                try {
+                    // Requête secondaire pour obtenir les détails du film via son ID (imdbID)
+                    const detailRes = await fetch(`${OMDB_API}&i=${m.imdbID}&plot=short`);
+                    const detailData = await detailRes.json();
+                    if (detailData.Response === "True") {
+                        fullDetails = detailData;
                     }
-                    return {
-                        id: `movie-${m.ids.trakt}`, apiId: m.ids.trakt, imdbId: m.ids.imdb, title: m.title, type: 'movie', 
-                        image: poster, rating: m.rating || 0, genres: m.genres || [], premiered: m.year ? m.year.toString() : 'N/A', runtime: m.runtime || 120, summary: m.overview || ''
-                    };
-                }));
-                return enrichedResults;
-            } catch(e) { return []; }
-        } else {
-            // Fallback pur OMDB
-            try {
-                const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(query)}&type=movie`);
-                const data = await res.json();
-                if(!data.Search) return [];
-                return data.Search.map(m => ({
-                    id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie', 
-                    image: m.Poster !== 'N/A' ? m.Poster : '', rating: 0, genres: [], premiered: m.Year, runtime: 120
-                }));
-            } catch(e) { return []; }
+                } catch(e) {
+                    console.warn(`Impossible de récupérer les détails pour ${m.Title}`);
+                }
+    
+                return {
+                    id: `movie-${m.imdbID}`, 
+                    apiId: m.imdbID, 
+                    title: m.Title, 
+                    type: 'movie', 
+                    image: m.Poster !== 'N/A' ? m.Poster : '', 
+                    rating: parseFloat(fullDetails.imdbRating) || 0, // Conversion de la note en nombre
+                    genres: [], 
+                    premiered: m.Year, 
+                    runtime: 120, // Valeur standard si non dispo
+                    summary: fullDetails.Plot !== 'N/A' ? fullDetails.Plot : '' // La description récupérée
+                };
+            }));
+    
+        } catch(e) {
+            console.error("Erreur recherche OMDB enrichie:", e);
+            return [];
         }
     }
 
