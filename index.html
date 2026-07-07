@@ -645,8 +645,13 @@
                     if (currentDiscoverMode === 'trending') endpoint = 'trending';
                     else if (currentDiscoverMode === 'top') endpoint = 'played/weekly';
                     
-                    const res = await fetch(`https://api.trakt.tv/movies/${endpoint}?extended=full&limit=30`, {
-                        headers: { 'Content-Type': 'application/json', 'trakt-api-version': '2', 'trakt-api-key': TRAKT_CLIENT_ID }
+                    const res = await fetch(`https://corsproxy.io/?https://api.trakt.tv/search/movie?query=${encodeURIComponent(query)}&extended=full`, {
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'trakt-api-version': '2', 
+                            'trakt-api-key': TRAKT_CLIENT_ID,
+                            'User-Agent': 'TV-TIME-REBORN/1.0'
+                        }
                     });
                     const data = await res.json();
                     
