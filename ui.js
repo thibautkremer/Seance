@@ -10,15 +10,8 @@ function createMediaCard(media, isLib = false) {
     div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col hover:border-gray-500 transition-colors';
     div.onclick = () => isLib ? openLibraryModal(media.id) : openPreviewModal(media);
     
-    // ... [Intègre ici tout ton bloc div.innerHTML de createMediaCard] ...
+    // ... [Utilise ici ton code complet de innerHTML pour la carte] ...
     return div;
-}
-
-function updateAllCardsUI() {
-    document.querySelectorAll('[id^="actions-"]').forEach(el => {
-        const id = el.id.replace('actions-', '');
-        el.innerHTML = buildCardActionsHTML(id);
-    });
 }
 
 function switchTab(name) {
@@ -34,3 +27,13 @@ function switchTab(name) {
     if (name === 'profile') renderProfile();
     if (name === 'calendar') renderCalendarTab();
 }
+
+function closeModal() {
+    suggestionsObserver.disconnect();
+    document.getElementById('mediaModal').classList.add('hidden');
+    activeModalMediaIndex = null;
+    document.getElementById('modalSuggestionsBlock').classList.add('hidden');
+}
+
+// Ajoute ici tes fonctions : renderSearchGrid, renderDiscoverGrid, renderLibrary, 
+// renderProfile, openPreviewModal, openLibraryModal, renderEpisodes, buildSeasonTabs, etc.
