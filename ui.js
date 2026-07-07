@@ -1,4 +1,19 @@
 // --- UI & RENDER ---
+function renderDiscoverTab(force = false) {
+    // Vide la grille si on force le rafraîchissement
+    const container = document.getElementById('discoverGrid');
+    if (force) container.innerHTML = '';
+    
+    // Logique de rendu de la grille découverte
+    if (discoverResults.length === 0) {
+        container.innerHTML = `<p class="text-xs text-gray-500 py-2">Aucune suggestion pour le moment.</p>`;
+        return;
+    }
+    
+    const start = (discoverPage - 1) * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, MAX_RESULTS);
+    discoverResults.slice(start, end).forEach(m => container.appendChild(createMediaCard(m, false)));
+}
 
 function createMediaCard(media, isLib = false) {
     globalMediaCache.set(media.id, media);
