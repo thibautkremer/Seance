@@ -156,8 +156,16 @@
                 <div class="text-xs text-gray-400 mt-0.5">Séries suivies</div>
             </div>
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-movies" class="text-2xl font-black text-amber-400">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Films suivis</div>
+                <div id="stat-series-finished" class="text-2xl font-black text-teal-500">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Séries finies</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-movies-finished" class="text-2xl font-black text-amber-400">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Films vus</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-avg-rating" class="text-2xl font-black text-yellow-400">0.0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Note moyenne (suivis)</div>
             </div>
         </div>
         
@@ -180,13 +188,13 @@
                     <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full font-bold text-sm shrink-0">✕</button>
                 </div>
                 
-                <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                <div class="flex flex-wrap items-center gap-1.5 mt-2 w-full">
                     <span id="modalTypeBadge" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-teal-600 text-white">SÉRIE</span>
                     <span id="modalProductionBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-700 text-white uppercase"></span>
-                    <span id="modalPremiereDate" class="text-[10px] text-gray-400 border border-gray-600 px-1.5 py-0.5 rounded">Date</span>
                     
-                    <!-- Barre de progression dorée globale (Point 4) -->
-                    <div class="ml-auto flex items-center gap-1.5 bg-yellow-900/20 px-2 py-1 rounded border border-yellow-700/30">
+                    <!-- Date et Note Globale sur la même ligne (Point 1 et 4) -->
+                    <span id="modalPremiereDate" class="text-[10px] text-gray-400 border border-gray-600 px-1.5 py-0.5 rounded">Date</span>
+                    <div class="flex items-center gap-1.5 bg-yellow-900/20 px-2 py-1 rounded border border-yellow-700/30">
                         <span id="modalGlobalRatingText" class="text-[10px] font-black text-yellow-400">N/A</span>
                         <div class="w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
                             <div id="modalGlobalRatingBar" class="h-full bg-yellow-400 transition-all" style="width: 0%"></div>
@@ -208,23 +216,29 @@
                 </div>
             </div>
 
-            <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
-            
+            <!-- Boutons d'actions AVANT le résumé (Point 6) -->
             <div id="modalActionButtonsGrid" class="grid grid-cols-2 gap-2">
                 <button id="modalActionFollowBtn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow transition">À regarder</button>
                 <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow transition">Déjà vu</button>
             </div>
 
+            <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
+            
             <div id="modalSeriesContent" class="space-y-4 hidden">
                 
-                <!-- Graphe Global Fix (Points 1, 2, 3) -->
+                <!-- Graphe Global (Point 2) -->
                 <div class="relative h-20 bg-gray-900 rounded-lg border border-gray-700 pt-1 pb-1">
-                    <!-- Lignes de repères jaunes fixes (Point 2) -->
-                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 0px;" title="10"></div>
-                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 25%;" title="7.5"></div>
-                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 50%;" title="5"></div>
-                    <!-- Zone de graphe -->
-                    <div class="absolute inset-x-1 bottom-1 top-1 flex items-end gap-[1px] overflow-x-auto hide-scroll z-10" id="modalGlobalGraph"></div>
+                    <!-- Légendes annotées à gauche -->
+                    <div class="absolute left-1 text-[8px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 0%;">10</div>
+                    <div class="absolute left-1 text-[8px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 25%;">7.5</div>
+                    <div class="absolute left-1 text-[8px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 50%;">5</div>
+                    
+                    <!-- Lignes de repères -->
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 0%;"></div>
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 25%;"></div>
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 50%;"></div>
+                    
+                    <div class="absolute right-1 left-6 bottom-1 top-1 flex items-end gap-[1px] overflow-x-auto hide-scroll z-10" id="modalGlobalGraph"></div>
                 </div>
 
                 <div id="modalSeasonSelectionRow" class="space-y-2 mt-2">
@@ -243,7 +257,7 @@
                 </div>
             </div>
 
-            <!-- Bouton Suggestions (Point 6) -->
+            <!-- Bouton Suggestions & Scroll infini (Point 3 et 6) -->
             <button id="modalViewSuggestionsBtn" class="w-full py-3 mt-4 bg-gray-900 hover:bg-gray-800 border border-teal-900/50 text-teal-400 font-bold rounded-xl text-xs shadow transition">💡 Voir des suggestions similaires</button>
             <div id="modalSuggestionsBlock" class="hidden mt-2 space-y-2"></div>
         </div>
@@ -270,7 +284,8 @@
     const localUserId = 'tvr_master_user_2026';
     
     const globalMediaCache = new Map();
-    const seasonColors = ['bg-teal-500', 'bg-amber-500', 'bg-purple-500', 'bg-rose-500', 'bg-blue-500', 'bg-emerald-500', 'bg-cyan-500', 'bg-fuchsia-500'];
+    // Couleurs dérivées de la palette de l'application (Point 5)
+    const seasonColors = ['bg-teal-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-teal-400', 'bg-cyan-400', 'bg-emerald-400', 'bg-teal-600', 'bg-cyan-600'];
     
     let currentMediaType = 'series', searchResults = [];
     let showsCache = [];
@@ -287,6 +302,10 @@
     let discoverPage = 1;
     let todayString = new Date().toISOString().split('T')[0];
 
+    // Variables pour les suggestions
+    let modalSuggestionsPool = [];
+    let modalSuggestionsPage = 1;
+
     const searchObserver = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) {
             searchPage++; renderSearchGrid(false);
@@ -296,6 +315,13 @@
     const discoverObserver = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting && discoverPage * PAGE_SIZE < Math.min(discoverResults.length, MAX_RESULTS)) {
             discoverPage++; renderDiscoverGrid(false);
+        }
+    });
+
+    const suggestionsObserver = new IntersectionObserver(entries => {
+        if(entries[0].isIntersecting && modalSuggestionsPool.length > 0) {
+            modalSuggestionsPage++;
+            appendSuggestions();
         }
     });
 
@@ -421,7 +447,7 @@
 
     // --- RECHERCHE ---
     async function triggerFuzzySearch(query) {
-        await ensureShowsPool(); // S'assurer que le cache est chargé pour plus de résultats
+        await ensureShowsPool(); 
         const qWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
         try {
             const [omdbRes, tvmazeRes] = await Promise.all([
@@ -435,7 +461,6 @@
             }));
             if (Array.isArray(tvmazeRes)) results = results.concat(tvmazeRes.map(i => normalizeShow(i.show)));
             
-            // On exploite massivement le fuzzy search local (Point 8)
             const localMatches = showsCache.filter(s => {
                 const t = s.name.toLowerCase();
                 return qWords.every(w => t.includes(w)); 
@@ -604,11 +629,11 @@
         div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col hover:border-gray-500 transition-colors';
         div.onclick = () => isLib ? openLibraryModal(media.id) : openPreviewModal(media);
         
-        const removeBtn = isLib ? `<button onclick="event.stopPropagation(); handleRemove('${media.id}')" class="absolute top-1 right-1 bg-gray-900/90 text-red-400 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full flex items-center justify-center font-bold shadow z-30 transition">✕</button>` : '';
         const quickActions = !isLib ? `<div class="mt-auto flex gap-1 pt-1" id="actions-${media.id}">${buildCardActionsHTML(media.id)}</div>` : '';
         
         const rating = media.rating > 0 ? media.rating.toFixed(1) : 'N/A';
-        const ratingOverlay = !isLib ? `<div class="absolute top-1 right-1 bg-black/80 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded z-10">★ ${rating}</div>` : '';
+        // Affichage systématique de la note, suppression de la croix (Point 7)
+        const ratingOverlay = `<div class="absolute top-1 right-1 bg-black/80 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded z-10 shadow border border-gray-800/50">★ ${rating}</div>`;
 
         let libOverlay = '';
         let libProgress = '';
@@ -635,7 +660,6 @@
                 <img src="${media.image || 'https://placehold.co/155x217/1f2937/4b5563'}" class="media-poster bg-gray-900" loading="lazy" />
                 ${badgeHTML}
                 ${ratingOverlay}
-                ${removeBtn}
                 ${libOverlay}
                 ${libProgress}
             </div>
@@ -690,7 +714,6 @@
         document.getElementById('modalSummary').textContent = media.summary || 'Aucun résumé.';
         document.getElementById('modalPremiereDate').textContent = media.premiered || 'N/A';
         
-        // Barre de note dorée (Point 4)
         const rate = media.rating > 0 ? media.rating : 0;
         document.getElementById('modalGlobalRatingText').textContent = rate > 0 ? rate.toFixed(1) : 'N/A';
         document.getElementById('modalGlobalRatingBar').style.width = `${(rate / 10) * 100}%`;
@@ -706,8 +729,8 @@
         const followBtn = document.getElementById('modalActionFollowBtn');
         const watchedBtn = document.getElementById('modalActionAllWatchedBtn');
         
+        // Setup Boutons Modal (Point 6)
         if (library.some(i => i.id === media.id)) {
-            // Modification des boutons si déjà dans la bibliothèque (Point 5)
             followBtn.textContent = '✕ Retirer';
             followBtn.className = "w-full py-3 bg-gray-900 hover:bg-red-950 text-red-400 border border-red-900/50 font-bold rounded-xl text-xs transition shadow";
             followBtn.onclick = () => { handleRemove(media.id); closeModal(); };
@@ -767,10 +790,23 @@
             btnCancel.classList.add('hidden');
         }
 
-        document.getElementById('modalActionButtonsGrid').classList.add('hidden');
         document.getElementById('modalProgressContainer').classList.add('hidden');
         document.getElementById('modalSuggestionsBlock').classList.add('hidden');
         
+        // Rendu des boutons pour l'onglet bibliothèque (Point 6)
+        document.getElementById('modalActionButtonsGrid').classList.remove('hidden');
+        const followBtn = document.getElementById('modalActionFollowBtn');
+        const watchedBtn = document.getElementById('modalActionAllWatchedBtn');
+        
+        followBtn.textContent = '✕ Retirer';
+        followBtn.className = "w-full py-3 bg-gray-900 hover:bg-red-950 text-red-400 border border-red-900/50 font-bold rounded-xl text-xs transition shadow";
+        followBtn.onclick = () => { handleRemove(item.id); closeModal(); };
+
+        watchedBtn.classList.remove('hidden');
+        watchedBtn.textContent = '↺ Non vu';
+        watchedBtn.className = "w-full py-3 bg-gray-900 hover:bg-amber-950 text-amber-400 border border-amber-900/50 font-bold rounded-xl text-xs transition shadow";
+        watchedBtn.onclick = () => { resetToUnwatched(item.id); closeModal(); };
+
         if (item.type === 'series' && item.episodes) {
             document.getElementById('modalSeriesContent').classList.remove('hidden');
             
@@ -805,7 +841,6 @@
         eps.forEach(ep => {
             const r = ep.ratingSource || (ep.rating?.average) || 7.0;
             const h = Math.max(10, (r / 10) * 100);
-            // Attribue une couleur tournante par rapport à la saison (Point 1)
             const colorClass = seasonColors[(ep.season - 1) % seasonColors.length] || 'bg-teal-500';
             
             container.innerHTML += `<div class="flex-1 min-w-[4px] ${colorClass} hover:opacity-80 rounded-t cursor-pointer relative z-10" style="height: ${h}%" title="S${ep.season}E${ep.number}: ${r}"></div>`;
@@ -938,43 +973,61 @@
         if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
     }
 
-    // --- MODULE DE SUGGESTIONS (Point 6) ---
+    // --- MODULE DE SUGGESTIONS (Point 3) ---
     async function renderSuggestions(genre, currentId) {
         const block = document.getElementById('modalSuggestionsBlock');
         block.classList.remove('hidden');
-        block.innerHTML = `<div class="text-xs text-gray-400 py-4 text-center animate-pulse">Recherche de recommandations...</div>`;
+        block.innerHTML = `
+            <div id="modalSuggestionsList" class="space-y-2"></div>
+            <div id="modalSuggestionsSentinel" class="h-4"></div>
+        `;
+        
         try {
             await ensureShowsPool();
-            let pool = showsCache.filter(s => s.genres?.includes(genre) && `series-${s.id}` !== currentId).sort(() => 0.5 - Math.random()).slice(0, 6);
-            block.innerHTML = '';
+            modalSuggestionsPool = showsCache.filter(s => s.genres?.includes(genre) && `series-${s.id}` !== currentId).sort(() => 0.5 - Math.random());
+            modalSuggestionsPage = 1;
             
-            if (pool.length === 0) {
-                block.innerHTML = `<div class="text-xs text-gray-500 py-2 text-center">Aucune suggestion trouvée.</div>`;
-                return;
-            }
+            suggestionsObserver.disconnect();
+            suggestionsObserver.observe(document.getElementById('modalSuggestionsSentinel'));
+            
+            appendSuggestions(true);
+        } catch(e) {}
+    }
 
-            pool.forEach(show => {
-                const n = normalizeShow(show);
-                const rate = n.rating > 0 ? n.rating.toFixed(1) : 'N/A';
-                
-                const div = document.createElement('div');
-                div.className = 'bg-gray-900 border border-gray-700 p-2 rounded-xl flex gap-3 items-center';
-                div.innerHTML = `
-                    <img src="${n.image || 'https://placehold.co/40x60'}" class="w-12 h-16 object-cover rounded cursor-pointer shrink-0 border border-gray-800" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})' />
-                    <div class="flex-1 min-w-0 cursor-pointer" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})'>
-                        <h4 class="text-xs font-bold text-white truncate">${n.title}</h4>
-                        <div class="flex items-center gap-1.5 mt-1">
-                            <span class="text-[9px] text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700">${n.premiered}</span>
-                            <span class="text-[9px] text-yellow-400 font-bold ml-1 bg-yellow-900/30 px-1.5 py-0.5 rounded border border-yellow-700/50">★ ${rate}</span>
-                        </div>
+    function appendSuggestions(clear = false) {
+        const list = document.getElementById('modalSuggestionsList');
+        if(clear) list.innerHTML = '';
+        
+        const start = (modalSuggestionsPage - 1) * 8; // On en affiche 8 par 8
+        const end = start + 8;
+        const slice = modalSuggestionsPool.slice(start, end);
+        
+        if(slice.length === 0 && clear) {
+            list.innerHTML = `<div class="text-xs text-gray-500 py-2 text-center">Aucune suggestion trouvée.</div>`;
+            return;
+        }
+
+        slice.forEach(show => {
+            const n = normalizeShow(show);
+            const rate = n.rating > 0 ? n.rating.toFixed(1) : 'N/A';
+            
+            const div = document.createElement('div');
+            div.className = 'bg-gray-900 border border-gray-700 p-2 rounded-xl flex gap-3 items-center';
+            div.innerHTML = `
+                <img src="${n.image || 'https://placehold.co/40x60'}" class="w-12 h-16 object-cover rounded cursor-pointer shrink-0 border border-gray-800" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})' />
+                <div class="flex-1 min-w-0 cursor-pointer" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})'>
+                    <h4 class="text-xs font-bold text-white truncate">${n.title}</h4>
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span class="text-[9px] text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700">${n.premiered}</span>
+                        <span class="text-[9px] text-yellow-400 font-bold ml-1 bg-yellow-900/30 px-1.5 py-0.5 rounded border border-yellow-700/50">★ ${rate}</span>
                     </div>
-                    <div class="flex flex-col gap-1 w-20 shrink-0" id="actions-${n.id}">
-                        ${buildCardActionsHTML(n.id)}
-                    </div>
-                `;
-                block.appendChild(div);
-            });
-        } catch(e) { block.innerHTML = ''; }
+                </div>
+                <div class="flex flex-col gap-1 w-20 shrink-0" id="actions-${n.id}">
+                    ${buildCardActionsHTML(n.id)}
+                </div>
+            `;
+            list.appendChild(div);
+        });
     }
 
     // --- CALENDRIER ---
@@ -1036,7 +1089,7 @@
         });
     }
 
-    // --- PROFIL ---
+    // --- PROFIL (Point 4) ---
     function formatDuration(totalMin) {
         if (isNaN(totalMin) || totalMin <= 0) return '0 h';
         let r = Math.max(0, Math.round(totalMin));
@@ -1049,31 +1102,35 @@
     }
 
     function renderProfile() {
-        // Correction des variables et calculs statistiques (Point 7)
-        let totalMin = 0, seriesCount = 0, moviesCount = 0, epWatchedCount = 0;
+        let totalMin = 0, seriesCount = 0, moviesCount = 0;
+        let seriesFinished = 0, moviesFinished = 0, totalRating = 0, ratingCount = 0;
         
         library.forEach(item => {
+            if (item.rating > 0) { totalRating += item.rating; ratingCount++; }
+            
             if (item.type === 'movie') { 
                 moviesCount++; 
-                if(item.status === 'Watched') totalMin += 120; // Moyenne 2h pour un film fini
+                if(item.status === 'Watched') {
+                    totalMin += 120; 
+                    moviesFinished++;
+                }
             } else {
                 seriesCount++;
+                if(item.status === 'Watched') seriesFinished++;
                 (item.episodes||[]).forEach(ep => {
                     if (ep.watched) { 
-                        // S'assurer que le runtime est bien un nombre, sinon 40 min par défaut
                         totalMin += (!isNaN(ep.runtime) && ep.runtime > 0) ? Number(ep.runtime) : 40; 
-                        epWatchedCount++; 
                     }
                 });
             }
         });
 
-        // Mise à jour interface
         document.getElementById('stat-hours').textContent = formatDuration(totalMin);
         document.getElementById('stat-series').textContent = seriesCount;
-        document.getElementById('stat-movies').textContent = moviesCount;
+        document.getElementById('stat-series-finished').textContent = seriesFinished;
+        document.getElementById('stat-movies-finished').textContent = moviesFinished;
+        document.getElementById('stat-avg-rating').textContent = ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : 'N/A';
         
-        // Camembert
         const totalMedia = seriesCount + moviesCount;
         const pctSeries = totalMedia > 0 ? Math.round((seriesCount / totalMedia) * 100) : 0;
         const pctMovies = totalMedia > 0 ? 100 - pctSeries : 0;
@@ -1085,7 +1142,6 @@
         document.getElementById('pieSeriesText').textContent = `${pctSeries}%`;
         document.getElementById('pieMoviesText').textContent = `${pctMovies}%`;
 
-        // Top 10 Séries
         const top10El = document.getElementById('stat-top-10');
         const topSeries = library.filter(i => i.type === 'series' && i.rating > 0).sort((a, b) => b.rating - a.rating).slice(0, 10);
         
