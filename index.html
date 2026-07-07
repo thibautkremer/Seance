@@ -332,31 +332,45 @@
     let modalSuggestionsPool = [];
     let modalSuggestionsPage = 1;
 
-    // Déclare les instances en variables globales en haut de ton script
+    // Déclaration globale : on crée les instances d'observer ici
     const searchObserver = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) { searchPage++; renderSearchGrid(false); }
+        if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) { 
+            searchPage++; 
+            renderSearchGrid(false); 
+        }
     });
     
     const discoverObserver = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && discoverPage * PAGE_SIZE < Math.min(discoverResults.length, MAX_RESULTS)) { discoverPage++; renderDiscoverGrid(false); }
+        if (entries[0].isIntersecting && discoverPage * PAGE_SIZE < Math.min(discoverResults.length, MAX_RESULTS)) { 
+            discoverPage++; 
+            renderDiscoverGrid(false); 
+        }
     });
     
     const suggestionsObserver = new IntersectionObserver(entries => {
-        if(entries[0].isIntersecting && modalSuggestionsPool.length > 0) { modalSuggestionsPage++; appendSuggestions(); }
+        if(entries[0].isIntersecting && modalSuggestionsPool.length > 0) { 
+            modalSuggestionsPage++; 
+            appendSuggestions(); 
+        }
     });
     
     // --- INITIALISATION ---
-    window.addEventListener('DOMContentLoaded', () => {
+   window.addEventListener('DOMContentLoaded', () => {
         deduplicateLibrary();
         initSupabase();
-        document.getElementById('searchInput').addEventListener('input', e => {
-            const q = e.target.value.trim();
-            if (q.length > 1) triggerFuzzySearch(q);
-        });
+        
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', e => {
+                const q = e.target.value.trim();
+                if (q.length > 1) triggerFuzzySearch(q);
+            });
+        }
+    
         updateHeaderCount();
         preloadShowsCache();
         
-        // Attache uniquement les observers qui sont dans le DOM principal
+        // On observe seulement si les éléments sont trouvés dans le DOM
         const sSentinel = document.getElementById('searchSentinel');
         if (sSentinel) searchObserver.observe(sSentinel);
     
@@ -964,12 +978,14 @@
     }
 
     function closeModal() {
-        // 1. On arrête proprement l'observer des suggestions
+        // C'est l'étape cruciale pour éviter l'erreur de "null element" à la réouverture
         suggestionsObserver.disconnect();
         
-        // 2. Le reste de ton code de fermeture habituel
         document.getElementById('mediaModal').classList.add('hidden');
         activeModalMediaIndex = null;
+        
+        // Optionnel : Nettoyer le contenu pour qu'il soit vide à la prochaine ouverture
+        document.getElementById('modalSuggestionsBlock').classList.add('hidden');
     }
 
     // --- GRAPHES ---
