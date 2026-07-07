@@ -62,7 +62,7 @@
         </div>
         <div id="searchError" class="text-red-400 text-sm bg-red-950/40 p-3 rounded-xl border border-red-900/50 hidden"></div>
         <div id="searchResults" class="media-grid"></div>
-        <div id="searchSentinel" class="h-4"></div> <!-- Trigger infini -->
+        <div id="searchSentinel" class="h-4"></div>
     </div>
 
     <!-- TAB: DISCOVER -->
@@ -72,7 +72,7 @@
             <button onclick="renderDiscoverTab(true)" class="text-[10px] bg-teal-900/50 border border-teal-700 text-teal-300 px-3 py-1.5 rounded-lg font-bold">↻ Rafraîchir</button>
         </div>
         <div id="discoverGrid" class="media-grid"></div>
-        <div id="discoverSentinel" class="h-4"></div> <!-- Trigger infini -->
+        <div id="discoverSentinel" class="h-4"></div>
     </div>
 
     <!-- TAB: CALENDAR -->
@@ -175,10 +175,8 @@
         </div>
         
         <div class="p-3 sm:p-4 space-y-4">
-            <div id="modalGenresRow" class="flex flex-wrap gap-1 hidden"></div>
             <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
             
-            <!-- SUGGESTIONS -->
             <button id="modalViewSuggestionsBtn" class="w-full py-2 bg-teal-900/40 border border-teal-700/50 text-teal-300 hover:bg-teal-900/60 font-bold rounded-xl text-xs transition">💡 Voir des suggestions similaires</button>
             <div id="modalSuggestionsBlock" class="space-y-2 hidden bg-gray-900/50 p-3 rounded-xl border border-teal-500/10">
                 <div id="modalSuggestionsList" class="space-y-2 max-h-64 overflow-y-auto pr-1 hide-scroll"></div>
@@ -223,6 +221,9 @@
     let supabaseClient = null;
     const localUserId = 'tvr_master_user_2026';
     
+    // NOUVEAU CACHE GLOBAL pour résoudre les clics morts (Points 2 & 4)
+    const globalMediaCache = new Map();
+    
     let currentMediaType = 'series', searchResults = [];
     let showsCache = [];
     let library = JSON.parse(localStorage.getItem('personal_tracker_db')) || [];
@@ -237,22 +238,36 @@
     let discoverResults = [];
     let discoverPage = 1;
 
-    // Observers pour le Scroll Infini
+    // Observers Scroll Infini
     const searchObserver = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting && searchPage * PAGE_SIZE < Math.min(searchResults.length, MAX_RESULTS)) {
-            searchPage++;
-            renderSearchGrid(false); // false = append
+            searchPage++; renderSearchGrid(false);
         }
     });
     
     const discoverObserver = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting && discoverPage * PAGE_SIZE < Math.min(discoverResults.length, MAX_RESULTS)) {
-            discoverPage++;
-            renderDiscoverGrid(false); // false = append
+            discoverPage++; renderDiscoverGrid(false);
         }
     });
 
+    // Nettoyage des doublons (Point 6)
+    function deduplicateLibrary() {
+        const unique = [];
+        const seen = new Set();
+        library.sort((a,b) => (b.last_modified || 0) - (a.last_modified || 0));
+        for(const item of library) {
+            // Sécurité anti "fiche undefined" (Point 5)
+            if(item && item.id && item.title && !seen.has(item.id)) {
+                seen.add(item.id);
+                unique.push(item);
+            }
+        }
+        library = unique;
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+        deduplicateLibrary();
         initSupabase();
         document.getElementById('searchInput').addEventListener('input', e => {
             const q = e.target.value.trim();
@@ -273,6 +288,7 @@
     function updateHeaderCount() {
         const el = document.getElementById('libCount');
         if(library.length > 0) { el.textContent = library.length; el.classList.remove('hidden'); }
+        else { el.classList.add('hidden'); }
     }
 
     function initSupabase() {
@@ -303,7 +319,8 @@
             const id = syncQueue[i];
             const item = library.find(x => x.id === id);
             try {
-                if (item) await supabaseClient.from('user_library').upsert({ user_id: localUserId, media_id: id, media_data: item, last_modified: item.last_modified });
+                // ATTENTION: La DB Supabase *DOIT* avoir la Clé Primaire (user_id, media_id) pour que upsert fonctionne sans dupliquer (Point 7)
+                if (item) await supabaseClient.from('user_library').upsert({ user_id: localUserId, media_id: id, media_data: item, last_modified: item.last_modified }, { onConflict: 'user_id, media_id' });
                 else await supabaseClient.from('user_library').delete().match({ user_id: localUserId, media_id: id });
                 syncQueue.splice(i, 1);
             } catch (e) {}
@@ -324,7 +341,11 @@
                     if (localIdx === -1) { library.push(cloudRow.media_data); localUpdated = true; }
                     else if ((cloudRow.last_modified||0) > (library[localIdx].last_modified||0)) { library[localIdx] = cloudRow.media_data; localUpdated = true; }
                 });
-                if (localUpdated) { saveLocalDB(); renderLibrary(); }
+                if (localUpdated) { 
+                    deduplicateLibrary(); // Sécurité doublons (Point 6)
+                    saveLocalDB(); 
+                    if(!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary(); 
+                }
             }
             processSyncQueue();
         } catch(e) { setCloudStatus('offline'); }
@@ -361,7 +382,10 @@
                 fetch(`${TVMAZE_API}/search/shows?q=${encodeURIComponent(query)}`).then(r => r.json()).catch(()=>[])
             ]);
             let results = [];
-            if (omdbRes.Search) results = results.concat(omdbRes.Search.map(m => ({ id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie', image: m.Poster !== 'N/A' ? m.Poster : '', rating: 0, genres: [] })));
+            if (omdbRes.Search) results = results.concat(omdbRes.Search.map(m => {
+                const obj = { id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie', image: m.Poster !== 'N/A' ? m.Poster : '', rating: 0, genres: [] };
+                globalMediaCache.set(obj.id, obj); return obj;
+            }));
             if (Array.isArray(tvmazeRes)) results = results.concat(tvmazeRes.map(i => normalizeShow(i.show)));
             
             const localMatches = showsCache.filter(s => {
@@ -377,7 +401,7 @@
 
     function resetAndDisplaySearch() {
         searchPage = 1;
-        renderSearchGrid(true); // true = clear existing
+        renderSearchGrid(true);
     }
 
     function renderSearchGrid(clear = false) {
@@ -415,7 +439,6 @@
 
     async function renderDiscoverTab(force = false) {
         if (!force && discoverResults.length > 0) {
-            // Si on a déjà des résultats, pas besoin de refetch, juste s'assurer que c'est affiché
             if(document.getElementById('discoverGrid').children.length === 0) {
                 discoverPage = 1;
                 renderDiscoverGrid(true);
@@ -432,7 +455,7 @@
         
         if(personalized.length < 50) personalized = [...personalized, ...pool];
         
-        discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100); // 100 max pour scroll
+        discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100);
         discoverPage = 1;
         renderDiscoverGrid(true);
     }
@@ -454,11 +477,13 @@
         const sFilter = document.getElementById('libraryStatusFilter').value;
         const dFilter = document.getElementById('libraryDiffusionFilter').value;
         const tFilter = document.getElementById('libraryTypeFilter').value;
-        const search = document.getElementById('librarySearch').value.toLowerCase();
+        const searchInput = document.getElementById('librarySearch').value.toLowerCase();
         
         grid.innerHTML = '';
         
         library.filter(item => {
+            if(!item || !item.id) return false; // Sécurité (Point 5)
+            
             if (tFilter !== 'all' && item.type !== tFilter) return false;
             if (sFilter === 'not_finished' && item.status !== 'In Progress') return false;
             if (sFilter === 'watched' && item.status !== 'Watched') return false;
@@ -471,50 +496,117 @@
                 if (dFilter === 'running' && (isManualCanceled || !sp.includes('running'))) return false;
                 if (dFilter === 'ended' && (isManualCanceled || !sp.includes('ended'))) return false;
             }
-            if (search && !item.title.toLowerCase().includes(search)) return false;
+            
+            // Correction du crash de recherche si le titre était indéfini (Point 1)
+            const title = item.title ? item.title.toLowerCase() : '';
+            if (searchInput && !title.includes(searchInput)) return false;
+            
             return true;
         }).forEach((item) => {
-            grid.appendChild(createMediaCard(item, true));
+            // Calculer les overlays de la bibliothèque (Point 3)
+            let overlayHTML = '';
+            let progressBar = '';
+            if(item.type === 'series') {
+                const prog = getProgress(item);
+                const nextEp = item.episodes?.find(e => !e.watched);
+                
+                if (item.status === 'Watched') {
+                    overlayHTML = `<button onclick="event.stopPropagation(); resetToUnwatched('${item.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
+                } else if (item.status === 'Abandoned') {
+                    overlayHTML = `<button onclick="event.stopPropagation(); resetToUnwatched('${item.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-red-900 border border-red-700 text-red-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Reprendre</button>`;
+                } else if (nextEp) {
+                    overlayHTML = `<button onclick="event.stopPropagation(); checkNextEp('${item.id}')" class="absolute bottom-1 right-1 bg-teal-600/90 hover:bg-teal-500 text-white text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">✓ S${nextEp.season}E${nextEp.number}</button>`;
+                }
+                if(item.episodes?.length > 0) progressBar = `<div class="absolute bottom-0 inset-x-0 h-1 bg-gray-700/60 z-10"><div class="h-full bg-teal-500" style="width:${prog}%"></div></div>`;
+            } else if (item.type === 'movie' && item.status === 'Watched') {
+                overlayHTML = `<button onclick="event.stopPropagation(); resetToUnwatched('${item.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
+            }
+            
+            grid.appendChild(createMediaCard(item, true, overlayHTML, progressBar));
         });
     }
 
-    // --- CARTES MEDIAS (AVEC ACTIONS INTEGREES) ---
-    function buildCardActionsHTML(media) {
-        const inLib = library.some(i => i.id === media.id);
-        if (inLib) return `<button onclick="event.stopPropagation(); removeFromLibrary('${media.id}'); updateCardActions(this.parentElement, '${media.id}')" class="w-full text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 py-1 rounded">✕ Retirer</button>`;
-        return `<button onclick="event.stopPropagation(); quickAdd('${media.id}', false); updateCardActions(this.parentElement, '${media.id}')" class="flex-1 text-[9px] bg-teal-600 text-white font-bold py-1 rounded">+ Voir</button>
-                <button onclick="event.stopPropagation(); quickAdd('${media.id}', true); updateCardActions(this.parentElement, '${media.id}')" class="flex-1 text-[9px] bg-emerald-700 text-white font-bold py-1 rounded">✓ Vu</button>`;
+    function getProgress(item) {
+        if (!item.episodes || item.episodes.length === 0) return item.status === 'Watched' ? 100 : 0;
+        return Math.round(item.episodes.filter(e => e.watched).length / item.episodes.length * 100);
     }
     
-    function updateCardActions(container, mediaId) {
-        // Recalculer le media (soit depuis librairie, soit recréer mock pour les fonctions)
-        const media = library.find(i => i.id === mediaId) || {id: mediaId}; 
-        container.innerHTML = buildCardActionsHTML(media);
+    function checkNextEp(id) {
+        const item = library.find(i => i.id === id);
+        if(!item) return;
+        const nextEp = item.episodes?.find(e => !e.watched);
+        if(nextEp) {
+            const idx = item.episodes.indexOf(nextEp);
+            for(let i=0; i<=idx; i++) item.episodes[i].watched = true;
+            item.status = item.episodes.every(e => e.watched) ? 'Watched' : 'In Progress';
+            item.last_modified = Date.now();
+            saveLocalDB(item.id);
+            renderLibrary();
+        }
+    }
+    
+    function resetToUnwatched(id) {
+        const item = library.find(i => i.id === id);
+        if(!item) return;
+        if(item.type === 'series') item.episodes?.forEach(e => e.watched = false);
+        item.status = 'In Progress';
+        item.last_modified = Date.now();
+        saveLocalDB(item.id);
+        renderLibrary();
     }
 
-    function createMediaCard(media, isLib = false) {
+    // --- CARTES MEDIAS & ACTIONS RAPIDES (CORRIGÉ POUR ÉVITER LES CLICS MORTS) ---
+    function buildCardActionsHTML(mediaId) {
+        const inLib = library.some(i => i.id === mediaId);
+        if (inLib) return `<button onclick="event.stopPropagation(); handleRemove('${mediaId}')" class="w-full text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 py-1 rounded">✕ Retirer</button>`;
+        // Utilisation de la nouvelle fonction asynchrone handleQuickAdd (Point 4)
+        return `<button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', false)" class="flex-1 text-[9px] bg-teal-600 text-white font-bold py-1 rounded">+ Voir</button>
+                <button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', true)" class="flex-1 text-[9px] bg-emerald-700 text-white font-bold py-1 rounded">✓ Vu</button>`;
+    }
+    
+    async function handleQuickAdd(container, mediaId, watched) {
+        // Feedback visuel le temps que l'API récupère les épisodes (Point 4)
+        container.innerHTML = `<span class="text-[9px] text-teal-400 py-1 font-bold animate-pulse w-full text-center">Ajout...</span>`;
+        await quickAdd(mediaId, watched);
+        container.innerHTML = buildCardActionsHTML(mediaId);
+    }
+    
+    function handleRemove(mediaId) {
+        removeFromLibrary(mediaId);
+        // Si on n'est PAS dans la bibliothèque, on met à jour les boutons d'action rapide à la volée (Point 5)
+        if (document.getElementById('tab-library').classList.contains('hidden')) {
+            const actionsDiv = document.getElementById(`actions-${mediaId}`);
+            if(actionsDiv) actionsDiv.innerHTML = buildCardActionsHTML(mediaId);
+        }
+    }
+
+    function createMediaCard(media, isLib = false, overlayHTML = '', progressBar = '') {
+        // Sauvegarde de l'objet complet dans le cache (Points 2 & 4)
+        globalMediaCache.set(media.id, media);
+
         const isAnime = media.genres?.includes('Anime') || media.genres?.includes('Animation');
         const typeFlag = media.type === 'movie' ? 'FILM' : (isAnime ? 'ANIME' : 'SÉRIE');
         const typeClass = media.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
         
         const div = document.createElement('div');
-        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col';
+        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col hover:border-gray-500 transition-colors';
         div.onclick = () => isLib ? openLibraryModal(media.id) : openPreviewModal(media);
         
-        // Bouton de suppression rapide en haut à droite uniquement dans la bibliothèque
-        const removeBtn = isLib ? `<button onclick="event.stopPropagation(); removeFromLibrary('${media.id}')" class="absolute top-1 right-1 bg-gray-900/90 text-red-400 hover:bg-red-900 w-6 h-6 rounded-full flex items-center justify-center font-bold shadow z-10">✕</button>` : '';
+        // Bouton de suppression sur l'affiche en Mode Suivi (Point 5)
+        const removeBtn = isLib ? `<button onclick="event.stopPropagation(); handleRemove('${media.id}')" class="absolute top-1 right-1 bg-gray-900/90 text-red-400 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full flex items-center justify-center font-bold shadow z-30 transition">✕</button>` : '';
         
-        // Actions rapides en bas uniquement en dehors de la bibliothèque
-        const quickActions = !isLib ? `<div class="mt-auto flex gap-1 pt-1">${buildCardActionsHTML(media)}</div>` : '';
+        const quickActions = !isLib ? `<div class="mt-auto flex gap-1 pt-1" id="actions-${media.id}">${buildCardActionsHTML(media.id)}</div>` : '';
 
         div.innerHTML = `
             <div class="relative w-full">
-                <img src="${media.image || 'https://placehold.co/155x217/1f2937/4b5563'}" class="media-poster bg-gray-900" />
-                <span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white z-10">${typeFlag}</span>
+                <img src="${media.image || 'https://placehold.co/155x217/1f2937/4b5563'}" class="media-poster bg-gray-900" loading="lazy" />
+                <span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white z-10 shadow">${typeFlag}</span>
                 ${removeBtn}
+                ${overlayHTML}
+                ${progressBar}
             </div>
             <div class="p-1.5 flex-1 flex flex-col">
-                <h3 class="font-bold text-white text-[11px] truncate leading-tight">${media.title}</h3>
+                <h3 class="font-bold text-white text-[11px] truncate leading-tight">${media.title || 'Inconnu'}</h3>
                 ${quickActions}
             </div>
         `;
@@ -523,11 +615,13 @@
 
     // --- MODALES ---
     function normalizeShow(show) {
-        return {
+        const obj = {
             id: `series-${show.id}`, apiId: show.id, title: show.name, type: 'series',
             image: show.image?.medium || '', summary: show.summary?.replace(/<[^>]*>/g, '') || '',
             rating: show.rating?.average || 0, genres: show.genres || [], status_production: show.status || 'Running'
         };
+        globalMediaCache.set(obj.id, obj);
+        return obj;
     }
 
     async function openPreviewModal(media) {
@@ -548,26 +642,26 @@
         
         if (library.some(i => i.id === media.id)) {
             followBtn.textContent = '✕ Retirer';
-            followBtn.onclick = () => { removeFromLibrary(media.id); closeModal(); };
+            followBtn.onclick = () => { handleRemove(media.id); closeModal(); };
             watchedBtn.classList.add('hidden');
         } else {
             watchedBtn.classList.remove('hidden');
             followBtn.textContent = '+ À regarder';
-            followBtn.onclick = async () => { await addToLibrary(media, false); closeModal(); switchTab('library'); };
+            followBtn.onclick = async () => { followBtn.textContent = 'Ajout...'; await quickAdd(media.id, false); closeModal(); switchTab('library'); };
             watchedBtn.textContent = '✓ Déjà vu';
-            watchedBtn.onclick = async () => { await addToLibrary(media, true); closeModal(); switchTab('library'); };
+            watchedBtn.onclick = async () => { watchedBtn.textContent = 'Ajout...'; await quickAdd(media.id, true); closeModal(); switchTab('library'); };
         }
         
         if (media.type === 'series') {
             document.getElementById('modalSeriesContent').classList.remove('hidden');
-            const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
-            previewEpisodes = await res.json();
-            buildSeasonTabs(previewEpisodes, false);
+            try {
+                const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
+                previewEpisodes = await res.json();
+                buildSeasonTabs(previewEpisodes, false);
+            } catch(e) {}
         }
 
-        // Setup Suggestions
         document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(media.genres?.[0]||'Anime', media.id);
-
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
@@ -576,6 +670,7 @@
         const idx = library.findIndex(i => i.id === id);
         activeModalMediaIndex = idx;
         const item = library[idx];
+        if(!item) return;
         
         document.getElementById('modalTitle').textContent = item.title;
         document.getElementById('modalPoster').src = item.image || 'https://placehold.co/155x217';
@@ -602,22 +697,19 @@
             document.getElementById('modalEpisodesBlock').classList.add('hidden');
         }
 
-        // Setup Suggestions
         document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(item.genres?.[0]||'Anime', item.id);
-
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
     function closeModal() {
         document.getElementById('mediaModal').classList.add('hidden');
         activeModalMediaIndex = null;
-        // Re-render la grille courante pour appliquer les changements (boutons)
         if (!document.getElementById('tab-search').classList.contains('hidden')) resetAndDisplaySearch();
         if (!document.getElementById('tab-discover').classList.contains('hidden')) renderDiscoverGrid(true);
         if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
     }
 
-    // --- SUGGESTIONS ---
+    // --- SUGGESTIONS (CORRIGÉES AVEC LES ACTIONS RAPIDES) ---
     async function renderSuggestions(genre, currentId) {
         const block = document.getElementById('modalSuggestionsBlock'), list = document.getElementById('modalSuggestionsList');
         block.classList.remove('hidden');
@@ -630,19 +722,19 @@
                 const n = normalizeShow(show);
                 const div = document.createElement('div');
                 div.className = 'bg-gray-800/90 border border-gray-700 p-2 rounded-xl flex items-center gap-2';
+                // Utilisation de l'API stringify pour forcer le JSON clean
                 div.innerHTML = `
-                    <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick="closeModal(); openPreviewModal(${JSON.stringify(n).replace(/"/g, '&quot;')})">
+                    <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})'>
                         <img src="${n.image || 'https://placehold.co/40x60'}" class="w-8 h-11 object-cover rounded bg-gray-950" />
                         <h4 class="text-xs font-bold text-white truncate">${n.title}</h4>
                     </div>
-                    <div class="flex gap-1 w-24">${buildCardActionsHTML(n)}</div>
+                    <div class="flex gap-1 w-24 flex-shrink-0" id="actions-${n.id}">${buildCardActionsHTML(n.id)}</div>
                 `;
                 list.appendChild(div);
             });
         } catch(e) { list.innerHTML = ''; }
     }
 
-    // --- GESTION DU STATUT ANNULÉ MANUEL ---
     function renderProductionBadge(status, forcedCanceled) {
         const badge = document.getElementById('modalProductionBadge');
         if(forcedCanceled) {
@@ -666,7 +758,6 @@
         openLibraryModal(item.id); 
     }
 
-    // --- UTILITAIRES EPISODES ---
     function buildSeasonTabs(episodes, isLib) {
         const seasons = [...new Set(episodes.map(e => e.season))];
         const tabs = document.getElementById('modalSeasonTabs');
@@ -707,19 +798,12 @@
     }
 
     async function quickAdd(mediaId, watched) {
-        // Find media object in search or discover arrays
-        let media = searchResults.find(r => r.id === mediaId) || discoverResults.find(r => `series-${r.id}` === mediaId || r.id === mediaId);
-        if(!media) {
-            // fallback si c'est un bouton suggestion
-            const idSplit = mediaId.split('-');
-            const s = showsCache.find(sh => String(sh.id) === idSplit[1]);
-            if(s) media = normalizeShow(s);
-        }
-        if(media) await addToLibrary(media, watched);
-    }
-
-    async function addToLibrary(media, watched) {
-        if (library.some(i => i.id === media.id)) return;
+        if (library.some(i => i.id === mediaId)) return;
+        
+        // Utilisation du cache global qui évite les plantages de recherche API
+        let media = globalMediaCache.get(mediaId);
+        if(!media) return;
+        
         let episodes = [];
         if (media.type === 'series') {
             try {
