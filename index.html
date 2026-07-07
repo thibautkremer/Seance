@@ -45,7 +45,7 @@
                     <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg text-gray-400">Films</button>
                 </div>
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="Recherche souple (ex: hou drag)..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
+                    <input type="text" id="searchInput" placeholder="Recherche souple..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
                 </div>
             </div>
             <div class="flex gap-2 items-center">
@@ -66,6 +66,11 @@
         <div class="bg-gray-800 p-3 sm:p-4 rounded-xl border border-gray-700 flex flex-col gap-3">
             <div class="flex justify-between items-center">
                 <h2 class="text-base font-bold text-white">✨ Recommandations</h2>
+                <!-- Sélecteur Films/Séries (Point 7) -->
+                <div class="flex bg-gray-900 rounded-lg p-0.5 border border-gray-700">
+                    <button onclick="setDiscoverType('series')" id="btn-disc-type-series" class="px-3 py-1 text-[10px] font-bold rounded shadow bg-teal-600 text-white transition">Séries</button>
+                    <button onclick="setDiscoverType('movie')" id="btn-disc-type-movie" class="px-3 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition">Films</button>
+                </div>
                 <button onclick="renderDiscoverTab(true)" class="text-[10px] bg-teal-900/50 border border-teal-700 text-teal-300 px-3 py-1.5 rounded-lg font-bold">↻ Rafraîchir</button>
             </div>
             <div class="grid grid-cols-3 gap-2">
@@ -122,11 +127,14 @@
     <!-- TAB: PROFILE -->
     <div id="tab-profile" class="space-y-4 hidden">
         <div class="grid grid-cols-3 gap-2">
-            <label class="bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold py-3 rounded-xl transition text-center cursor-pointer shadow">
+            <label class="bg-teal-600 hover:bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-3 rounded-xl transition text-center cursor-pointer shadow">
                 📂 Import JSON<input type="file" onchange="importLibrary(event)" class="hidden" accept=".json" />
             </label>
             <button onclick="forceSync()" class="bg-blue-800 hover:bg-blue-700 border border-blue-600 text-blue-200 text-[10px] sm:text-xs font-bold py-3 rounded-xl shadow transition">☁️ Forcer Cloud</button>
-            <button onclick="clearAll()" class="bg-gray-800 hover:bg-red-950 border border-red-900/40 text-red-400 text-xs font-bold py-3 rounded-xl transition shadow">🗑 Vider</button>
+            <button onclick="clearAll()" class="bg-gray-800 hover:bg-red-950 border border-red-900/40 text-red-400 text-[10px] sm:text-xs font-bold py-3 rounded-xl transition shadow">🗑 Vider</button>
+            
+            <!-- Bouton Mass Update (Point 2) -->
+            <button id="btn-mass-update" onclick="massUpdateLibrary()" class="bg-purple-800 hover:bg-purple-700 border border-purple-600 text-purple-200 text-[10px] sm:text-xs font-bold py-3 rounded-xl shadow transition col-span-3">🔄 Mettre à jour (Infos & Épisodes API)</button>
         </div>
         
         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex items-center justify-around gap-4">
@@ -148,29 +156,33 @@
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2 sm:col-span-4">
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
                 <div id="stat-hours" class="text-xl font-black text-teal-400">0 h</div>
-                <div class="text-xs text-gray-400 mt-0.5">Temps total regardé</div>
+                <div class="text-[10px] sm:text-xs text-gray-400 mt-0.5">Temps regardé</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md col-span-2">
+                <div id="stat-backlog-hours" class="text-xl font-black text-purple-400">0 h</div>
+                <div class="text-[10px] sm:text-xs text-gray-400 mt-0.5">Backlog restant</div>
+            </div>
+            
+            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
+                <div id="stat-series" class="text-xl font-black text-teal-400">0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Séries suivies</div>
             </div>
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-series" class="text-2xl font-black text-teal-400">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Séries suivies</div>
+                <div id="stat-episodes-watched" class="text-xl font-black text-teal-500">0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Épisodes vus</div>
             </div>
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-series-finished" class="text-2xl font-black text-teal-500">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Séries finies</div>
+                <div id="stat-movies-finished" class="text-xl font-black text-amber-400">0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Films vus</div>
             </div>
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-movies-finished" class="text-2xl font-black text-amber-400">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Films vus</div>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-avg-rating" class="text-2xl font-black text-yellow-400">0.0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Note moyenne (suivis)</div>
+                <div id="stat-avg-rating" class="text-xl font-black text-yellow-400">0.0</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Note moyenne</div>
             </div>
         </div>
 
-        <!-- Répartition par Genres (Point 5) -->
         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2 mt-4">
             <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🏷️ Répartition par genres</h3>
             <div id="stat-genre-bars" class="space-y-3 mt-3"></div>
@@ -183,11 +195,12 @@
     </div>
 </main>
 
-<!-- MODAL DES MEDIAS -->
-<div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-3 flex items-start justify-center hidden">
-    <div class="bg-gray-800 border border-gray-700 w-full max-w-lg lg:max-w-2xl rounded-2xl overflow-hidden my-4 shadow-2xl pb-4">
+<!-- MODAL DES MEDIAS (Point 5: Refonte Structurelle Sticky) -->
+<div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-gray-800 border border-gray-700 w-full max-w-lg lg:max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         
-        <div class="p-3 sm:p-4 flex gap-3 border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-20">
+        <!-- HEADER (Fixe / Ne scrolle pas) -->
+        <div class="p-3 sm:p-4 flex gap-3 border-b border-gray-700 bg-gray-800 shrink-0 relative z-20">
             <img id="modalPoster" src="" class="w-20 h-28 object-cover rounded border border-gray-700 shrink-0" />
             <div class="min-w-0 flex-1 flex flex-col justify-center">
                 <div class="flex justify-between items-start">
@@ -214,7 +227,8 @@
             </div>
         </div>
         
-        <div class="p-3 sm:p-4 space-y-5">
+        <!-- CONTENT (Défilement indépendant) -->
+        <div class="p-3 sm:p-4 overflow-y-auto flex-1 hide-scroll space-y-5 relative">
             <div id="modalProgressContainer" class="hidden space-y-1 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
                 <div class="flex justify-between text-xs font-bold text-gray-300">
                     <span>Avancement global</span>
@@ -225,7 +239,6 @@
                 </div>
             </div>
 
-            <!-- Boutons d'actions -->
             <div id="modalActionButtonsGrid" class="grid grid-cols-2 gap-2">
                 <button id="modalActionFollowBtn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow transition">À regarder</button>
                 <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow transition">Déjà vu</button>
@@ -235,9 +248,8 @@
             
             <div id="modalSeriesContent" class="space-y-4 hidden">
                 
-                <!-- Graphe Global -->
+                <!-- Graphe Global (Point 1 : Espacement réduit `left-3`) -->
                 <div class="relative h-20 bg-gray-900 rounded-lg border border-gray-700 pt-1 pb-1">
-                    <!-- Légendes 6px -->
                     <div class="absolute left-1 text-[6px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 0%;">10</div>
                     <div class="absolute left-1 text-[6px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 25%;">7.5</div>
                     <div class="absolute left-1 text-[6px] text-yellow-500/70 z-0 font-bold -translate-y-1/2" style="top: 50%;">5</div>
@@ -246,7 +258,7 @@
                     <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 25%;"></div>
                     <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 50%;"></div>
                     
-                    <div class="absolute right-1 left-5 bottom-1 top-1 flex items-end gap-[1px] overflow-x-auto hide-scroll z-10" id="modalGlobalGraph"></div>
+                    <div class="absolute right-1 left-3 bottom-1 top-1 flex items-end gap-[1px] overflow-x-auto hide-scroll z-10" id="modalGlobalGraph"></div>
                 </div>
 
                 <div id="modalSeasonSelectionRow" class="space-y-2 mt-2">
@@ -298,9 +310,11 @@
     let syncQueue = JSON.parse(localStorage.getItem('personal_tracker_sync_queue')) || [];
     let activeModalMediaIndex = null, activeModalSeason = null, modalMode = 'preview', previewEpisodes = [];
     let calFilter = 'all';
+    
     let currentDiscoverMode = 'mix';
-
-    const PAGE_SIZE = 50; // Passé de 20 à 50
+    let discoverMediaType = 'series'; // Point 7
+    
+    const PAGE_SIZE = 50;
     const MAX_RESULTS = 200;
     let searchPage = 1;
     let discoverResults = [];
@@ -409,7 +423,6 @@
         if (!supabaseClient) return;
         setCloudStatus('syncing');
         try {
-            // Lecture forcée depuis le cloud
             const { data, error } = await supabaseClient.from('user_library').select('*').eq('user_id', localUserId);
             if(error) throw error;
             
@@ -426,10 +439,8 @@
                         localUpdated = true; 
                     }
                 });
-                
                 if (localUpdated) { 
                     deduplicateLibrary(); 
-                    // Sauvegarde directe sans relancer la queue de synchro
                     localStorage.setItem('personal_tracker_db', JSON.stringify(library));
                     updateHeaderCount();
                     if(!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
@@ -438,7 +449,7 @@
             }
             processSyncQueue();
         } catch(e) { 
-            console.error("Erreur de synchro (vérifier RLS):", e);
+            console.error(e);
             setCloudStatus('offline'); 
         }
     }
@@ -465,7 +476,7 @@
         resetAndDisplaySearch();
     }
 
-    // --- RECHERCHE ELARGIE ---
+    // --- RECHERCHE ---
     async function triggerFuzzySearch(query) {
         await ensureShowsPool(); 
         const qWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
@@ -486,7 +497,6 @@
                 return qWords.every(w => t.includes(w)); 
             }).map(normalizeShow);
             
-            // Slice à 50 pour avoir plus de résultats dès la première page
             results = [...results, ...localMatches].filter((v,i,a)=>a.findIndex(t=>(t.id===v.id))===i).slice(0, 50);
             searchResults = results;
             resetAndDisplaySearch();
@@ -530,6 +540,14 @@
     }
     async function preloadShowsCache() { await ensureShowsPool(); }
 
+    function setDiscoverType(type) {
+        discoverMediaType = type;
+        document.getElementById('btn-disc-type-series').className = type === 'series' ? 'px-3 py-1 text-[10px] font-bold rounded shadow bg-teal-600 text-white transition' : 'px-3 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition';
+        document.getElementById('btn-disc-type-movie').className = type === 'movie' ? 'px-3 py-1 text-[10px] font-bold rounded shadow bg-teal-600 text-white transition' : 'px-3 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition';
+        discoverPage = 1;
+        renderDiscoverTab(true);
+    }
+
     function setDiscoverMode(mode) {
         currentDiscoverMode = mode;
         ['mix', 'top', 'trending'].forEach(m => {
@@ -543,22 +561,48 @@
 
     async function renderDiscoverTab(force = false) {
         if (!force && discoverResults.length > 0 && document.getElementById('discoverGrid').children.length > 0) return;
-        await ensureShowsPool();
         
         const libIds = new Set(library.map(i => i.id));
-        let pool = showsCache.filter(s => !libIds.has(`series-${s.id}`));
         
-        if(currentDiscoverMode === 'mix') {
-            const favoriteKeywords = ['Anime', 'Animation', 'Action', 'Fantasy'];
-            let personalized = pool.filter(s => s.genres?.some(g => favoriteKeywords.includes(g)));
-            if(personalized.length < 50) personalized = [...personalized, ...pool];
-            discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100);
-        } 
-        else if (currentDiscoverMode === 'top') {
-            discoverResults = pool.filter(s => s.rating?.average > 0).sort((a,b) => b.rating.average - a.rating.average).slice(0, 100);
-        }
-        else if (currentDiscoverMode === 'trending') {
-            discoverResults = pool.filter(s => s.status === 'Running' && s.rating?.average > 0).sort((a,b) => b.updated - a.updated).slice(0, 100);
+        if (discoverMediaType === 'series') {
+            await ensureShowsPool();
+            let pool = showsCache.filter(s => !libIds.has(`series-${s.id}`));
+            
+            if(currentDiscoverMode === 'mix') {
+                const favoriteKeywords = ['Anime', 'Animation', 'Action', 'Fantasy'];
+                let personalized = pool.filter(s => s.genres?.some(g => favoriteKeywords.includes(g)));
+                if(personalized.length < 50) personalized = [...personalized, ...pool];
+                discoverResults = personalized.sort(() => 0.5 - Math.random()).slice(0, 100).map(normalizeShow);
+            } 
+            else if (currentDiscoverMode === 'top') {
+                discoverResults = pool.filter(s => s.rating?.average > 0).sort((a,b) => b.rating.average - a.rating.average).slice(0, 100).map(normalizeShow);
+            }
+            else if (currentDiscoverMode === 'trending') {
+                discoverResults = pool.filter(s => s.status === 'Running' && s.rating?.average > 0).sort((a,b) => b.updated - a.updated).slice(0, 100).map(normalizeShow);
+            }
+        } else {
+            // Mock OMDB Discover (Randomized)
+            const keywords = currentDiscoverMode === 'mix' ? ['anime', 'action', 'fantasy', 'marvel', 'batman', 'jedi', 'ring', 'matrix'] 
+                            : currentDiscoverMode === 'top' ? ['godfather', 'shawshank', 'dark knight', 'pulp fiction', 'schindler', 'inception']
+                            : ['2024', '2025', 'dune', 'avatar', 'spider-man', 'wick', 'deadpool'];
+            const kw = keywords.sort(() => 0.5 - Math.random()).slice(0, 3);
+            
+            let moviePool = [];
+            for(let k of kw) {
+                try {
+                    const res = await fetch(`${OMDB_API}&s=${encodeURIComponent(k)}`);
+                    const data = await res.json();
+                    if(data.Search) {
+                        moviePool = moviePool.concat(data.Search.map(m => {
+                            const obj = { id: `movie-${m.imdbID}`, apiId: m.imdbID, title: m.Title, type: 'movie', image: m.Poster !== 'N/A' ? m.Poster : '', rating: 0, genres: [], premiered: m.Year, runtime: 120 };
+                            globalMediaCache.set(obj.id, obj);
+                            return obj;
+                        }));
+                    }
+                } catch(e) {}
+            }
+            moviePool = moviePool.filter((v,i,a)=>a.findIndex(t=>(t.id===v.id))===i && !libIds.has(v.id));
+            discoverResults = moviePool.sort(() => 0.5 - Math.random());
         }
         
         discoverPage = 1;
@@ -573,7 +617,7 @@
         const end = Math.min(start + PAGE_SIZE, MAX_RESULTS);
         const slice = discoverResults.slice(start, end);
         
-        slice.forEach(s => container.appendChild(createMediaCard(normalizeShow(s), false)));
+        slice.forEach(m => container.appendChild(createMediaCard(m, false)));
     }
 
     // --- BIBLIOTHEQUE ---
@@ -624,20 +668,23 @@
                 <button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', true)" class="flex-1 text-[9px] bg-emerald-700 text-white font-bold py-1 rounded">✓ Vu</button>`;
     }
     
+    // Fonction qui met à jour visuellement les cartes sans recharger la grille (Point 6)
+    function updateAllCardsUI() {
+        document.querySelectorAll('[id^="actions-"]').forEach(el => {
+            const id = el.id.replace('actions-', '');
+            el.innerHTML = buildCardActionsHTML(id);
+        });
+    }
+
     async function handleQuickAdd(container, mediaId, watched) {
         container.innerHTML = `<span class="text-[9px] text-teal-400 py-1 font-bold animate-pulse w-full text-center">Ajout...</span>`;
         await quickAdd(mediaId, watched);
-        closeModal(); // On ferme simplement la fiche
-        if(!document.getElementById('tab-search').classList.contains('hidden')) resetAndDisplaySearch();
-        if(!document.getElementById('tab-discover').classList.contains('hidden')) renderDiscoverGrid(true);
+        closeModal(); 
     }
     
     function handleRemove(mediaId) {
         removeFromLibrary(mediaId);
-        if (document.getElementById('tab-library').classList.contains('hidden')) {
-            const actionsDiv = document.getElementById(`actions-${mediaId}`);
-            if(actionsDiv) actionsDiv.innerHTML = buildCardActionsHTML(mediaId);
-        }
+        updateAllCardsUI();
     }
 
     function createMediaCard(media, isLib = false) {
@@ -981,7 +1028,7 @@
             try {
                 const res = await fetch(`${TVMAZE_API}/shows/${media.apiId}/episodes`);
                 const data = await res.json();
-                // Point 2 : Coche "Vu" uniquement si l'épisode est déjà diffusé
+                // Point 3 : On ne valide QUE les épisodes déjà sortis
                 episodes = data.map(ep => {
                     const isReleased = ep.airdate && ep.airdate <= todayString;
                     return {...ep, watched: watched && isReleased};
@@ -991,13 +1038,72 @@
         const entry = { ...media, episodes, status: watched ? 'Watched' : 'In Progress', addedAt: Date.now(), last_modified: Date.now() };
         library.push(entry);
         saveLocalDB(entry.id);
+        updateAllCardsUI();
     }
 
     function removeFromLibrary(id) {
         library = library.filter(i => i.id !== id);
         saveLocalDB();
         queueForSync(id);
+        updateAllCardsUI();
         if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
+    }
+
+    // --- MISE A JOUR MASSIVE (Point 2 & 3) ---
+    async function massUpdateLibrary() {
+        const btn = document.getElementById('btn-mass-update');
+        btn.innerHTML = `<span class="animate-pulse">🔄 Mise à jour en cours (Ne pas quitter)...</span>`;
+        btn.disabled = true;
+        btn.classList.add('opacity-70');
+        
+        for (let i = 0; i < library.length; i++) {
+            let item = library[i];
+            try {
+                if (item.type === 'series') {
+                    const res = await fetch(`${TVMAZE_API}/shows/${item.apiId}?embed=episodes`);
+                    const data = await res.json();
+                    
+                    item.rating = data.rating?.average || item.rating;
+                    item.runtime = data.runtime || data.averageRuntime || item.runtime;
+                    item.summary = data.summary?.replace(/<[^>]*>/g, '') || item.summary;
+                    item.status_production = data.status || item.status_production;
+                    item.network = data.network?.name || data.webChannel?.name || item.network;
+                    
+                    const apiEps = data._embedded?.episodes || [];
+                    let newEpsList = [];
+                    apiEps.forEach(apiEp => {
+                        const existing = (item.episodes || []).find(e => e.id === apiEp.id);
+                        const isReleased = apiEp.airdate && apiEp.airdate <= todayString;
+                        // Forcer les non-sortis à false, conserver le statut des existants sinon
+                        const watched = isReleased ? (existing ? existing.watched : false) : false;
+                        
+                        newEpsList.push({ ...apiEp, watched: watched });
+                    });
+                    item.episodes = newEpsList;
+                    item.status = newEpsList.every(e => e.watched) ? 'Watched' : 'In Progress';
+                    item.last_modified = Date.now();
+                    
+                } else if (item.type === 'movie') {
+                    const res = await fetch(`${OMDB_API}&i=${item.apiId}&plot=full`);
+                    const data = await res.json();
+                    if(data.Response === "True") {
+                        item.rating = parseFloat(data.imdbRating) || item.rating;
+                        item.runtime = parseInt(data.Runtime) || item.runtime;
+                        item.summary = data.Plot || item.summary;
+                        item.last_modified = Date.now();
+                    }
+                }
+            } catch(e) { console.error("Erreur maj", item.title); }
+        }
+        
+        saveLocalDB();
+        renderProfile();
+        if(!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
+        
+        btn.innerHTML = `🔄 Mettre à jour (Infos & Épisodes API)`;
+        btn.disabled = false;
+        btn.classList.remove('opacity-70');
+        alert('Mise à jour de la bibliothèque terminée avec succès !');
     }
 
     // --- MODULE DE SUGGESTIONS ---
@@ -1131,12 +1237,11 @@
     function renderProfile() {
         let totalMin = 0, seriesCount = 0, moviesCount = 0;
         let seriesFinished = 0, moviesFinished = 0, totalRating = 0, ratingCount = 0;
-        const gc = {}; // Genre count
+        let epWatchedCount = 0, backlogMin = 0; // Point 4
+        const gc = {};
         
         library.forEach(item => {
             if (item.rating > 0) { totalRating += item.rating; ratingCount++; }
-            
-            // Compilation des genres
             (item.genres||[]).forEach(g => { gc[g] = (gc[g]||0) + 1; });
 
             if (item.type === 'movie') { 
@@ -1144,20 +1249,29 @@
                 if(item.status === 'Watched') {
                     totalMin += (item.runtime > 0 ? item.runtime : 120); 
                     moviesFinished++;
+                } else if (item.status !== 'Watched') {
+                    backlogMin += (item.runtime > 0 ? item.runtime : 120);
                 }
             } else {
                 seriesCount++;
                 if(item.status === 'Watched') seriesFinished++;
                 (item.episodes||[]).forEach(ep => {
+                    const rt = item.runtime > 0 ? item.runtime : 40;
                     if (ep.watched) { 
-                        totalMin += (item.runtime > 0 ? item.runtime : 40); 
+                        totalMin += rt; 
+                        epWatchedCount++;
+                    } else if (!ep.watched && ep.airdate && ep.airdate <= todayString && item.status !== 'Abandoned') {
+                        // Épisodes sortis, non vus et non abandonnés
+                        backlogMin += rt;
                     }
                 });
             }
         });
 
         document.getElementById('stat-hours').textContent = formatDuration(totalMin);
+        document.getElementById('stat-backlog-hours').textContent = formatDuration(backlogMin);
         document.getElementById('stat-series').textContent = seriesCount;
+        document.getElementById('stat-episodes-watched').textContent = epWatchedCount;
         document.getElementById('stat-series-finished').textContent = seriesFinished;
         document.getElementById('stat-movies-finished').textContent = moviesFinished;
         document.getElementById('stat-avg-rating').textContent = ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : 'N/A';
@@ -1173,7 +1287,6 @@
         document.getElementById('pieSeriesText').textContent = `${pctSeries}%`;
         document.getElementById('pieMoviesText').textContent = `${pctMovies}%`;
 
-        // Barres de genres
         const sortedGenres = Object.entries(gc).sort((a,b)=>b[1]-a[1]);
         const barsEl = document.getElementById('stat-genre-bars');
         if (sortedGenres.length) {
@@ -1225,7 +1338,7 @@
                 }
                 saveLocalDB();
                 renderProfile();
-                alert("Import terminé.");
+                alert("Import terminé. Lancez la mise à jour massive pour récupérer les infos manquantes.");
             } catch(err) { alert('Erreur JSON'); }
         };
         reader.readAsText(file);
