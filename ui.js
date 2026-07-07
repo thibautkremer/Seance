@@ -14,7 +14,11 @@ function renderDiscoverTab(force = false) {
     const end = Math.min(start + PAGE_SIZE, MAX_RESULTS);
     discoverResults.slice(start, end).forEach(m => container.appendChild(createMediaCard(m, false)));
 }
-
+function renderDiscoverTab(force = false) {
+    if (!force && discoverResults.length > 0 && document.getElementById('discoverGrid').children.length > 0) return;
+    // Si tu avais une logique spécifique de filtrage pour discover, tu l'ajoutes ici
+    renderDiscoverGrid(true);
+}
 function createMediaCard(media, isLib = false) {
     globalMediaCache.set(media.id, media);
     const isAnime = media.genres?.includes('Anime') || media.genres?.includes('Animation');
