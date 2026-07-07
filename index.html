@@ -68,7 +68,6 @@
                 <h2 class="text-base font-bold text-white">✨ Recommandations</h2>
                 <button onclick="renderDiscoverTab(true)" class="text-[10px] bg-teal-900/50 border border-teal-700 text-teal-300 px-3 py-1.5 rounded-lg font-bold">↻ Rafraîchir</button>
             </div>
-            <!-- Sous-onglets de découverte (Point 12) -->
             <div class="grid grid-cols-3 gap-2">
                 <button onclick="setDiscoverMode('mix')" id="btn-disc-mix" class="py-1.5 text-xs font-bold rounded bg-teal-600 text-white shadow">Pour vous</button>
                 <button onclick="setDiscoverMode('top')" id="btn-disc-top" class="py-1.5 text-xs font-bold rounded bg-gray-700 text-gray-300">Mieux notés</button>
@@ -95,14 +94,12 @@
 
     <!-- TAB: LIBRARY -->
     <div id="tab-library" class="space-y-3 hidden">
-        <!-- Filtres sur une seule ligne avec scroll horizontal si besoin (Point 11) -->
         <div class="flex gap-2 items-center overflow-x-auto hide-scroll pb-2 border-b border-gray-800">
             <select id="libraryTypeFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
                 <option value="all">Tous types</option>
                 <option value="series">Séries</option>
                 <option value="movie">Films</option>
             </select>
-            <!-- Default à "En cours" (Point 7) -->
             <select id="libraryStatusFilter" onchange="renderLibrary()" class="bg-gray-800 border border-gray-700 rounded-lg text-xs px-2 py-1.5 text-gray-300 shrink-0">
                 <option value="all">Tous visionnages</option>
                 <option value="not_finished" selected>En cours</option>
@@ -131,7 +128,6 @@
             <button onclick="clearAll()" class="bg-gray-800 border border-red-900/40 text-red-400 text-xs font-bold py-3 rounded-xl">🗑 Vider</button>
         </div>
         
-        <!-- Camembert Films vs Séries (Point 8) -->
         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex items-center justify-around gap-4">
             <div class="relative w-24 h-24 shrink-0">
                 <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
@@ -160,37 +156,48 @@
                 <div class="text-xs text-gray-400 mt-0.5">Séries suivies</div>
             </div>
             <div class="bg-gray-800 p-4 rounded-xl text-center border border-gray-700 shadow-md">
-                <div id="stat-episodes-watched" class="text-2xl font-black text-cyan-400">0</div>
-                <div class="text-xs text-gray-400 mt-0.5">Épisodes vus</div>
+                <div id="stat-movies" class="text-2xl font-black text-amber-400">0</div>
+                <div class="text-xs text-gray-400 mt-0.5">Films suivis</div>
             </div>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md space-y-2 mt-4">
+            <h3 class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">🏆 Top 10 Séries</h3>
+            <div id="stat-top-10" class="space-y-2 text-xs"></div>
         </div>
     </div>
 </main>
 
 <!-- MODAL DES MEDIAS -->
 <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto p-3 flex items-start justify-center hidden">
-    <div class="bg-gray-800 border border-gray-700 w-full max-w-lg lg:max-w-2xl rounded-2xl overflow-hidden my-4 shadow-2xl">
+    <div class="bg-gray-800 border border-gray-700 w-full max-w-lg lg:max-w-2xl rounded-2xl overflow-hidden my-4 shadow-2xl pb-4">
         
-        <div class="p-3 sm:p-4 flex gap-3 border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-10">
+        <div class="p-3 sm:p-4 flex gap-3 border-b border-gray-700 bg-gray-800/60 sticky top-0 backdrop-blur z-20">
             <img id="modalPoster" src="" class="w-20 h-28 object-cover rounded border border-gray-700 shrink-0" />
             <div class="min-w-0 flex-1 flex flex-col justify-center">
                 <div class="flex justify-between items-start">
                     <h2 id="modalTitle" class="font-black text-white text-lg leading-tight line-clamp-2">Détails</h2>
                     <button onclick="closeModal()" class="text-gray-400 hover:text-white bg-gray-700 w-7 h-7 rounded-full font-bold text-sm shrink-0">✕</button>
                 </div>
-                <!-- Badges, Date et Note globale (Points 2 & 3) -->
+                
                 <div class="flex flex-wrap items-center gap-1.5 mt-2">
                     <span id="modalTypeBadge" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-teal-600 text-white">SÉRIE</span>
                     <span id="modalProductionBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-700 text-white uppercase"></span>
                     <span id="modalPremiereDate" class="text-[10px] text-gray-400 border border-gray-600 px-1.5 py-0.5 rounded">Date</span>
-                    <span id="modalGlobalRating" class="text-[10px] font-black text-yellow-400 bg-yellow-900/30 border border-yellow-700/50 px-1.5 py-0.5 rounded ml-auto">★ N/A</span>
+                    
+                    <!-- Barre de progression dorée globale (Point 4) -->
+                    <div class="ml-auto flex items-center gap-1.5 bg-yellow-900/20 px-2 py-1 rounded border border-yellow-700/30">
+                        <span id="modalGlobalRatingText" class="text-[10px] font-black text-yellow-400">N/A</span>
+                        <div class="w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                            <div id="modalGlobalRatingBar" class="h-full bg-yellow-400 transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
                 <button id="btnForceCancel" onclick="toggleForceCancel()" class="mt-2 text-[10px] w-max bg-gray-900 border border-red-900/50 text-red-400 px-2 py-1 rounded hidden">Force : Marquer Annulée</button>
             </div>
         </div>
         
         <div class="p-3 sm:p-4 space-y-5">
-            <!-- Avancement global avec barre (Point 9) -->
             <div id="modalProgressContainer" class="hidden space-y-1 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
                 <div class="flex justify-between text-xs font-bold text-gray-300">
                     <span>Avancement global</span>
@@ -204,27 +211,30 @@
             <p id="modalSummary" class="text-xs text-gray-300 leading-relaxed bg-gray-900/40 p-3 rounded-xl border border-gray-700/50"></p>
             
             <div id="modalActionButtonsGrid" class="grid grid-cols-2 gap-2">
-                <button id="modalActionFollowBtn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow">À regarder</button>
-                <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow">Déjà vu</button>
+                <button id="modalActionFollowBtn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow transition">À regarder</button>
+                <button id="modalActionAllWatchedBtn" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow transition">Déjà vu</button>
             </div>
 
             <div id="modalSeriesContent" class="space-y-4 hidden">
                 
-                <!-- Graphe Global (Point 1) -->
-                <div class="space-y-1">
-                    <h3 class="text-[10px] font-bold text-gray-500 uppercase">Graphe des notes (Toutes saisons)</h3>
-                    <div class="h-16 flex items-end gap-0.5 bg-gray-900 p-2 rounded-lg border border-gray-700 overflow-x-auto hide-scroll" id="modalGlobalGraph"></div>
+                <!-- Graphe Global Fix (Points 1, 2, 3) -->
+                <div class="relative h-20 bg-gray-900 rounded-lg border border-gray-700 pt-1 pb-1">
+                    <!-- Lignes de repères jaunes fixes (Point 2) -->
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 0px;" title="10"></div>
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 25%;" title="7.5"></div>
+                    <div class="absolute inset-x-0 border-t border-dashed border-yellow-500/40 z-0" style="top: 50%;" title="5"></div>
+                    <!-- Zone de graphe -->
+                    <div class="absolute inset-x-1 bottom-1 top-1 flex items-end gap-[1px] overflow-x-auto hide-scroll z-10" id="modalGlobalGraph"></div>
                 </div>
 
-                <div id="modalSeasonSelectionRow" class="space-y-2">
+                <div id="modalSeasonSelectionRow" class="space-y-2 mt-2">
                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saisons</h3>
                     <div id="modalSeasonTabs" class="flex gap-1.5 overflow-x-auto pb-1 hide-scroll"></div>
                 </div>
                 
-                <!-- Graphe Saison Courante (Point 1) -->
-                <div class="space-y-1">
-                    <h3 class="text-[10px] font-bold text-gray-500 uppercase">Notes de la saison sélectionnée</h3>
-                    <div class="h-12 flex items-end gap-1 bg-gray-900 p-2 rounded-lg border border-gray-700 overflow-x-auto hide-scroll" id="modalSeasonGraph"></div>
+                <!-- Graphe Saison -->
+                <div class="relative h-12 bg-gray-900 rounded-lg border border-gray-700">
+                    <div class="absolute inset-x-1 bottom-1 top-1 flex items-end gap-[2px] overflow-x-auto hide-scroll z-10" id="modalSeasonGraph"></div>
                 </div>
                 
                 <div id="modalEpisodesBlock" class="space-y-2 hidden">
@@ -232,6 +242,10 @@
                     <div id="modalEpisodesList" class="max-h-80 overflow-y-auto space-y-2 pr-1 hide-scroll"></div>
                 </div>
             </div>
+
+            <!-- Bouton Suggestions (Point 6) -->
+            <button id="modalViewSuggestionsBtn" class="w-full py-3 mt-4 bg-gray-900 hover:bg-gray-800 border border-teal-900/50 text-teal-400 font-bold rounded-xl text-xs shadow transition">💡 Voir des suggestions similaires</button>
+            <div id="modalSuggestionsBlock" class="hidden mt-2 space-y-2"></div>
         </div>
     </div>
 </div>
@@ -256,6 +270,7 @@
     const localUserId = 'tvr_master_user_2026';
     
     const globalMediaCache = new Map();
+    const seasonColors = ['bg-teal-500', 'bg-amber-500', 'bg-purple-500', 'bg-rose-500', 'bg-blue-500', 'bg-emerald-500', 'bg-cyan-500', 'bg-fuchsia-500'];
     
     let currentMediaType = 'series', searchResults = [];
     let showsCache = [];
@@ -308,7 +323,6 @@
         preloadShowsCache();
         searchObserver.observe(document.getElementById('searchSentinel'));
         discoverObserver.observe(document.getElementById('discoverSentinel'));
-        // Initialiser l'onglet suivi par défaut (Point 7 pris en compte dans le HTML avec selected)
     });
 
     function saveLocalDB(mediaId = null) {
@@ -323,7 +337,7 @@
         else { el.classList.add('hidden'); }
     }
 
-    // --- SYNCHRO SUPABASE (Point 10) ---
+    // --- SYNCHRO SUPABASE ---
     function initSupabase() {
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -352,7 +366,6 @@
             const id = syncQueue[i];
             const item = library.find(x => x.id === id);
             try {
-                // ATTENTION: La base doit avoir ADD PRIMARY KEY (user_id, media_id)
                 if (item) await supabaseClient.from('user_library').upsert({ user_id: localUserId, media_id: id, media_data: item, last_modified: item.last_modified }, { onConflict: 'user_id, media_id' });
                 else await supabaseClient.from('user_library').delete().match({ user_id: localUserId, media_id: id });
                 syncQueue.splice(i, 1);
@@ -408,6 +421,7 @@
 
     // --- RECHERCHE ---
     async function triggerFuzzySearch(query) {
+        await ensureShowsPool(); // S'assurer que le cache est chargé pour plus de résultats
         const qWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
         try {
             const [omdbRes, tvmazeRes] = await Promise.all([
@@ -421,6 +435,7 @@
             }));
             if (Array.isArray(tvmazeRes)) results = results.concat(tvmazeRes.map(i => normalizeShow(i.show)));
             
+            // On exploite massivement le fuzzy search local (Point 8)
             const localMatches = showsCache.filter(s => {
                 const t = s.name.toLowerCase();
                 return qWords.every(w => t.includes(w)); 
@@ -461,7 +476,7 @@
         slice.forEach(m => container.appendChild(createMediaCard(m, false)));
     }
 
-    // --- DECOUVERTE PERSONNALISÉE (Point 12) ---
+    // --- DECOUVERTE PERSONNALISÉE ---
     async function ensureShowsPool() {
         if (showsCache.length > 0) return;
         const res = await fetch(`${TVMAZE_API}/shows?page=0`);
@@ -555,7 +570,7 @@
         return Math.round((watched / item.episodes.length) * 100);
     }
 
-    // --- CARTES MEDIAS (Point 2, 13) ---
+    // --- CARTES MEDIAS ---
     function buildCardActionsHTML(mediaId) {
         const inLib = library.some(i => i.id === mediaId);
         if (inLib) return `<button onclick="event.stopPropagation(); handleRemove('${mediaId}')" class="w-full text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 py-1 rounded">✕ Retirer</button>`;
@@ -581,7 +596,6 @@
         globalMediaCache.set(media.id, media);
         const isAnime = media.genres?.includes('Anime') || media.genres?.includes('Animation');
         
-        // Couleur de fond selon le type (Point 13)
         const bgColorClass = media.type === 'movie' ? 'bg-amber-900/60' : (isAnime ? 'bg-purple-900/60' : 'bg-teal-900/60');
         const typeFlag = media.type === 'movie' ? 'FILM' : (isAnime ? 'ANIME' : 'SÉRIE');
         const typeClass = media.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
@@ -596,7 +610,6 @@
         const rating = media.rating > 0 ? media.rating.toFixed(1) : 'N/A';
         const ratingOverlay = !isLib ? `<div class="absolute top-1 right-1 bg-black/80 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded z-10">★ ${rating}</div>` : '';
 
-        // Overlays Bibliothèque
         let libOverlay = '';
         let libProgress = '';
         if (isLib && media.type === 'series') {
@@ -614,7 +627,6 @@
             libOverlay = `<button onclick="event.stopPropagation(); resetToUnwatched('${media.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
         }
 
-        // Si on est dans le suivi, on utilise le bgColorClass pour le texte (Point 13), sinon c'est le badge top-left
         const badgeHTML = !isLib ? `<span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white z-10 shadow">${typeFlag}</span>` : '';
         const titleBg = isLib ? bgColorClass : 'bg-gray-800';
 
@@ -641,7 +653,7 @@
         const nextEp = item.episodes?.find(e => !e.watched);
         if(nextEp) {
             const idx = item.episodes.indexOf(nextEp);
-            for(let i=0; i<=idx; i++) item.episodes[i].watched = true; // Cascade update
+            for(let i=0; i<=idx; i++) item.episodes[i].watched = true; 
             item.status = item.episodes.every(e => e.watched) ? 'Watched' : 'In Progress';
             item.last_modified = Date.now();
             saveLocalDB(item.id);
@@ -676,8 +688,12 @@
         document.getElementById('modalTitle').textContent = media.title;
         document.getElementById('modalPoster').src = media.image || 'https://placehold.co/155x217';
         document.getElementById('modalSummary').textContent = media.summary || 'Aucun résumé.';
-        document.getElementById('modalGlobalRating').textContent = `★ ${media.rating > 0 ? media.rating : 'N/A'}`; // Point 2
-        document.getElementById('modalPremiereDate').textContent = media.premiered || 'N/A'; // Point 3
+        document.getElementById('modalPremiereDate').textContent = media.premiered || 'N/A';
+        
+        // Barre de note dorée (Point 4)
+        const rate = media.rating > 0 ? media.rating : 0;
+        document.getElementById('modalGlobalRatingText').textContent = rate > 0 ? rate.toFixed(1) : 'N/A';
+        document.getElementById('modalGlobalRatingBar').style.width = `${(rate / 10) * 100}%`;
         
         document.getElementById('btnForceCancel').classList.add('hidden');
         renderProductionBadge(media.status_production, media.user_forced_cancel);
@@ -685,19 +701,29 @@
         document.getElementById('modalActionButtonsGrid').classList.remove('hidden');
         document.getElementById('modalSeriesContent').classList.add('hidden');
         document.getElementById('modalProgressContainer').classList.add('hidden');
+        document.getElementById('modalSuggestionsBlock').classList.add('hidden');
         
         const followBtn = document.getElementById('modalActionFollowBtn');
         const watchedBtn = document.getElementById('modalActionAllWatchedBtn');
         
         if (library.some(i => i.id === media.id)) {
+            // Modification des boutons si déjà dans la bibliothèque (Point 5)
             followBtn.textContent = '✕ Retirer';
+            followBtn.className = "w-full py-3 bg-gray-900 hover:bg-red-950 text-red-400 border border-red-900/50 font-bold rounded-xl text-xs transition shadow";
             followBtn.onclick = () => { handleRemove(media.id); closeModal(); };
-            watchedBtn.classList.add('hidden');
+
+            watchedBtn.classList.remove('hidden');
+            watchedBtn.textContent = '↺ Non vu';
+            watchedBtn.className = "w-full py-3 bg-gray-900 hover:bg-amber-950 text-amber-400 border border-amber-900/50 font-bold rounded-xl text-xs transition shadow";
+            watchedBtn.onclick = () => { resetToUnwatched(media.id); closeModal(); };
         } else {
             watchedBtn.classList.remove('hidden');
             followBtn.textContent = '+ À regarder';
+            followBtn.className = "w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-xs shadow transition";
             followBtn.onclick = async () => { followBtn.textContent = 'Ajout...'; await quickAdd(media.id, false); closeModal(); switchTab('library'); };
+            
             watchedBtn.textContent = '✓ Déjà vu';
+            watchedBtn.className = "w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow transition";
             watchedBtn.onclick = async () => { watchedBtn.textContent = 'Ajout...'; await quickAdd(media.id, true); closeModal(); switchTab('library'); };
         }
         
@@ -711,6 +737,7 @@
             } catch(e) {}
         }
 
+        document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(media.genres?.[0]||'Anime', media.id);
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
@@ -724,8 +751,11 @@
         document.getElementById('modalTitle').textContent = item.title;
         document.getElementById('modalPoster').src = item.image || 'https://placehold.co/155x217';
         document.getElementById('modalSummary').textContent = item.summary;
-        document.getElementById('modalGlobalRating').textContent = `★ ${item.rating > 0 ? item.rating : 'N/A'}`;
         document.getElementById('modalPremiereDate').textContent = item.premiered || 'N/A';
+        
+        const rate = item.rating > 0 ? item.rating : 0;
+        document.getElementById('modalGlobalRatingText').textContent = rate > 0 ? rate.toFixed(1) : 'N/A';
+        document.getElementById('modalGlobalRatingBar').style.width = `${(rate / 10) * 100}%`;
         
         renderProductionBadge(item.status_production, item.user_forced_cancel);
         
@@ -739,11 +769,11 @@
 
         document.getElementById('modalActionButtonsGrid').classList.add('hidden');
         document.getElementById('modalProgressContainer').classList.add('hidden');
+        document.getElementById('modalSuggestionsBlock').classList.add('hidden');
         
         if (item.type === 'series' && item.episodes) {
             document.getElementById('modalSeriesContent').classList.remove('hidden');
             
-            // Progression Globale (Point 9)
             const prog = getProgress(item);
             document.getElementById('modalProgressContainer').classList.remove('hidden');
             document.getElementById('modalProgressText').textContent = `${prog}%`;
@@ -756,6 +786,7 @@
             document.getElementById('modalEpisodesBlock').classList.add('hidden');
         }
 
+        document.getElementById('modalViewSuggestionsBtn').onclick = () => renderSuggestions(item.genres?.[0]||'Anime', item.id);
         document.getElementById('mediaModal').classList.remove('hidden');
     }
 
@@ -767,14 +798,17 @@
         if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
     }
 
-    // --- GRAPHES (Point 1) ---
+    // --- GRAPHES ---
     function renderGlobalGraph(eps) {
         const container = document.getElementById('modalGlobalGraph');
         container.innerHTML = '';
         eps.forEach(ep => {
             const r = ep.ratingSource || (ep.rating?.average) || 7.0;
             const h = Math.max(10, (r / 10) * 100);
-            container.innerHTML += `<div class="flex-1 min-w-[4px] bg-teal-600/50 hover:bg-teal-400 rounded-t cursor-pointer" style="height: ${h}%" title="S${ep.season}E${ep.number}: ${r}"></div>`;
+            // Attribue une couleur tournante par rapport à la saison (Point 1)
+            const colorClass = seasonColors[(ep.season - 1) % seasonColors.length] || 'bg-teal-500';
+            
+            container.innerHTML += `<div class="flex-1 min-w-[4px] ${colorClass} hover:opacity-80 rounded-t cursor-pointer relative z-10" style="height: ${h}%" title="S${ep.season}E${ep.number}: ${r}"></div>`;
         });
     }
 
@@ -784,7 +818,9 @@
         eps.forEach(ep => {
             const r = ep.ratingSource || (ep.rating?.average) || 7.0;
             const h = Math.max(10, (r / 10) * 100);
-            container.innerHTML += `<div class="flex-1 min-w-[12px] bg-cyan-600/60 hover:bg-cyan-400 rounded-t cursor-pointer flex flex-col justify-end items-center" style="height: ${h}%" title="E${ep.number}: ${r}"><span class="text-[8px] text-white opacity-50 mb-1">${r}</span></div>`;
+            const colorClass = seasonColors[(ep.season - 1) % seasonColors.length] || 'bg-cyan-600';
+            
+            container.innerHTML += `<div class="flex-1 min-w-[12px] ${colorClass} hover:opacity-80 rounded-t cursor-pointer flex flex-col justify-end items-center relative z-10" style="height: ${h}%" title="E${ep.number}: ${r}"><span class="text-[8px] text-white font-bold mb-0.5 opacity-80">${r}</span></div>`;
         });
     }
 
@@ -819,11 +855,13 @@
         
         seasons.forEach((s, i) => {
             const btn = document.createElement('button');
-            btn.className = `px-3 py-1 text-xs font-bold rounded-lg shrink-0 ${i===0?'bg-teal-600 text-white':'bg-gray-700 text-gray-300'}`;
+            const colorClass = seasonColors[(s - 1) % seasonColors.length] || 'bg-teal-600';
+            
+            btn.className = `px-3 py-1 text-xs font-bold rounded-lg shrink-0 ${i===0? `${colorClass} text-white`:'bg-gray-700 text-gray-300'}`;
             btn.textContent = `S${s}`;
             btn.onclick = (e) => {
-                Array.from(tabs.children).forEach(b=>b.classList.replace('bg-teal-600','bg-gray-700'));
-                e.target.classList.replace('bg-gray-700','bg-teal-600');
+                Array.from(tabs.children).forEach(b=>b.className = 'px-3 py-1 text-xs font-bold rounded-lg shrink-0 bg-gray-700 text-gray-300');
+                e.target.className = `px-3 py-1 text-xs font-bold rounded-lg shrink-0 ${colorClass} text-white`;
                 renderEpisodes(episodes.filter(ep => ep.season === s), isLib);
             };
             tabs.appendChild(btn);
@@ -831,20 +869,17 @@
         if (seasons.length > 0) renderEpisodes(episodes.filter(ep => ep.season === seasons[0]), isLib);
     }
 
-    // --- EPISODES (Points 4, 5, 6) ---
+    // --- EPISODES ---
     function renderEpisodes(eps, isLib) {
         const list = document.getElementById('modalEpisodesList');
-        
-        // MàJ Graphe Saison
         renderSeasonGraph(eps);
 
         list.innerHTML = eps.map(ep => {
             const isFuture = ep.airdate && ep.airdate > todayString;
-            const dateSpan = isFuture ? `<span class="text-amber-400 font-bold ml-1">${ep.airdate}</span>` : `<span class="text-gray-500 ml-1">${ep.airdate || ''}</span>`; // Point 6
+            const dateSpan = isFuture ? `<span class="text-amber-400 font-bold ml-1">${ep.airdate}</span>` : `<span class="text-gray-500 ml-1">${ep.airdate || ''}</span>`;
             const sumText = ep.summary?.replace(/<[^>]*>/g, '') || 'Aucun résumé disponible pour cet épisode.';
             const btnAction = isLib ? `<button onclick="event.stopPropagation(); toggleEpCascade(${ep.id}, '${ep.season}')" class="px-2 py-1 rounded text-[10px] shrink-0 ${ep.watched ? 'bg-emerald-900 text-emerald-400' : 'bg-gray-800'}" ${isFuture?'disabled':''}>${ep.watched ? '✓ Vu' : 'Vu'}</button>` : '';
 
-            // Toggle Résumé (Point 5)
             return `
             <div class="flex flex-col gap-1">
                 <div class="p-2 rounded-xl bg-gray-900/60 border border-gray-700/50 text-xs flex justify-between items-center cursor-pointer" onclick="document.getElementById('ep-sum-${ep.id}').classList.toggle('hidden')">
@@ -856,7 +891,6 @@
         }).join('');
     }
 
-    // Cascade pour cocher les précédents (Point 4)
     function toggleEpCascade(epId, seasonStr) {
         const item = library[activeModalMediaIndex];
         const epIndex = item.episodes.findIndex(e => e.id === epId);
@@ -865,10 +899,8 @@
         const targetState = !item.episodes[epIndex].watched;
         
         if (targetState) {
-            // Coche tous les précédents
             for(let i=0; i<=epIndex; i++) item.episodes[i].watched = true;
         } else {
-            // Décoche juste celui-ci
             item.episodes[epIndex].watched = false;
         }
         
@@ -876,7 +908,6 @@
         item.last_modified = Date.now();
         saveLocalDB(item.id);
         
-        // Refresh de la modale pour mettre à jour la barre globale et la liste
         const prog = getProgress(item);
         document.getElementById('modalProgressText').textContent = `${prog}%`;
         document.getElementById('modalProgressBar').style.width = `${prog}%`;
@@ -905,6 +936,45 @@
         saveLocalDB();
         queueForSync(id);
         if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
+    }
+
+    // --- MODULE DE SUGGESTIONS (Point 6) ---
+    async function renderSuggestions(genre, currentId) {
+        const block = document.getElementById('modalSuggestionsBlock');
+        block.classList.remove('hidden');
+        block.innerHTML = `<div class="text-xs text-gray-400 py-4 text-center animate-pulse">Recherche de recommandations...</div>`;
+        try {
+            await ensureShowsPool();
+            let pool = showsCache.filter(s => s.genres?.includes(genre) && `series-${s.id}` !== currentId).sort(() => 0.5 - Math.random()).slice(0, 6);
+            block.innerHTML = '';
+            
+            if (pool.length === 0) {
+                block.innerHTML = `<div class="text-xs text-gray-500 py-2 text-center">Aucune suggestion trouvée.</div>`;
+                return;
+            }
+
+            pool.forEach(show => {
+                const n = normalizeShow(show);
+                const rate = n.rating > 0 ? n.rating.toFixed(1) : 'N/A';
+                
+                const div = document.createElement('div');
+                div.className = 'bg-gray-900 border border-gray-700 p-2 rounded-xl flex gap-3 items-center';
+                div.innerHTML = `
+                    <img src="${n.image || 'https://placehold.co/40x60'}" class="w-12 h-16 object-cover rounded cursor-pointer shrink-0 border border-gray-800" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})' />
+                    <div class="flex-1 min-w-0 cursor-pointer" onclick='closeModal(); openPreviewModal(${JSON.stringify(n).replace(/'/g, "&#39;")})'>
+                        <h4 class="text-xs font-bold text-white truncate">${n.title}</h4>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <span class="text-[9px] text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700">${n.premiered}</span>
+                            <span class="text-[9px] text-yellow-400 font-bold ml-1 bg-yellow-900/30 px-1.5 py-0.5 rounded border border-yellow-700/50">★ ${rate}</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1 w-20 shrink-0" id="actions-${n.id}">
+                        ${buildCardActionsHTML(n.id)}
+                    </div>
+                `;
+                block.appendChild(div);
+            });
+        } catch(e) { block.innerHTML = ''; }
     }
 
     // --- CALENDRIER ---
@@ -968,6 +1038,7 @@
 
     // --- PROFIL ---
     function formatDuration(totalMin) {
+        if (isNaN(totalMin) || totalMin <= 0) return '0 h';
         let r = Math.max(0, Math.round(totalMin));
         const days = Math.floor(r/(24*60)); r -= days*24*60;
         const hours = Math.floor(r/60);
@@ -978,23 +1049,31 @@
     }
 
     function renderProfile() {
-        let totalMin = 0, seriesCount = 0, moviesCount = 0, epWatched = 0;
+        // Correction des variables et calculs statistiques (Point 7)
+        let totalMin = 0, seriesCount = 0, moviesCount = 0, epWatchedCount = 0;
+        
         library.forEach(item => {
-            if (item.type === 'movie') { moviesCount++; totalMin += 120; } 
-            else {
+            if (item.type === 'movie') { 
+                moviesCount++; 
+                if(item.status === 'Watched') totalMin += 120; // Moyenne 2h pour un film fini
+            } else {
                 seriesCount++;
                 (item.episodes||[]).forEach(ep => {
-                    if (ep.watched) { totalMin += (ep.runtime || 40); epWatched++; }
+                    if (ep.watched) { 
+                        // S'assurer que le runtime est bien un nombre, sinon 40 min par défaut
+                        totalMin += (!isNaN(ep.runtime) && ep.runtime > 0) ? Number(ep.runtime) : 40; 
+                        epWatchedCount++; 
+                    }
                 });
             }
         });
 
+        // Mise à jour interface
         document.getElementById('stat-hours').textContent = formatDuration(totalMin);
         document.getElementById('stat-series').textContent = seriesCount;
         document.getElementById('stat-movies').textContent = moviesCount;
-        document.getElementById('stat-episodes-watched').textContent = epWatched;
         
-        // Camembert (Point 8)
+        // Camembert
         const totalMedia = seriesCount + moviesCount;
         const pctSeries = totalMedia > 0 ? Math.round((seriesCount / totalMedia) * 100) : 0;
         const pctMovies = totalMedia > 0 ? 100 - pctSeries : 0;
@@ -1006,26 +1085,22 @@
         document.getElementById('pieSeriesText').textContent = `${pctSeries}%`;
         document.getElementById('pieMoviesText').textContent = `${pctMovies}%`;
 
-        const gc = {};
-        library.forEach(i => (i.genres||[]).forEach(g => { gc[g] = (gc[g]||0) + 1; }));
-        const sorted = Object.entries(gc).sort((a,b)=>b[1]-a[1]);
-        
-        const barsEl = document.getElementById('stat-genre-bars');
-        if (sorted.length) {
-            const max = sorted[0][1];
-            barsEl.innerHTML = sorted.slice(0,5).map(([g,c]) => `<div><div class="flex justify-between text-[10px] mb-0.5"><span class="text-gray-300">${g}</span><span class="text-gray-500">${c}</span></div><div class="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden"><div class="h-full bg-teal-500" style="width:${Math.round(c/max*100)}%"></div></div></div>`).join('');
-        }
-
+        // Top 10 Séries
         const top10El = document.getElementById('stat-top-10');
         const topSeries = library.filter(i => i.type === 'series' && i.rating > 0).sort((a, b) => b.rating - a.rating).slice(0, 10);
-        top10El.innerHTML = topSeries.map((s, idx) => `
-            <div class="flex items-center gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
-                <span class="text-teal-500 font-black w-4">${idx + 1}.</span>
-                <img src="${s.image}" class="w-6 h-8 object-cover rounded" />
-                <div class="flex-1 truncate text-white font-bold text-xs">${s.title}</div>
-                <div class="text-yellow-400 font-bold text-[10px] bg-yellow-950/30 px-1.5 rounded">★ ${s.rating}</div>
-            </div>
-        `).join('');
+        
+        if(topSeries.length === 0) {
+            top10El.innerHTML = `<p class="text-xs text-gray-500 py-2">Aucune série avec note pour le moment.</p>`;
+        } else {
+            top10El.innerHTML = topSeries.map((s, idx) => `
+                <div class="flex items-center gap-3 bg-gray-900/50 p-2 rounded-xl border border-gray-700/50">
+                    <span class="text-teal-500 font-black w-4 text-right">${idx + 1}.</span>
+                    <img src="${s.image}" class="w-8 h-12 object-cover rounded border border-gray-800" />
+                    <div class="flex-1 truncate text-white font-bold text-xs">${s.title}</div>
+                    <div class="text-yellow-400 font-bold text-[10px] bg-yellow-950/30 px-2 py-1 rounded border border-yellow-700/50">★ ${s.rating.toFixed(1)}</div>
+                </div>
+            `).join('');
+        }
     }
 
     async function importLibrary(event) {
