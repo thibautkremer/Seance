@@ -457,6 +457,29 @@
         } catch(e) { setCloudStatus('offline'); }
     }
 
+// --- NAVIGATION ---
+    function switchTab(name) {
+        ['search','discover','calendar','library','profile'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.add('hidden');
+            document.getElementById(`nav-${t}`).classList.replace('text-teal-400', 'text-gray-400');
+        });
+        document.getElementById(`tab-${name}`).classList.remove('hidden');
+        document.getElementById(`nav-${name}`).classList.replace('text-gray-400', 'text-teal-400');
+        
+        if (name === 'library') renderLibrary();
+        if (name === 'discover') renderDiscoverTab();
+        if (name === 'profile') renderProfile();
+        if (name === 'calendar') renderCalendarTab();
+    }
+
+    function setMediaType(type) {
+        currentMediaType = type;
+        document.getElementById('btn-series').className = type === 'series' ? 'py-2 text-sm font-bold rounded-lg bg-teal-600 text-white' : 'py-2 text-sm font-bold rounded-lg text-gray-400';
+        document.getElementById('btn-movie').className = type === 'movie' ? 'py-2 text-sm font-bold rounded-lg bg-teal-600 text-white' : 'py-2 text-sm font-bold rounded-lg text-gray-400';
+        resetAndDisplaySearch();
+    }
+
+    
     // --- RECHERCHE ---
     async function searchMoviesAPI(query) {
         if (TRAKT_CLIENT_ID && TRAKT_CLIENT_ID !== 'METTRE_VOTRE_CLIENT_ID_TRAKT_ICI') {
