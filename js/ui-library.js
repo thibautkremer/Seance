@@ -1,158 +1,80 @@
 // ==========================================
-// UI-LIBRARY.JS — Bibliothèque personnelle + cartes médias
+// UI-LIBRARY.JS — Gestion de l'affichage de la bibliothèque/suivis
 // ==========================================
 
-    // --- BIBLIOTHEQUE ---
-    function applySmartFilter(keyword) {
-        if(keyword === 'movie') { document.getElementById('libraryTypeFilter').value = 'movie'; document.getElementById('librarySearch').value = ''; }
-        else { document.getElementById('libraryTypeFilter').value = 'all'; document.getElementById('librarySearch').value = keyword; }
-        renderLibrary();
-    }
-
-    function renderLibrary() {
-        const typeFilter = document.getElementById('filterLibType')?.value || 'all';
-        const statusFilter = document.getElementById('filterLibStatus')?.value || 'all';
-        const broadcastFilter = document.getElementById('filterLibBroadcast')?.value || 'all';
-        
-        let filtered = library.filter(m => {
-            // Filtrage du Type (Gestion spéciale pour les Animes)
-            if (typeFilter === 'anime') {
-                if (m.type !== 'series' || !(m.genres || []).includes('Anime')) return false;
-            } else if (typeFilter === 'series') {
-                if (m.type !== 'series' || (m.genres || []).includes('Anime')) return false;
-            } else if (typeFilter !== 'all' && m.type !== typeFilter) {
-                return false;
-            }
-            
-            // Filtrage de la Progression
-            if (statusFilter !== 'all' && m.status !== statusFilter) return false;
-            
-            // Filtrage de la Diffusion (Seulement pour les séries/animes)
-            if (broadcastFilter !== 'all') {
-                if (m.type === 'movie') return false; 
-                if (m.status_production !== broadcastFilter) return false;
-            }
-            return true;
-        });
+function renderLibrary() {
+    const typeFilter = document.getElementById('filterLibType')?.value || 'all';
+    const statusFilter = document.getElementById('filterLibStatus')?.value || 'all';
+    const broadcastFilter = document.getElementById('filterLibBroadcast')?.value || 'all';
+    const grid = document.getElementById('libraryGrid');
     
-        // Applique les filtres avancés s'ils sont appelés
-        if (typeof advancedFilterEngine !== 'undefined') {
-            filtered = advancedFilterEngine.applyFilters(filtered);
+    if (!grid) return;
+    
+    let filtered = library.filter(m => {
+        // Filtrage du Type (Gestion spéciale pour les Animes)
+        if (typeFilter === 'anime') {
+            if (m.type !== 'series' || !(m.genres || []).includes('Anime')) return false;
+        } else if (typeFilter === 'series') {
+            if (m.type !== 'series' || (m.genres || []).includes('Anime')) return false;
+        } else if (typeFilter !== 'all' && m.type !== typeFilter) {
+            return false;
         }
-    
-        // Le reste de ta logique pour générer la grille de résultats...
-        // const grid = document.getElementById('libraryGrid');
-        // grid.innerHTML = ''; 
-        // etc...
-    }
-
-    function getProgress(item) {
-        if (!item.episodes || item.episodes.length === 0) return item.status === 'Watched' ? 100 : 0;
-        const watched = item.episodes.filter(e => e.watched).length;
-        return Math.round((watched / item.episodes.length) * 100);
-    }
-
-    // --- CARTES MEDIAS ---
-    function buildCardActionsHTML(mediaId) {
-        const inLib = library.some(i => i.id === mediaId);
-        if (inLib) return `<button onclick="event.stopPropagation(); handleRemove('${mediaId}')" class="w-full text-center text-[9px] bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 py-1 rounded">✕ Retirer</button>`;
-        return `<button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', false)" class="flex-1 text-[9px] bg-teal-600 text-white font-bold py-1 rounded">+ Voir</button>
-                <button onclick="event.stopPropagation(); handleQuickAdd(this.parentElement, '${mediaId}', true)" class="flex-1 text-[9px] bg-emerald-700 text-white font-bold py-1 rounded">✓ Vu</button>`;
-    }
-    
-    function updateAllCardsUI() {
-        document.querySelectorAll('[id^="actions-"]').forEach(el => {
-            const id = el.id.replace('actions-', '');
-            el.innerHTML = buildCardActionsHTML(id);
-        });
-    }
-
-    async function handleQuickAdd(container, mediaId, watched) {
-        container.innerHTML = `<span class="text-[9px] text-teal-400 py-1 font-bold animate-pulse w-full text-center">Ajout...</span>`;
-        await quickAdd(mediaId, watched);
-    }
-    
-    function handleRemove(mediaId) {
-        library = library.filter(i => i.id !== mediaId);
-        saveLocalDB(mediaId);
-        updateAllCardsUI();
-        if (!document.getElementById('tab-library').classList.contains('hidden')) renderLibrary();
-    }
-
-    function createMediaCard(media, isLib = false) {
-        globalMediaCache.set(media.id, media);
-        const isAnime = media.genres?.includes('Anime') || media.genres?.includes('Animation');
         
-        const bgColorClass = media.type === 'movie' ? 'bg-amber-900/60' : (isAnime ? 'bg-purple-900/60' : 'bg-teal-900/60');
-        const typeFlag = media.type === 'movie' ? 'FILM' : (isAnime ? 'ANIME' : 'SÉRIE');
-        const typeClass = media.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
-
-        const div = document.createElement('div');
-        div.className = 'bg-gray-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer shadow-sm relative flex flex-col hover:border-gray-500 transition-colors';
-        div.onclick = () => isLib ? openLibraryModal(media.id) : openPreviewModal(media);
+        // Filtrage de la Progression
+        if (statusFilter !== 'all' && m.status !== statusFilter) return false;
         
-        const quickActions = !isLib ? `<div class="mt-auto flex gap-1 pt-1" id="actions-${media.id}">${buildCardActionsHTML(media.id)}</div>` : '';
-        const rating = media.rating > 0 ? media.rating.toFixed(1) : 'N/A';
-        const ratingOverlay = `<div class="absolute top-1 right-1 bg-black/80 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded z-10 shadow border border-gray-800/50">★ ${rating}</div>`;
-        const dateOverlay = !isLib && media.premiered ? `<div class="absolute bottom-1 right-1 bg-black/80 text-gray-300 text-[9px] font-black px-1.5 py-0.5 rounded z-10 border border-gray-800/50">${media.premiered}</div>` : '';
+        // Filtrage de la Diffusion
+        if (broadcastFilter !== 'all') {
+            if (m.type === 'movie') return false; 
+            if (m.status_production !== broadcastFilter) return false;
+        }
+        return true;
+    });
 
-        let libOverlay = '';
-        let libProgress = '';
-        if (isLib && media.type === 'series') {
-            const prog = getProgress(media);
-            const nextEp = media.episodes?.find(e => !e.watched && e.airdate && e.airdate <= todayString);
-            if (media.status === 'Watched') {
-                libOverlay = `<button onclick="event.stopPropagation(); resetToUnwatched('${media.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
-            } else if (media.status === 'Abandoned') {
-                libOverlay = `<button onclick="event.stopPropagation(); resetToUnwatched('${media.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-red-900 border border-red-700 text-red-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Reprendre</button>`;
-            } else if (nextEp) {
-                libOverlay = `<button onclick="event.stopPropagation(); checkNextEp('${media.id}')" class="absolute bottom-1 right-1 bg-teal-600/90 hover:bg-teal-500 text-white text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">✓ S${nextEp.season}E${nextEp.number}</button>`;
-            }
-            libProgress = `<div class="absolute bottom-0 inset-x-0 h-1.5 bg-gray-700/80 z-10"><div class="h-full bg-teal-500" style="width:${prog}%"></div></div>`;
-        } else if (isLib && media.type === 'movie' && media.status === 'Watched') {
-            libOverlay = `<button onclick="event.stopPropagation(); resetToUnwatched('${media.id}')" class="absolute bottom-1 right-1 bg-gray-900/90 hover:bg-amber-900 border border-gray-700 text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-black transition shadow z-20">↺ Non vu</button>`;
+    // Application des filtres avancés s'ils sont chargés et appelés
+    if (typeof advancedFilterEngine !== 'undefined') {
+        filtered = advancedFilterEngine.applyFilters(filtered);
+    }
+
+    grid.innerHTML = '';
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10">Aucun média ne correspond à ces filtres.</div>`;
+        return;
+    }
+
+    filtered.forEach(item => {
+        const isAnime = item.type === 'series' && (item.genres || []).includes('Anime');
+        const typeLabel = isAnime ? 'Anime' : (item.type === 'series' ? 'Série' : 'Film');
+        const typeColor = item.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
+        
+        // Calcul progression
+        let progressHtml = '';
+        if (item.type === 'series' && item.episodes && item.episodes.length > 0) {
+            const watched = item.episodes.filter(e => e.watched).length;
+            const total = item.episodes.length;
+            const percent = Math.round((watched / total) * 100);
+            progressHtml = `
+                <div class="mt-2 h-1.5 w-full bg-gray-700 rounded overflow-hidden">
+                    <div class="h-full ${percent === 100 ? 'bg-emerald-500' : 'bg-teal-500'}" style="width: ${percent}%"></div>
+                </div>
+                <div class="text-[9px] text-gray-400 text-right mt-0.5">${watched}/${total} ép.</div>
+            `;
+        } else if (item.status === 'Watched') {
+            progressHtml = `<div class="mt-2 text-[10px] font-bold text-emerald-500">✓ Terminé</div>`;
         }
 
-        const badgeHTML = !isLib ? `<span class="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded ${typeClass} text-white z-10 shadow">${typeFlag}</span>` : '';
-        const titleBg = isLib ? bgColorClass : 'bg-gray-800';
-
-        div.innerHTML = `
-            <div class="relative w-full">
-                <img src="${media.image || 'https://placehold.co/155x217/1f2937/4b5563'}" class="media-poster bg-gray-900" loading="lazy" />
-                ${badgeHTML}
-                ${ratingOverlay}
-                ${dateOverlay}
-                ${libOverlay}
-                ${libProgress}
-            </div>
-            <div class="p-2 flex-1 flex flex-col ${titleBg}">
-                <h3 class="font-bold text-white text-[11px] truncate leading-tight">${media.title || 'Inconnu'}</h3>
-                ${quickActions}
+        grid.innerHTML += `
+            <div onclick="openLibraryModal('${item.id}')" class="relative bg-gray-800 border border-gray-700 rounded-xl overflow-hidden cursor-pointer hover:border-teal-500 transition shadow-lg group">
+                <div class="relative w-full aspect-[2/3]">
+                    <img src="${item.image || 'https://via.placeholder.com/300x450?text=Pas+d+image'}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy" />
+                    <div class="absolute top-2 left-2 ${typeColor} text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase shadow">${typeLabel}</div>
+                </div>
+                <div class="p-2">
+                    <h3 class="text-xs font-bold text-white line-clamp-1">${item.title}</h3>
+                    ${progressHtml}
+                </div>
             </div>
         `;
-        return div;
-    }
-
-    function checkNextEp(id) {
-        const item = library.find(i => i.id === id);
-        if(!item) return;
-        const nextEp = item.episodes?.find(e => !e.watched && e.airdate && e.airdate <= todayString);
-        if(nextEp) {
-            const idx = item.episodes.indexOf(nextEp);
-            for(let i=0; i<=idx; i++) item.episodes[i].watched = true; 
-            item.status = item.episodes.every(e => e.watched || !e.airdate || e.airdate > todayString) ? 'Watched' : 'In Progress';
-            item.last_modified = Date.now();
-            saveLocalDB(item.id);
-            renderLibrary();
-        }
-    }
-    
-    function resetToUnwatched(id) {
-        const item = library.find(i => i.id === id);
-        if(!item) return;
-        if(item.type === 'series') item.episodes?.forEach(e => e.watched = false);
-        item.status = 'In Progress';
-        item.last_modified = Date.now();
-        saveLocalDB(item.id);
-        renderLibrary();
-    }
+    });
+}
