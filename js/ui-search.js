@@ -1,5 +1,5 @@
 // ==========================================
-// UI-SEARCH.JS — Gestion de la recherche et de l'affichage des résultats
+// UI-SEARCH.JS — Gestion de la recherche
 // ==========================================
 
 function setMediaType(type) {
@@ -27,31 +27,26 @@ function resetAndDisplaySearch() {
 
 function renderSearchGrid(isReset = false) {
     const grid = document.getElementById('searchResults');
-    const searchInput = document.getElementById('searchInput');
-    
     if (!grid) return;
     
-    // Protection absolue contre le null
+    // Récupération sécurisée du champ de recherche
+    const searchInput = document.getElementById('searchInput');
     const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-    // Si c'est un reset complet
     if (isReset) grid.innerHTML = '';
 
-    // On filtre d'abord le type actuel
     let filteredResults = searchResults.filter(r => r.type === currentMediaType);
     
     if (query) {
-        // Filtrage basique si une recherche texte est présente
         filteredResults = filteredResults.filter(r => (r.title || '').toLowerCase().includes(query));
     }
 
-    // Pagination
     const start = (searchPage - 1) * PAGE_SIZE;
     const end = searchPage * PAGE_SIZE;
     const toRender = filteredResults.slice(start, end);
 
     if (toRender.length === 0 && searchPage === 1) {
-        grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10">Recherchez un film ou une série pour commencer.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-12 font-bold">Cherchez une série, un anime ou un film pour commencer.</div>`;
         return;
     }
 
@@ -60,6 +55,7 @@ function renderSearchGrid(isReset = false) {
         const isAnime = item.type === 'series' && (item.genres || []).includes('Anime');
         const typeColor = item.type === 'movie' ? 'bg-amber-600' : (isAnime ? 'bg-purple-600' : 'bg-teal-600');
         const typeLabel = isAnime ? 'Anime' : (item.type === 'series' ? 'Série' : 'Film');
+        
         const badge = isAdded 
             ? `<div class="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">✓ Ajouté</div>`
             : '';
@@ -82,7 +78,6 @@ function renderSearchGrid(isReset = false) {
         `;
     });
 
-    // Observer pour le scroll infini
     if (end < filteredResults.length && typeof searchObserver !== 'undefined') {
         const dummy = document.createElement('div');
         dummy.className = 'col-span-full h-4';
@@ -91,7 +86,7 @@ function renderSearchGrid(isReset = false) {
     }
 }
 
-// Écouteur sur l'input de recherche
+// Écouteur pour déclencher la recherche API au clavier
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
