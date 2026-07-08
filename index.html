@@ -6,6 +6,10 @@
     <meta name="theme-color" content="#0d9488">
     <meta name="description" content="TV TIME REBORN - Gestionnaire personnel de séries et films avec IA">
     <title>TV TIME REBORN</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://api.tvmaze.com">
@@ -66,6 +70,15 @@
     <!-- TAB: CALENDAR -->
     <div id="tab-calendar" class="space-y-4 hidden">
         <h2 class="text-lg font-bold text-white">📅 Mon Calendrier</h2>
+        
+        <!-- Filtres temporels requis par calendar.js -->
+        <div class="flex gap-2 overflow-x-auto hide-scroll pb-1">
+            <button id="cal-all" onclick="setCalFilter('all')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-teal-600 text-white">Tout</button>
+            <button id="cal-today" onclick="setCalFilter('today')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Aujourd'hui</button>
+            <button id="cal-week" onclick="setCalFilter('week')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">7 Jours</button>
+            <button id="cal-month" onclick="setCalFilter('month')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">30 Jours</button>
+        </div>
+
         <div id="calendarTimeline" class="space-y-2"></div>
     </div>
 
@@ -134,6 +147,15 @@
 <script src="js/main.js"></script>
 
 <script>
+    // Enregistrement du Service Worker pour la PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(err => {
+                console.error('Erreur lors de l\'enregistrement du Service Worker:', err);
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             if (window.renderAdvancedStatsPanel) document.getElementById('advancedStatsPanel').innerHTML = renderAdvancedStatsPanel();
