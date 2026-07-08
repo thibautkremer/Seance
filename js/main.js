@@ -1,41 +1,47 @@
 // ==========================================
-// MAIN.JS — Navigation entre onglets + initialisation au chargement (DOMContentLoaded)
+// MAIN.JS — Routage principal et initialisation
 // ==========================================
 
-    // --- INITIALISATION ---
-   window.addEventListener('DOMContentLoaded', () => {
-        deduplicateLibrary();
-        initSupabase();
+function switchTab(tabId) {
+    // 1. Cacher tous les onglets et réinitialiser les couleurs de navigation
+    ['search', 'discover', 'calendar', 'library', 'profile'].forEach(id => {
+        const el = document.getElementById(`tab-${id}`);
+        if (el) el.classList.add('hidden');
         
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', e => {
-                const q = e.target.value.trim();
-                if (q.length > 1) triggerFuzzySearch(q);
-            });
+        const nav = document.getElementById(`nav-${id}`);
+        if (nav) {
+            nav.classList.remove('text-teal-400');
+            nav.classList.add('text-gray-400');
         }
-    
-        updateHeaderCount();
-        preloadShowsCache();
-        
-        // On observe seulement si les éléments sont trouvés dans le DOM
-        const sSentinel = document.getElementById('searchSentinel');
-        if (sSentinel) searchObserver.observe(sSentinel);
-    
-        const dSentinel = document.getElementById('discoverSentinel');
-        if (dSentinel) discoverObserver.observe(dSentinel);
     });
-// --- NAVIGATION ---
-    function switchTab(name) {
-        ['search','discover','calendar','library','profile'].forEach(t => {
-            document.getElementById(`tab-${t}`).classList.add('hidden');
-            document.getElementById(`nav-${t}`).classList.replace('text-teal-400', 'text-gray-400');
-        });
-        document.getElementById(`tab-${name}`).classList.remove('hidden');
-        document.getElementById(`nav-${name}`).classList.replace('text-gray-400', 'text-teal-400');
-        
-        if (name === 'library') renderLibrary();
-        if (name === 'discover') renderDiscoverTab();
-        if (name === 'profile') renderProfile();
-        if (name === 'calendar') renderCalendarTab();
+
+    // 2. Afficher l'onglet sélectionné
+    const targetTab = document.getElementById(`tab-${tabId}`);
+    if (targetTab) targetTab.classList.remove('hidden');
+
+    const targetNav = document.getElementById(`nav-${tabId}`);
+    if (targetNav) {
+        targetNav.classList.remove('text-gray-400');
+        targetNav.classList.add('text-teal-400');
     }
+
+    // 3. Exécuter la fonction de rendu appropriée à l'onglet
+    try {
+        if (tabId === 'library' && typeof renderLibrary === 'function') renderLibrary();
+        if (tabId === 'calendar' && typeof renderCalendarTab === 'function') renderCalendarTab();
+        if (tabId === 'profile' && typeof renderProfile === 'function') renderProfile();
+        if (tabId === 'discover' && typeof renderDiscoverGrid === 'function' && discoverResults.length === 0) {
+            renderDiscoverGrid(true);
+        }
+    } catch (e) {
+        console.error(`Erreur lors du rendu de l'onglet ${tabId} :`, e);
+    }
+}
+
+// Initialisation au lancement de l'application
+document.addEventListener('DOMContentLoaded', () => {
+    switchTab('search');
+    if (typeof updateHeaderCount === 'function') {
+        updateHeaderCount();
+    }
+});
