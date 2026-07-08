@@ -10,37 +10,40 @@
     }
 
     function renderLibrary() {
-        const grid = document.getElementById('libraryGrid');
-        const sFilter = document.getElementById('libraryStatusFilter').value;
-        const dFilter = document.getElementById('libraryDiffusionFilter').value;
-        const tFilter = document.getElementById('libraryTypeFilter').value;
-        const searchInput = document.getElementById('librarySearch').value.toLowerCase().trim();
+        const typeFilter = document.getElementById('filterLibType')?.value || 'all';
+        const statusFilter = document.getElementById('filterLibStatus')?.value || 'all';
+        const broadcastFilter = document.getElementById('filterLibBroadcast')?.value || 'all';
         
-        grid.innerHTML = '';
-        
-        library.filter(item => {
-            if(!item || !item.id) return false; 
-            if (tFilter !== 'all' && item.type !== tFilter) return false;
-            if (sFilter === 'not_finished' && item.status !== 'In Progress') return false;
-            if (sFilter === 'watched' && item.status !== 'Watched') return false;
-            if (sFilter === 'abandoned' && item.status !== 'Abandoned') return false;
-            
-            if (item.type === 'series' && dFilter !== 'all') {
-                const sp = (item.status_production || '').toLowerCase();
-                const isManualCanceled = item.user_forced_cancel === true;
-                if (dFilter === 'canceled' && !isManualCanceled && !sp.includes('cancel')) return false;
-                if (dFilter === 'running' && (isManualCanceled || !sp.includes('running'))) return false;
-                if (dFilter === 'ended' && (isManualCanceled || !sp.includes('ended'))) return false;
+        let filtered = library.filter(m => {
+            // Filtrage du Type (Gestion spéciale pour les Animes)
+            if (typeFilter === 'anime') {
+                if (m.type !== 'series' || !(m.genres || []).includes('Anime')) return false;
+            } else if (typeFilter === 'series') {
+                if (m.type !== 'series' || (m.genres || []).includes('Anime')) return false;
+            } else if (typeFilter !== 'all' && m.type !== typeFilter) {
+                return false;
             }
             
-            if (searchInput !== "") {
-                const titleMatch = item.title ? item.title.toLowerCase().includes(searchInput) : false;
-                const genreMatch = item.genres ? item.genres.some(g => g.toLowerCase().includes(searchInput)) : false;
-                const networkMatch = item.network ? item.network.toLowerCase().includes(searchInput) : false;
-                if (!titleMatch && !genreMatch && !networkMatch) return false;
+            // Filtrage de la Progression
+            if (statusFilter !== 'all' && m.status !== statusFilter) return false;
+            
+            // Filtrage de la Diffusion (Seulement pour les séries/animes)
+            if (broadcastFilter !== 'all') {
+                if (m.type === 'movie') return false; 
+                if (m.status_production !== broadcastFilter) return false;
             }
             return true;
-        }).forEach((item) => { grid.appendChild(createMediaCard(item, true)); });
+        });
+    
+        // Applique les filtres avancés s'ils sont appelés
+        if (typeof advancedFilterEngine !== 'undefined') {
+            filtered = advancedFilterEngine.applyFilters(filtered);
+        }
+    
+        // Le reste de ta logique pour générer la grille de résultats...
+        // const grid = document.getElementById('libraryGrid');
+        // grid.innerHTML = ''; 
+        // etc...
     }
 
     function getProgress(item) {
