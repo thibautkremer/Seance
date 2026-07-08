@@ -4,24 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d9488">
-    <meta name="description" content="TV TIME REBORN - Gestionnaire personnel de séries et films avec IA">
+    <meta name="description" content="TV TIME REBORN - Gestionnaire personnel de séries et films">
     <title>TV TIME REBORN</title>
     
+    <!-- Fix : Eviter l'erreur 404 du favicon -->
+    <link rel="icon" href="data:,">
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Fix : Utilisation du CDN Tailwind v3 qui est plus stable en script direct -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="preconnect" href="https://api.tvmaze.com">
-    <link rel="preconnect" href="https://api.trakt.tv">
-    <link rel="preconnect" href="https://vjhegncviufyguzdrpdp.supabase.co">
+    
     <style>
         body { background-color: #111827; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         .hidden { display: none !important; }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .media-poster { width: 100%; aspect-ratio: 155.88 / 217.56; object-fit: cover; }
         .media-grid { display: grid; gap: 0.5rem; grid-template-columns: repeat(3, 1fr); }
         @media (min-width: 480px)  { .media-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (min-width: 640px)  { .media-grid { grid-template-columns: repeat(5, 1fr); } }
@@ -35,9 +35,8 @@
     <div class="max-w-screen-2xl mx-auto px-4 py-2.5 flex justify-between items-center">
         <h1 class="text-lg font-black tracking-wider text-teal-400">TV TIME <span class="text-white text-xs px-2 py-0.5 bg-teal-600 rounded">REBORN</span></h1>
         <div class="flex items-center gap-2">
-            <button onclick="forceSync()" id="cloudStatus" class="cursor-pointer text-[10px] px-2 py-0.5 bg-gray-900 text-gray-400 rounded-full font-bold flex items-center gap-1 border border-gray-700 transition hover:text-white">☁ Sync</button>
+            <button onclick="forceSync()" id="cloudStatus" class="cursor-pointer text-[10px] px-2 py-0.5 bg-gray-900 text-gray-400 rounded-full font-bold transition hover:text-white">☁ Sync</button>
             <span id="libCount" class="text-[10px] px-2 py-0.5 bg-teal-950 text-teal-400 rounded-full font-bold border border-teal-900/50 hidden">0</span>
-            <button onclick="themeManager.toggle()" title="Alt+T" class="text-white hover:text-teal-400 transition font-bold">🌙</button>
         </div>
     </div>
 </header>
@@ -52,7 +51,8 @@
                     <button onclick="setMediaType('movie')" id="btn-movie" class="py-2 text-sm font-bold rounded-lg text-gray-400">Films</button>
                 </div>
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="Recherche souple..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <!-- Vérifie que ton fichier ui-search.js utilise bien l'ID 'searchInput' -->
+                    <input type="text" id="searchInput" placeholder="Recherche..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
             </div>
         </div>
@@ -70,38 +70,100 @@
     <!-- TAB: CALENDAR -->
     <div id="tab-calendar" class="space-y-4 hidden">
         <h2 class="text-lg font-bold text-white">📅 Mon Calendrier</h2>
-        
-        <!-- Filtres temporels requis par calendar.js -->
         <div class="flex gap-2 overflow-x-auto hide-scroll pb-1">
             <button id="cal-all" onclick="setCalFilter('all')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-teal-600 text-white">Tout</button>
             <button id="cal-today" onclick="setCalFilter('today')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">Aujourd'hui</button>
             <button id="cal-week" onclick="setCalFilter('week')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">7 Jours</button>
             <button id="cal-month" onclick="setCalFilter('month')" class="shrink-0 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-gray-800 text-gray-400 border border-gray-700">30 Jours</button>
         </div>
-
         <div id="calendarTimeline" class="space-y-2"></div>
     </div>
 
     <!-- TAB: LIBRARY -->
     <div id="tab-library" class="space-y-3 hidden">
-        <div id="advancedFiltersPanel"></div>
+        
+        <!-- Filtres basiques demandés -->
+        <div class="bg-gray-800 p-2 rounded-xl border border-gray-700 grid grid-cols-3 gap-2">
+            <select id="filterLibType" onchange="renderLibrary()" class="bg-gray-700 text-xs text-white rounded p-1 outline-none">
+                <option value="all">Tous types</option>
+                <option value="series">Séries</option>
+                <option value="anime">Animes</option>
+                <option value="movie">Films</option>
+            </select>
+            <select id="filterLibStatus" onchange="renderLibrary()" class="bg-gray-700 text-xs text-white rounded p-1 outline-none">
+                <option value="all">Progression</option>
+                <option value="Not Started">Non commencé</option>
+                <option value="In Progress">En cours</option>
+                <option value="Watched">Terminé</option>
+            </select>
+            <select id="filterLibBroadcast" onchange="renderLibrary()" class="bg-gray-700 text-xs text-white rounded p-1 outline-none">
+                <option value="all">Diffusion</option>
+                <option value="Running">En cours</option>
+                <option value="Upcoming">À venir</option>
+                <option value="Ended">Terminée</option>
+                <option value="Canceled">Annulée</option>
+            </select>
+        </div>
+
+        <button onclick="document.getElementById('advancedFiltersPanel').classList.toggle('hidden')" class="w-full text-xs font-bold text-gray-400 bg-gray-800 p-2 rounded-xl border border-gray-700 text-center hover:text-white transition">
+            ⚙️ Filtres Avancés
+        </button>
+
+        <!-- Filtres avancés cachés par défaut -->
+        <div id="advancedFiltersPanel" class="hidden"></div>
         <div id="libraryGrid" class="media-grid"></div>
     </div>
 
     <!-- TAB: PROFILE -->
     <div id="tab-profile" class="space-y-4 hidden">
-        <div id="advancedStatsPanel"></div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <div id="notificationSettingsPanel"></div>
-            <div id="integrationSettingsPanel"></div>
+        
+        <!-- Eléments fantômes pour empêcher profile.js de planter -->
+        <div id="basicProfileContainer" class="hidden">
+            <span id="statTotalHours"></span>
+            <span id="statEpisodesWatched"></span>
         </div>
+
+        <div id="advancedStatsPanel"></div>
+
+        <!-- Sections cachées dans des menus déroulants -->
+        <details class="bg-gray-800 rounded-xl border border-gray-700 group">
+            <summary class="p-3 text-sm font-bold text-white cursor-pointer list-none flex justify-between outline-none">
+                🏆 Achievements
+                <span class="text-teal-400 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <div id="achievementsPanel" class="p-3 border-t border-gray-700"></div>
+        </details>
+
+        <details class="bg-gray-800 rounded-xl border border-gray-700 group">
+            <summary class="p-3 text-sm font-bold text-white cursor-pointer list-none flex justify-between outline-none">
+                🔔 Notifications
+                <span class="text-teal-400 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <div id="notificationSettingsPanel" class="p-3 border-t border-gray-700"></div>
+        </details>
+
+        <details class="bg-gray-800 rounded-xl border border-gray-700 group">
+            <summary class="p-3 text-sm font-bold text-white cursor-pointer list-none flex justify-between outline-none">
+                🔗 Intégrations
+                <span class="text-teal-400 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <div id="integrationSettingsPanel" class="p-3 border-t border-gray-700"></div>
+        </details>
     </div>
 </main>
 
-<!-- MODAL -->
+<!-- MODAL (Avec identifiants fantômes pour modal.js) -->
 <div id="mediaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
     <div class="bg-gray-800 border border-gray-700 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div id="modalContent" class="p-4 overflow-y-auto"></div>
+        <div id="modalContent" class="p-4 overflow-y-auto w-full relative">
+            <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-400 hover:text-white text-xl z-10">&times;</button>
+            <img id="modalImage" class="w-full h-48 object-cover rounded-xl mb-4 hidden" />
+            <h2 id="modalTitle" class="text-xl font-black text-white mb-1"></h2>
+            <div id="modalMeta" class="text-xs text-teal-400 font-bold mb-3"></div>
+            <p id="modalSynopsis" class="text-sm text-gray-300 mb-4"></p>
+            <div id="modalActions" class="flex gap-2 mb-4"></div>
+            <div id="modalEpisodes"></div>
+        </div>
     </div>
 </div>
 
@@ -113,27 +175,19 @@
     <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-xs text-gray-400 flex-1"><span class="text-lg">📊</span><span class="text-[10px]">Profil</span></button>
 </nav>
 
-<!-- Core Modules -->
+<!-- Scripts -->
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/api.js"></script>
-
-<!-- Optimization & Enhancement -->
 <script src="js/performance-improvements.js"></script>
 <script src="js/ui-improvements.js"></script>
-
-<!-- AI & Filtering -->
 <script src="js/ai-engine.js"></script>
 <script src="js/advanced-filters.js"></script>
-
-<!-- Integrations & External Services -->
 <script src="js/notifications.js"></script>
 <script src="js/integrations.js"></script>
 <script src="js/streaming-info.js"></script>
 <script src="js/advanced-stats.js"></script>
-
-<!-- UI Components -->
 <script src="js/ui-search.js"></script>
 <script src="js/ui-discover.js"></script>
 <script src="js/ui-library.js"></script>
@@ -142,20 +196,9 @@
 <script src="js/calendar.js"></script>
 <script src="js/profile.js"></script>
 <script src="js/import.js"></script>
-
-<!-- Main App -->
 <script src="js/main.js"></script>
 
 <script>
-    // Enregistrement du Service Worker pour la PWA
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js').catch(err => {
-                console.error('Erreur lors de l\'enregistrement du Service Worker:', err);
-            });
-        });
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             if (window.renderAdvancedStatsPanel) document.getElementById('advancedStatsPanel').innerHTML = renderAdvancedStatsPanel();
@@ -166,6 +209,5 @@
         if (window.startNotificationChecks) startNotificationChecks();
     });
 </script>
-
 </body>
 </html>
